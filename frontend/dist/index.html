@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VectorOS - Router Management</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #12122a;
+      --surface-hover: #1a1a3a;
+      --border: #2a2a4a;
+      --primary: #00ff88;
+      --primary-dim: #00cc6a;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --danger: #ff4444;
+      --warning: #ffaa00;
+      --info: #4488ff;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      color: var(--primary);
+      letter-spacing: 2px;
+    }
+
+    .logo .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .nav {
+      padding: 1rem 0.5rem;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-item:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--primary);
+    }
+
+    .nav-icon {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h2 {
+      font-size: 1.75rem;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header .description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    /* Stats */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Status Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: rgba(0, 255, 136, 0.15);
+      color: var(--primary);
+    }
+
+    .badge-warning {
+      background: rgba(255, 170, 0, 0.15);
+      color: var(--warning);
+    }
+
+    .badge-danger {
+      background: rgba(255, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .badge-info {
+      background: rgba(68, 136, 255, 0.15);
+      color: var(--info);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Table */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover td {
+      background: var(--surface-hover);
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .form-check input[type="checkbox"] {
+      width: 1.2rem;
+      height: 1.2rem;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dim);
+    }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-hover);
+    }
+
+    .btn-danger {
+      background: rgba(255, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 68, 68, 0.3);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem 1.5rem;
+      min-width: 300px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast-success { border-left: 4px solid var(--primary); }
+    .toast-error { border-left: 4px solid var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.75rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Page sections */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 60px; }
+      .logo h1 { font-size: 1rem; }
+      .logo .subtitle { display: none; }
+      .nav-item span { display: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <h1>VectorOS</h1>
+        <div class="subtitle">VPP Router Management</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span>仪表盘</span>
+        </a>
+        <a class="nav-item" data-page="pppoe" onclick="showPage('pppoe')">
+          <span class="nav-icon">🔌</span>
+          <span>PPPoE</span>
+        </a>
+        <a class="nav-item" data-page="interfaces" onclick="showPage('interfaces')">
+          <span class="nav-icon">🌐</span>
+          <span>接口</span>
+        </a>
+        <a class="nav-item" data-page="routes" onclick="showPage('routes')">
+          <span class="nav-icon">🛣️</span>
+          <span>路由</span>
+        </a>
+        <a class="nav-item" data-page="dhcp" onclick="showPage('dhcp')">
+          <span class="nav-icon">📡</span>
+          <span>DHCP</span>
+        </a>
+        <a class="nav-item" data-page="dns" onclick="showPage('dns')">
+          <span class="nav-icon">🔍</span>
+          <span>DNS</span>
+        </a>
+        <a class="nav-item" data-page="system" onclick="showPage('system')">
+          <span class="nav-icon">⚙️</span>
+          <span>系统</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <h2>仪表盘</h2>
+          <p class="description">系统概览和状态监控</p>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="stat-card">
+            <div class="stat-icon">🔌</div>
+            <div class="stat-value" id="stat-pppoe">-</div>
+            <div class="stat-label">PPPoE 会话</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-value" id="stat-interfaces">-</div>
+            <div class="stat-label">网络接口</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🛣️</div>
+            <div class="stat-value" id="stat-routes">-</div>
+            <div class="stat-label">路由条目</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-value" id="stat-uptime">-</div>
+            <div class="stat-label">运行时间</div>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 1.5rem;">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">系统状态</span>
+              <span class="badge badge-success"><span class="dot"></span> 运行中</span>
+            </div>
+            <table>
+              <tr><td>VectorOS 版本</td><td id="sys-version">-</td></tr>
+              <tr><td>VPP 版本</td><td id="vpp-version">-</td></tr>
+              <tr><td>PPPoE 插件</td><td id="pppoe-status">-</td></tr>
+              <tr><td>API Socket</td><td id="api-socket">-</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">快速操作</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <button class="btn btn-primary" onclick="showPage('pppoe')">配置 PPPoE 拨号</button>
+              <button class="btn btn-secondary" onclick="refreshAll()">刷新状态</button>
+              <button class="btn btn-secondary" onclick="showPage('interfaces')">管理接口</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PPPoE Page -->
+      <div id="page-pppoe" class="page">
+        <div class="page-header">
+          <h2>PPPoE 配置</h2>
+          <p class="description">配置 PPPoE 拨号连接</p>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">PPPoE 连接配置</span>
+            </div>
+            <form id="pppoe-form" onsubmit="savePppoe(event)">
+              <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-input" id="pppoe-username" placeholder="PPPoE 用户名" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-input" id="pppoe-password" placeholder="PPPoE 密码" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">接口</label>
+                <select class="form-select" id="pppoe-interface">
+                  <option value="enp1s0">enp1s0 (WAN)</option>
+                  <option value="enp2s0">enp2s0</option>
+                  <option value="enp3s0">enp3s0</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">MTU</label>
+                  <input type="number" class="form-input" id="pppoe-mtu" value="1492" min="576" max="1500">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">MRU</label>
+                  <input type="number" class="form-input" id="pppoe-mru" value="1492" min="576" max="1500">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-check">
+                  <input type="checkbox" id="pppoe-peer-dns" checked>
+                  <span>使用运营商 DNS</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="form-check">
+                  <input type="checkbox" id="pppoe-default-route4" checked>
+                  <span>添加 IPv4 默认路由</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="form-check">
+                  <input type="checkbox" id="pppoe-default-route6" checked>
+                  <span>添加 IPv6 默认路由</span>
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width: 100%;">保存配置</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">PPPoE 状态</span>
+              <button class="btn btn-sm btn-secondary" onclick="refreshPppoe()">刷新</button>
+            </div>
+            <div id="pppoe-status-content">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interfaces Page -->
+      <div id="page-interfaces" class="page">
+        <div class="page-header">
+          <h2>网络接口</h2>
+          <p class="description">管理网络接口和 VF 绑定</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">接口列表</span>
+            <button class="btn btn-sm btn-secondary" onclick="refreshInterfaces()">刷新</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>名称</th>
+                  <th>索引</th>
+                  <th>状态</th>
+                  <th>MTU</th>
+                  <th>MAC 地址</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="interfaces-table">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div>加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Routes Page -->
+      <div id="page-routes" class="page">
+        <div class="page-header">
+          <h2>路由表</h2>
+          <p class="description">查看和管理路由条目</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">路由条目</span>
+            <button class="btn btn-sm btn-secondary" onclick="refreshRoutes()">刷新</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>目标网络</th>
+                  <th>下一跳</th>
+                  <th>接口</th>
+                  <th>距离</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody id="routes-table">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div>加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DHCP Page -->
+      <div id="page-dhcp" class="page">
+        <div class="page-header">
+          <h2>DHCP 服务</h2>
+          <p class="description">管理 DHCP 地址分配</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">DHCP 租约</span>
+            <button class="btn btn-sm btn-secondary" onclick="refreshDhcp()">刷新</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>MAC 地址</th>
+                  <th>IP 地址</th>
+                  <th>主机名</th>
+                  <th>租约到期</th>
+                  <th>接口</th>
+                </tr>
+              </thead>
+              <tbody id="dhcp-table">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">DHCP 服务未启用</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNS Page -->
+      <div id="page-dns" class="page">
+        <div class="page-header">
+          <h2>DNS 配置</h2>
+          <p class="description">DNS 转发和缓存设置</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">上游 DNS 服务器</span>
+          </div>
+          <div id="dns-servers">
+            <div class="form-group">
+              <label class="form-check">
+                <input type="checkbox" checked disabled>
+                <span>8.8.8.8 (Google)</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-check">
+                <input type="checkbox" checked disabled>
+                <span>1.1.1.1 (Cloudflare)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Page -->
+      <div id="page-system" class="page">
+        <div class="page-header">
+          <h2>系统信息</h2>
+          <p class="description">VectorOS 系统状态和配置</p>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">服务状态</span>
+            </div>
+            <table>
+              <tr><td>VectorOS</td><td><span class="badge badge-success"><span class="dot"></span> 运行中</span></td></tr>
+              <tr><td>VPP</td><td><span class="badge badge-success"><span class="dot"></span> 运行中</span></td></tr>
+              <tr><td>PPPoE 插件</td><td><span class="badge badge-success"><span class="dot"></span> 已加载</span></td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">API 端点</span>
+            </div>
+            <table>
+              <tr><td>/api/health</td><td>健康检查</td></tr>
+              <tr><td>/api/config</td><td>系统配置</td></tr>
+              <tr><td>/api/pppoe/clients</td><td>PPPoE 状态</td></tr>
+              <tr><td>/api/interfaces</td><td>接口列表</td></tr>
+              <tr><td>/api/routes</td><td>路由表</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    // State
+    let currentPage = 'dashboard';
+    let systemInfo = {};
+
+    // Navigation
+    function showPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      document.getElementById(`page-${page}`).classList.add('active');
+      document.querySelector(`[data-page="${page}"]`).classList.add('active');
+
+      currentPage = page;
+      refreshPage(page);
+    }
+
+    // Toast notifications
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toasts');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // API calls
+    async function fetchApi(url) {
+      try {
+        const res = await fetch(url);
+        return await res.json();
+      } catch (e) {
+        console.error(`API error: ${url}`, e);
+        return { error: e.message };
+      }
+    }
+
+    // Refresh functions
+    async function refreshAll() {
+      await Promise.all([
+        refreshDashboard(),
+        refreshPppoe(),
+        refreshInterfaces(),
+        refreshRoutes()
+      ]);
+      showToast('状态已刷新');
+    }
+
+    async function refreshPage(page) {
+      switch (page) {
+        case 'dashboard': return refreshDashboard();
+        case 'pppoe': return refreshPppoe();
+        case 'interfaces': return refreshInterfaces();
+        case 'routes': return refreshRoutes();
+      }
+    }
+
+    async function refreshDashboard() {
+      const [health, pppoe] = await Promise.all([
+        fetchApi('/api/health'),
+        fetchApi('/api/pppoe/clients')
+      ]);
+
+      document.getElementById('stat-pppoe').textContent = pppoe.status === 'ok' ? '✓' : '✗';
+      document.getElementById('stat-interfaces').textContent = '4';
+      document.getElementById('stat-routes').textContent = '0';
+      document.getElementById('stat-uptime').textContent = '✓';
+
+      document.getElementById('sys-version').textContent = health.version || '-';
+      document.getElementById('vpp-version').textContent = 'v26.06-rc0';
+      document.getElementById('pppoe-status').textContent = pppoe.status === 'ok' ? '已就绪' : '未就绪';
+      document.getElementById('api-socket').textContent = '/run/vpp/api.sock';
+    }
+
+    async function refreshPppoe() {
+      const data = await fetchApi('/api/pppoe/clients');
+      const content = document.getElementById('pppoe-status-content');
+
+      if (data.error) {
+        content.innerHTML = `<p style="color: var(--danger);">${data.error}</p>`;
+        return;
+      }
+
+      content.innerHTML = `
+        <table>
+          <tr><td>状态</td><td><span class="badge badge-success"><span class="dot"></span> ${data.status}</span></td></tr>
+          <tr><td>基础消息 ID</td><td>${data.base_msg_id}</td></tr>
+          <tr><td>消息</td><td>${data.message}</td></tr>
+        </table>
+        <div style="margin-top: 1rem;">
+          <p style="color: var(--text-muted); font-size: 0.85rem;">
+            PPPoE API 已就绪，可以创建拨号连接。
+          </p>
+        </div>
+      `;
+    }
+
+    async function refreshInterfaces() {
+      const data = await fetchApi('/api/interfaces');
+      const tbody = document.getElementById('interfaces-table');
+
+      if (data.error) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger);">${data.error}</td></tr>`;
+        return;
+      }
+
+      const interfaces = [
+        { name: 'ens18', idx: 1, state: 'up', mtu: 1500, mac: '00:00:00:00:00:00', type: '管理' },
+        { name: 'enp1s0', idx: 2, state: 'down', mtu: 1500, mac: 'VF (CX4 LX)', type: 'WAN' },
+        { name: 'enp2s0', idx: 3, state: 'down', mtu: 1500, mac: 'VF (CX4 LX)', type: 'LAN' },
+        { name: 'enp3s0', idx: 4, state: 'down', mtu: 1500, mac: 'VF (CX4 LX)', type: '备用' },
+      ];
+
+      tbody.innerHTML = interfaces.map(iface => `
+        <tr>
+          <td><strong>${iface.name}</strong></td>
+          <td>${iface.idx}</td>
+          <td><span class="badge ${iface.state === 'up' ? 'badge-success' : 'badge-warning'}">${iface.state}</span></td>
+          <td>${iface.mtu}</td>
+          <td>${iface.mac}</td>
+          <td><button class="btn btn-sm btn-secondary">配置</button></td>
+        </tr>
+      `).join('');
+    }
+
+    async function refreshRoutes() {
+      const tbody = document.getElementById('routes-table');
+      tbody.innerHTML = `
+        <tr>
+          <td>0.0.0.0/0</td>
+          <td>PPPoE</td>
+          <td>pppoe-wan0</td>
+          <td>1</td>
+          <td><span class="badge badge-info">默认</span></td>
+        </tr>
+        <tr>
+          <td>192.168.1.0/24</td>
+          <td>直连</td>
+          <td>lan0phy</td>
+          <td>0</td>
+          <td><span class="badge badge-success">直连</span></td>
+        </tr>
+      `;
+    }
+
+    async function refreshDhcp() {
+      // Placeholder
+    }
+
+    // PPPoE form
+    async function savePppoe(e) {
+      e.preventDefault();
+      const config = {
+        username: document.getElementById('pppoe-username').value,
+        password: document.getElementById('pppoe-password').value,
+        interface: document.getElementById('pppoe-interface').value,
+        mtu: parseInt(document.getElementById('pppoe-mtu').value),
+        mru: parseInt(document.getElementById('pppoe-mru').value),
+        usePeerDns: document.getElementById('pppoe-peer-dns').checked,
+        addDefaultRoute4: document.getElementById('pppoe-default-route4').checked,
+        addDefaultRoute6: document.getElementById('pppoe-default-route6').checked,
+      };
+
+      // TODO: Send to API
+      console.log('PPPoE config:', config);
+      showToast('PPPoE 配置已保存（功能开发中）');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshDashboard();
+    });
+  </script>
+</body>
+</html>
