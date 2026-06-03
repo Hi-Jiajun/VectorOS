@@ -5,14 +5,17 @@ use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use crate::config::Config;
+use crate::vpp::VppClient;
 use std::sync::Arc;
+use tracing::info;
 
 pub struct AppState {
     pub config: Config,
+    pub vpp: Option<VppClient>,
 }
 
-pub async fn start_server(listen: &str, config: Config) -> anyhow::Result<()> {
-    let state = Arc::new(AppState { config });
+pub async fn start_server(listen: &str, config: Config, vpp: Option<VppClient>) -> anyhow::Result<()> {
+    let state = Arc::new(AppState { config, vpp });
 
     let app = Router::new()
         .merge(routes::api_routes())
@@ -26,5 +29,3 @@ pub async fn start_server(listen: &str, config: Config) -> anyhow::Result<()> {
 
     Ok(())
 }
-
-use tracing::info;

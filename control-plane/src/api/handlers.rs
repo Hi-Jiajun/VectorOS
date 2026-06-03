@@ -12,9 +12,26 @@ pub async fn get_config(State(state): State<Arc<AppState>>) -> Json<Value> {
     Json(json!({ "config": state.config }))
 }
 
-pub async fn get_interfaces() -> Json<Value> {
-    // TODO: Query VPP for interface list
-    Json(json!({ "interfaces": [] }))
+pub async fn get_interfaces(State(state): State<Arc<AppState>>) -> Json<Value> {
+    if let Some(ref vpp) = state.vpp {
+        match vpp.get_interfaces() {
+            Ok(ifaces) => Json(json!({ "interfaces": ifaces })),
+            Err(e) => Json(json!({ "error": e.to_string() })),
+        }
+    } else {
+        Json(json!({ "error": "VPP not connected" }))
+    }
+}
+
+pub async fn get_pppoe_clients(State(state): State<Arc<AppState>>) -> Json<Value> {
+    if let Some(ref vpp) = state.vpp {
+        match vpp.pppoe_dump_clients() {
+            Ok(clients) => Json(json!({ "clients": clients })),
+            Err(e) => Json(json!({ "error": e.to_string() })),
+        }
+    } else {
+        Json(json!({ "error": "VPP not connected" }))
+    }
 }
 
 pub async fn get_routes() -> Json<Value> {

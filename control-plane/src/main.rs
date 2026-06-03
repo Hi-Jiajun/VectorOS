@@ -37,8 +37,19 @@ async fn main() -> Result<()> {
 
     info!("Config loaded: {:?}", config);
 
-    // Start API server
-    api::start_server(&cli.api_listen, config).await?;
+    // Try to connect to VPP
+    match vpp::VppClient::connect(&config.vpp.socket_path) {
+        Ok(client) => {
+            info!("Connected to VPP");
+            // Start API server with VPP client
+            api::start_server(&cli.api_listen, config, Some(client)).await?;
+        }
+        Err(e) => {
+            info!("VPP not available ({}), starting in standalone mode", e);
+            // Start API server without VPP
+            api::start_server(&cli.api_listen, config, None).await?;
+        }
+    }
 
     Ok(())
 }

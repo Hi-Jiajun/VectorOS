@@ -26,11 +26,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 thiserror = "1"
 
-# VPP API client
-# TODO: Add vpp-api dependency or implement binary API client
-
 # Config
 toml = "0.8"
 
 # CLI
 clap = { version = "4", features = ["derive"] }
+
+# Byte encoding
+bytes = "1"
+byteorder = "1"
