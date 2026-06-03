@@ -1,0 +1,24 @@
+# Rust
+/target
+Cargo.lock
+
+# Node
+node_modules/
+/dist
+/.svelte-kit
+/build
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# VPP
+*.so
+*.o

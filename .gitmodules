@@ -1,0 +1,4 @@
+[submodule "vpp"]
+	path = vpp
+	url = https://github.com/Hi-Jiajun/vpp.git
+	branch = feat/pr-pppoeclient
