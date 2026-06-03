@@ -103,21 +103,36 @@ const PPPOECLIENT_DETAILS: u8 = 5;
 // const PPPOECLIENT_CONTROL_HISTORY_SUMMARY: u8 = 9;
 // const PPPOECLIENT_CONTROL_HISTORY_SUMMARY_REPLY: u8 = 10;
 
+// Hardcoded message IDs for VPP 26.06-rc0~703-g33c6e2e36
+// TODO: Replace with dynamic get_first_msg_id lookup
+const PPPOECLIENT_ADD_DEL_ID: u16 = 1938;
+const PPPOECLIENT_ADD_DEL_REPLY_ID: u16 = 1939;
+const PPPOECLIENT_SET_OPTIONS_ID: u16 = 1940;
+const PPPOECLIENT_SET_OPTIONS_REPLY_ID: u16 = 1941;
+const PPPOECLIENT_SESSION_ACTION_ID: u16 = 1942;
+const PPPOECLIENT_SESSION_ACTION_REPLY_ID: u16 = 1943;
+const PPPOECLIENT_DUMP_ID: u16 = 1944;
+const PPPOECLIENT_DETAILS_ID: u16 = 1945;
+
 /// PPPoE client API with dynamic message IDs
 pub struct PppoeApi {
     base_msg_id: u16,
 }
 
 impl PppoeApi {
-    /// Initialize PPPoE API by getting message IDs from VPP
-    pub fn init(client: &VppClient) -> Result<Self, anyhow::Error> {
-        let base_msg_id = client.get_first_msg_id("pppoeclient")?;
-        tracing::info!("PPPoE client base message ID: {}", base_msg_id);
-        Ok(Self { base_msg_id })
+    /// Initialize PPPoE API with hardcoded message IDs
+    pub fn init(_client: &VppClient) -> Result<Self, anyhow::Error> {
+        tracing::info!("PPPoE client initialized with hardcoded message IDs");
+        Ok(Self { base_msg_id: 0 })
     }
 
-    fn msg_id(&self, offset: u8) -> u16 {
-        self.base_msg_id + offset as u16
+    fn msg_id(&self, msg_type: u16) -> u16 {
+        msg_type
+    }
+
+    /// Get the base message ID
+    pub fn base_msg_id(&self) -> u16 {
+        PPPOECLIENT_ADD_DEL_ID
     }
 
     /// Create a PPPoE client add/del message
@@ -131,7 +146,7 @@ impl PppoeApi {
         ifname: &str,
         context: u32,
     ) -> VppMessage {
-        let mut msg = VppMessage::new_request(self.msg_id(PPPOECLIENT_ADD_DEL), context);
+        let mut msg = VppMessage::new_request(PPPOECLIENT_ADD_DEL_ID, context);
         msg.data.put_u8(if is_add { 1 } else { 0 });
         msg.data.put_u32_le(sw_if_index);
         msg.data.put_u32_le(host_uniq);
@@ -155,7 +170,7 @@ impl PppoeApi {
         timeout: u32,
         context: u32,
     ) -> VppMessage {
-        let mut msg = VppMessage::new_request(self.msg_id(PPPOECLIENT_SET_OPTIONS), context);
+        let mut msg = VppMessage::new_request(PPPOECLIENT_SET_OPTIONS_ID, context);
         msg.data.put_u32_le(pppoeclient_index);
         encode_vpp_string(username, &mut msg.data, 64);
         encode_vpp_string(password, &mut msg.data, 64);
@@ -182,7 +197,7 @@ impl PppoeApi {
         action: SessionAction,
         context: u32,
     ) -> VppMessage {
-        let mut msg = VppMessage::new_request(self.msg_id(PPPOECLIENT_SESSION_ACTION), context);
+        let mut msg = VppMessage::new_request(PPPOECLIENT_SESSION_ACTION_ID, context);
         msg.data.put_u32_le(pppoeclient_index);
         msg.data.put_u8(action as u8);
         msg
@@ -190,14 +205,14 @@ impl PppoeApi {
 
     /// Create a PPPoE client dump message
     pub fn make_dump(&self, sw_if_index: u32, context: u32) -> VppMessage {
-        let mut msg = VppMessage::new_request(self.msg_id(PPPOECLIENT_DUMP), context);
+        let mut msg = VppMessage::new_request(PPPOECLIENT_DUMP_ID, context);
         msg.data.put_u32_le(sw_if_index);
         msg
     }
 
     /// Check if a message is a pppoeclient_details reply
     pub fn is_details_reply(&self, msg_type: u16) -> bool {
-        msg_type == self.msg_id(PPPOECLIENT_DETAILS)
+        msg_type == PPPOECLIENT_DETAILS_ID
     }
 
     /// Decode pppoeclient_details reply
