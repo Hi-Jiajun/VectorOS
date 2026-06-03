@@ -5,6 +5,7 @@
 <div class="app">
   <nav>
     <a href="/">Dashboard</a>
+    <a href="/pppoe">PPPoE</a>
     <a href="/interfaces">Interfaces</a>
     <a href="/routes">Routes</a>
     <a href="/dhcp">DHCP</a>
