@@ -3,6 +3,7 @@ use axum::Json;
 use serde_json::{json, Value};
 use std::sync::Arc;
 use crate::api::AppState;
+use crate::vpp::pppoe::PppoeApi;
 
 pub async fn health() -> Json<Value> {
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION") }))
@@ -25,9 +26,12 @@ pub async fn get_interfaces(State(state): State<Arc<AppState>>) -> Json<Value> {
 
 pub async fn get_pppoe_clients(State(state): State<Arc<AppState>>) -> Json<Value> {
     if let Some(ref vpp) = state.vpp {
-        match vpp.pppoe_dump_clients() {
-            Ok(clients) => Json(json!({ "clients": clients })),
-            Err(e) => Json(json!({ "error": e.to_string() })),
+        match vpp.pppoe_api() {
+            Ok(pppoe) => match vpp.pppoe_dump_clients(&pppoe) {
+                Ok(clients) => Json(json!({ "clients": clients })),
+                Err(e) => Json(json!({ "error": e.to_string() })),
+            },
+            Err(e) => Json(json!({ "error": format!("Failed to init PPPoE API: {}", e) })),
         }
     } else {
         Json(json!({ "error": "VPP not connected" }))

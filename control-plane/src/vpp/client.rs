@@ -6,7 +6,11 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
 use tracing::{debug, info};
 
-use super::message::{VppMessage, VppMsgHeader, VppRetval};
+use super::message::{
+    VppMessage, VppMsgHeader, VppRetval,
+    MSG_GET_FIRST_MSG_ID, MSG_GET_FIRST_MSG_ID_REPLY,
+    make_get_first_msg_id, decode_get_first_msg_id_reply,
+};
 
 /// VPP Binary API Client
 pub struct VppClient {
@@ -44,10 +48,13 @@ impl VppClient {
     /// Send a message and wait for reply
     pub fn send_recv(&self, mut msg: VppMessage) -> Result<VppMessage> {
         msg.header.client_index = 0;
+        let context = msg.header.context;
+        let msg_type = msg.msg_type();
+
         let encoded = msg.encode();
         let mut stream = self.stream.lock().unwrap();
 
-        debug!("Sending message type={} context={}", msg.msg_type(), msg.context());
+        debug!("Sending message type={} context={}", msg_type, context);
         stream.write_all(&encoded)?;
 
         // Read reply header
@@ -57,23 +64,40 @@ impl VppClient {
 
         debug!("Received reply type={} context={}", reply_header.msg_type, reply_header.context);
 
-        // Read reply body (up to 8KB for now)
+        // For autoreply messages, the body is just retval (4 bytes)
+        // For dump messages, we get multiple details messages followed by a control_ping_reply
         let mut data = BytesMut::with_capacity(8192);
-        let mut buf = [0u8; 4096];
-        // Non-blocking read to get available data
-        stream.set_nonblocking(true)?;
-        loop {
-            match stream.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => data.extend_from_slice(&buf[..n]),
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
-                Err(e) => {
-                    stream.set_nonblocking(false)?;
-                    return Err(e.into());
+
+        // Read body based on message type
+        // For now, read a fixed amount for replies
+        if reply_header.msg_type == MSG_GET_FIRST_MSG_ID_REPLY {
+            // get_first_msg_id_reply: retval (4) + first_msg_id (2)
+            let mut body = [0u8; 6];
+            stream.read_exact(&mut body)?;
+            data.extend_from_slice(&body);
+        } else if reply_header.msg_type <= 2 {
+            // Control ping reply or similar - read retval
+            let mut body = [0u8; 4];
+            stream.read_exact(&mut body)?;
+            data.extend_from_slice(&body);
+        } else {
+            // For other messages, try to read available data
+            // TODO: Implement proper message length parsing
+            stream.set_nonblocking(true)?;
+            let mut buf = [0u8; 4096];
+            loop {
+                match stream.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(n) => data.extend_from_slice(&buf[..n]),
+                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
+                    Err(e) => {
+                        stream.set_nonblocking(false)?;
+                        return Err(e.into());
+                    }
                 }
             }
+            stream.set_nonblocking(false)?;
         }
-        stream.set_nonblocking(false)?;
 
         Ok(VppMessage {
             header: reply_header,
@@ -95,6 +119,23 @@ impl VppClient {
         } else {
             Ok(VppRetval(0))
         }
+    }
+
+    /// Get first message ID for a plugin
+    pub fn get_first_msg_id(&self, plugin_name: &str) -> Result<u16> {
+        let context = self.next_context();
+        let msg = make_get_first_msg_id(plugin_name, context);
+        let reply = self.send_recv(msg)?;
+
+        if reply.msg_type() != MSG_GET_FIRST_MSG_ID_REPLY {
+            anyhow::bail!(
+                "Expected get_first_msg_id_reply ({}), got {}",
+                MSG_GET_FIRST_MSG_ID_REPLY,
+                reply.msg_type()
+            );
+        }
+
+        Ok(decode_get_first_msg_id_reply(&reply.data)?)
     }
 
     /// Get all interfaces from VPP

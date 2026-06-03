@@ -106,3 +106,28 @@ impl VppRetval {
         }
     }
 }
+
+// VPP built-in message IDs
+// These are fixed in VPP and don't change across versions
+pub const MSG_GET_FIRST_MSG_ID: u16 = 15;
+pub const MSG_GET_FIRST_MSG_ID_REPLY: u16 = 16;
+
+/// Create a get_first_msg_id request
+pub fn make_get_first_msg_id(name: &str, context: u32) -> VppMessage {
+    let mut msg = VppMessage::new_request(MSG_GET_FIRST_MSG_ID, context);
+    encode_vpp_string(name, &mut msg.data, 64);
+    msg
+}
+
+/// Decode get_first_msg_id reply
+pub fn decode_get_first_msg_id_reply(data: &[u8]) -> io::Result<u16> {
+    if data.len() < 8 {
+        return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "reply too short"));
+    }
+    let retval = i32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    if retval != 0 {
+        return Err(io::Error::new(io::ErrorKind::Other, format!("get_first_msg_id failed: {}", retval)));
+    }
+    let first_msg_id = u16::from_le_bytes([data[4], data[5]]);
+    Ok(first_msg_id)
+}
