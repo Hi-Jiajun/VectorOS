@@ -1,37 +1,37 @@
 # VectorOS
 
-[English](README.md) | [中文](README.zh-CN.md)
+[中文](README.md) | [English](README.en.md)
 
 ---
 
-基于 VPP (Vector Packet Processing) 的高性能开源路由器系统。
+A high-performance open-source router system based on VPP (Vector Packet Processing).
 
-## 特性
+## Features
 
-- **高性能数据面**：基于 VPP 的用户态报文处理，DPDK/RDMA 驱动
-- **PPPoE 拨号**：内置 PPPoE Client 插件，支持 CHAP/PAP 认证、VLAN/QinQ、断线重连、指数退避
-- **现代控制面**：Rust (tokio + axum) 编写，内存安全、高性能
-- **Web 管理界面**：Svelte + Tailwind CSS，暗色主题仪表盘
-- **路由协议**：FRRouting 集成，支持 BGP/OSPF (via FPM)
-- **网络服务**：DHCP、DNS、NAT
+- **High-Performance Data Plane**: VPP-based userspace packet processing with DPDK/RDMA
+- **PPPoE Dialer**: Built-in PPPoE Client plugin with CHAP/PAP auth, VLAN/QinQ, auto-reconnect, exponential backoff
+- **Modern Control Plane**: Written in Rust (tokio + axum), memory-safe and high-performance
+- **Web Management UI**: Svelte + Tailwind CSS with dark-theme dashboard
+- **Routing**: FRRouting integration for BGP/OSPF via FPM
+- **Network Services**: DHCP, DNS, NAT
 
-## 架构
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │              Frontend (Svelte + Tailwind)                   │
-│         仪表盘 / 接口管理 / 路由 / DHCP / DNS               │
+│         Dashboard / Interfaces / Routes / DHCP / DNS        │
 ├─────────────────────────────────────────────────────────────┤
 │            Control Plane (Rust + Axum)                      │
-│     REST API / 配置管理 / DHCP / DNS / 状态采集              │
+│     REST API / Config / DHCP / DNS / State Collection       │
 │                    ↓ Binary API Socket                      │
 ├─────────────────────────────────────────────────────────────┤
 │              VPP Data Plane (C, DPDK)                       │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │  pppoeclient 插件 (3层架构)                           │   │
-│  │  PPPoE 发现 → PPPoX 桥接 → 嵌入式 pppd               │   │
+│  │  pppoeclient plugin (3-layer architecture)            │   │
+│  │  PPPoE Discovery → PPPoX Shim → Embedded pppd        │   │
 │  └──────────────────────────────────────────────────────┘   │
-│  NAT / 路由 / 接口管理 / VLAN / QinQ                       │
+│  NAT / Routing / Interface Mgmt / VLAN / QinQ              │
 ├─────────────────────────────────────────────────────────────┤
 │              FRRouting (BGP/OSPF) via FPM                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -39,54 +39,54 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 vectoros/
 ├── Cargo.toml                      # Rust workspace
-├── control-plane/                  # Rust 控制面
+├── control-plane/                  # Rust control plane
 │   └── src/
-│       ├── main.rs                 # 入口
-│       ├── api/                    # REST API
-│       ├── config/                 # 配置管理
-│       ├── vpp/                    # VPP Binary API 客户端
-│       └── services/               # DHCP, DNS 等服务
-├── frontend/                       # Svelte 前端
-│   └── src/routes/                 # 页面路由
-├── vpp/                            # VPP 源码 (git submodule)
-│   └── src/plugins/pppoeclient/    # PPPoE Client 插件
-└── vpp-plugins/                    # 额外 VPP 插件
+│       ├── main.rs                 # Entry point
+│       ├── api/                    # REST API handlers
+│       ├── config/                 # Configuration management
+│       ├── vpp/                    # VPP Binary API client
+│       └── services/               # DHCP, DNS services
+├── frontend/                       # Svelte frontend
+│   └── src/routes/                 # Page routes
+├── vpp/                            # VPP source (git submodule)
+│   └── src/plugins/pppoeclient/    # PPPoE Client plugin
+└── vpp-plugins/                    # Additional VPP plugins
 ```
 
-## 快速开始
+## Quick Start
 
-### 环境要求
+### Prerequisites
 
 - Linux kernel 4.19+
-- DPDK 兼容网卡
+- DPDK-compatible NIC
 - Rust 1.70+
 - Node.js 18+
 
-### 克隆仓库
+### Clone
 
 ```bash
 git clone --recursive https://github.com/Hi-Jiajun/vectoros.git
 cd vectoros
 ```
 
-如果已经 clone 但没有子模块：
+If already cloned without submodule:
 
 ```bash
 git submodule update --init
 ```
 
-### 编译控制面
+### Build Control Plane
 
 ```bash
 cargo build --release
 ```
 
-### 编译前端
+### Build Frontend
 
 ```bash
 cd frontend
@@ -95,25 +95,25 @@ npm run build
 cd ..
 ```
 
-### 运行
+### Run
 
 ```bash
 sudo ./target/release/vectoros --config config.toml
 ```
 
-## API 接口
+## API Endpoints
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/health` | GET | 健康检查 |
-| `/api/config` | GET | 获取当前配置 |
-| `/api/interfaces` | GET | 网络接口列表 |
-| `/api/routes` | GET | 路由表 |
-| `/api/dhcp/leases` | GET | DHCP 租约列表 |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/config` | GET | Get current configuration |
+| `/api/interfaces` | GET | List network interfaces |
+| `/api/routes` | GET | List routing table |
+| `/api/dhcp/leases` | GET | List DHCP leases |
 
-## 配置文件
+## Configuration
 
-配置路径：`/etc/vectoros/config.toml`
+Config path: `/etc/vectoros/config.toml`
 
 ```toml
 [vpp]
@@ -139,14 +139,14 @@ upstream = ["8.8.8.8", "1.1.1.1"]
 cache_size = 1000
 ```
 
-## 贡献
+## Contributing
 
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/xxx`)
-3. 提交更改
-4. 推送到分支 (`git push origin feature/xxx`)
-5. 创建 Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/xxx`)
+3. Commit your changes
+4. Push to the branch (`git push origin feature/xxx`)
+5. Create a Pull Request
 
-## 许可证
+## License
 
 Apache-2.0
