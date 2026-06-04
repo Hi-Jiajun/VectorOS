@@ -497,27 +497,27 @@ pub fn get_vpp_performance() -> Result<VppPerformance> {
         },
         interfaces: parse_interface_throughput(&raw["interfaces"]),
         nat: NatPerformance {
-            session_count: raw["nat"]["session_count"].as_u64().unwrap_or(0) as u32,
+            session_count: raw["nat"]["sessions"].as_u64().unwrap_or(0) as u32,
             session_rate: raw["nat"]["session_rate"].as_f64().unwrap_or(0.0),
         },
         pppoe: PppoePerformance {
-            total_clients: raw["pppoe"]["total_clients"].as_u64().unwrap_or(0) as u32,
-            sessions_active: raw["pppoe"]["sessions_active"].as_u64().unwrap_or(0) as u32,
-            sessions_discovery: raw["pppoe"]["sessions_discovery"].as_u64().unwrap_or(0) as u32,
+            total_clients: raw["pppoe"]["total"].as_u64().unwrap_or(0) as u32,
+            sessions_active: raw["pppoe"]["active"].as_u64().unwrap_or(0) as u32,
+            sessions_discovery: raw["pppoe"]["discovery"].as_u64().unwrap_or(0) as u32,
         },
         memory: VppMemory {
-            used: raw["memory"]["used"].as_u64().unwrap_or(0),
-            free: raw["memory"]["free"].as_u64().unwrap_or(0),
-            total: raw["memory"]["total"].as_u64().unwrap_or(0),
+            used: raw["memory"]["used_mb"].as_u64().unwrap_or(0),
+            free: raw["memory"]["free_mb"].as_u64().unwrap_or(0),
+            total: raw["memory"]["total_mb"].as_u64().unwrap_or(0),
             percent: raw["memory"]["percent"].as_f64().unwrap_or(0.0),
         },
         threads: VppThreads {
-            worker_threads: raw["threads"]["worker_threads"].as_u64().unwrap_or(0) as u32,
-            thread_details: parse_thread_details(&raw["threads"]["thread_details"]),
+            worker_threads: raw["threads"]["count"].as_u64().unwrap_or(0) as u32,
+            thread_details: parse_thread_details(&raw["threads"]["threads"]),
         },
         errors: VppErrors {
-            total_drops: raw["errors"]["total_drops"].as_u64().unwrap_or(0),
-            total_errors: raw["errors"]["total_errors"].as_u64().unwrap_or(0),
+            total_drops: raw["errors"]["total"].as_u64().unwrap_or(0),
+            total_errors: 0,
             counters: parse_error_counters(&raw["errors"]["counters"]),
         },
     };
