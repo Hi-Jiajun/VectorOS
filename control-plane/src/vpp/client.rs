@@ -4,6 +4,7 @@ use std::os::unix::net::UnixStream;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 use tracing::{debug, info};
 
 use super::message::{
@@ -30,6 +31,8 @@ impl VppClient {
             .with_context(|| format!("Failed to connect to VPP socket: {}", socket_path))?;
 
         stream.set_nonblocking(false)?;
+        stream.set_read_timeout(Some(Duration::from_secs(5)))?;
+        stream.set_write_timeout(Some(Duration::from_secs(5)))?;
 
         let client = Self {
             stream: Mutex::new(stream),
