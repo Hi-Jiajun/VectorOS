@@ -1238,6 +1238,599 @@
     }
 
     .conn-dot.offline { background: var(--red); }
+
+    /* ============================================================
+       Monitoring Dashboard - Enhanced Styles
+       ============================================================ */
+
+    /* Health Indicator (large, top of dashboard) */
+    .health-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      transition: all 0.3s;
+    }
+
+    .health-bar:hover {
+      border-color: var(--border-2);
+      box-shadow: var(--shadow);
+    }
+
+    .health-dot-lg {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 2s ease infinite;
+    }
+
+    .health-dot-lg.ok { background: var(--green); box-shadow: 0 0 16px rgba(34,197,94,0.5); }
+    .health-dot-lg.warn { background: var(--yellow); box-shadow: 0 0 16px rgba(234,179,8,0.5); }
+    .health-dot-lg.err { background: var(--red); box-shadow: 0 0 16px rgba(239,68,68,0.5); }
+
+    .health-label {
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .health-detail {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-left: 4px;
+    }
+
+    .health-chips {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .health-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .health-chip.ok { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .health-chip.warn { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(234,179,8,0.25); }
+    .health-chip.err { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+    .health-chip.off { background: rgba(255,255,255,0.04); color: var(--text-4); border: 1px solid var(--border); }
+
+    .health-chip .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Mini stat cards (compact row) */
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .mini-stat {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mini-stat:hover {
+      border-color: var(--border-2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .mini-stat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      border-radius: 0 3px 3px 0;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+
+    .mini-stat:hover::before { opacity: 1; }
+
+    .mini-stat.accent::before { background: var(--accent); }
+    .mini-stat.green::before { background: var(--green); }
+    .mini-stat.purple::before { background: var(--purple); }
+    .mini-stat.cyan::before { background: var(--cyan); }
+    .mini-stat.orange::before { background: var(--orange); }
+
+    .mini-stat .ms-icon {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .mini-stat .ms-val {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .mini-stat .ms-label {
+      font-size: 11px;
+      color: var(--text-3);
+      font-weight: 500;
+    }
+
+    .mini-stat .ms-sub {
+      font-size: 10px;
+      color: var(--text-4);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+    }
+
+    /* Real-time line chart (CSS-only sparkline) */
+    .spark-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 60px;
+      margin-top: 10px;
+    }
+
+    .spark-bar {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .spark-bar:hover {
+      filter: brightness(1.3);
+    }
+
+    .spark-bar:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: -26px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-5);
+      color: var(--text-1);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Gradient color classes for spark bars */
+    .spark-accent { background: linear-gradient(180deg, var(--accent-2), var(--accent)); }
+    .spark-green { background: linear-gradient(180deg, var(--green-2), var(--green)); }
+    .spark-purple { background: linear-gradient(180deg, #c084fc, var(--purple)); }
+    .spark-cyan { background: linear-gradient(180deg, #67e8f9, var(--cyan)); }
+    .spark-orange { background: linear-gradient(180deg, #fb923c, var(--orange)); }
+    .spark-red { background: linear-gradient(180deg, #f87171, var(--red)); }
+
+    /* Chart section (wide chart cards) */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .monitor-chart {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: all 0.3s;
+      overflow: hidden;
+    }
+
+    .monitor-chart:hover {
+      border-color: var(--border-2);
+      box-shadow: var(--shadow);
+    }
+
+    .monitor-chart .mc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .monitor-chart .mc-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .monitor-chart .mc-value {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.5px;
+      color: var(--text-1);
+    }
+
+    .monitor-chart .mc-value small {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-3);
+    }
+
+    .monitor-chart .mc-range {
+      font-size: 10px;
+      color: var(--text-4);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .bar-chart-full {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 100px;
+    }
+
+    .bar-chart-full .bar {
+      flex: 1;
+      border-radius: 3px 3px 0 0;
+      min-height: 3px;
+      transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .bar-chart-full .bar:hover {
+      filter: brightness(1.2);
+      transform: scaleY(1.05);
+      transform-origin: bottom;
+    }
+
+    .bar-chart-full .bar:hover::after {
+      content: attr(data-val);
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-5);
+      color: var(--text-1);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+      z-index: 10;
+    }
+
+    /* Throughput dual bar (rx + tx) */
+    .throughput-chart {
+      display: flex;
+      gap: 1px;
+      height: 80px;
+      align-items: flex-end;
+    }
+
+    .tp-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .tp-group .tp-rx,
+    .tp-group .tp-tx {
+      width: 100%;
+      border-radius: 2px 2px 0 0;
+      min-height: 1px;
+      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tp-legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+      justify-content: center;
+    }
+
+    .tp-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .tp-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    /* Interface stats cards */
+    .iface-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .iface-stat-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .iface-stat-card:hover {
+      border-color: var(--border-2);
+      box-shadow: var(--shadow);
+    }
+
+    .iface-stat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+
+    .iface-stat-head .if-name {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .iface-stat-body {
+      padding: 16px 18px;
+    }
+
+    .if-metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .if-metric:last-child { border-bottom: none; }
+
+    .if-metric .im-k {
+      font-size: 12px;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .if-metric .im-v {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-1);
+    }
+
+    .if-mini-bar {
+      width: 80px;
+      height: 6px;
+      background: var(--bg-4);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-left: 10px;
+    }
+
+    .if-mini-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .if-mini-bar-fill.accent { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .if-mini-bar-fill.green { background: linear-gradient(90deg, var(--green), var(--green-2)); }
+    .if-mini-bar-fill.red { background: linear-gradient(90deg, var(--red), #f87171); }
+
+    /* Alerts section */
+    .alerts-panel {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+      transition: all 0.3s;
+    }
+
+    .alerts-panel:hover {
+      border-color: var(--border-2);
+    }
+
+    .alerts-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+
+    .alerts-head h3 {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alerts-count {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .alerts-count.zero {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .alerts-count.has-alerts {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .alerts-body {
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
+      animation: alertSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .alert-item:hover {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .alert-item:last-child { border-bottom: none; }
+
+    @keyframes alertSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .alert-icon.warn { background: var(--yellow-bg); }
+    .alert-icon.err { background: var(--red-bg); }
+    .alert-icon.info { background: var(--cyan-bg); }
+
+    .alert-content { flex: 1; min-width: 0; }
+
+    .alert-msg {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .alert-time {
+      font-size: 10px;
+      color: var(--text-4);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .alert-badge {
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .alert-badge.warn { background: var(--yellow-bg); color: var(--yellow); }
+    .alert-badge.err { background: var(--red-bg); color: var(--red); }
+    .alert-badge.info { background: var(--cyan-bg); color: var(--cyan); }
+
+    .alerts-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 28px;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+
+    .alerts-empty .ae-icon { font-size: 20px; }
+
+    /* Uptime counter (monospace, animated) */
+    .uptime-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Responsive overrides for monitoring layout */
+    @media (max-width: 1400px) {
+      .mini-stats { grid-template-columns: repeat(3, 1fr); }
+      .chart-row-3 { grid-template-columns: 1fr 1fr; }
+      .iface-stats-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 1024px) {
+      .mini-stats { grid-template-columns: repeat(2, 1fr); }
+      .chart-row { grid-template-columns: 1fr; }
+      .chart-row-3 { grid-template-columns: 1fr; }
+      .health-chips { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .mini-stats { grid-template-columns: 1fr; }
+      .health-bar { flex-wrap: wrap; gap: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -1313,7 +1906,7 @@
             <span class="dot"></span>
             <span id="health-text">Healthy</span>
           </div>
-          <label class="auto-refresh-toggle" title="Auto-refresh every 5 seconds">
+          <label class="auto-refresh-toggle" title="Auto-refresh every 2 seconds">
             <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
             <span class="toggle-track"></span>
             <span class="auto-refresh-label">Auto</span>
@@ -1325,62 +1918,131 @@
       <div class="content">
         <!-- Dashboard -->
         <div id="p-dashboard" class="page active">
-          <div class="stats" id="dashboard-stats">
-            <div class="stat">
-              <div class="stat-head">
-                <div class="stat-ico i1">🔌</div>
-                <span class="stat-tag" id="st-pppoe">--</span>
-              </div>
-              <div class="stat-val" id="sv-pppoe">--</div>
-              <div class="stat-desc">PPPoE Status</div>
+          <!-- System Health Bar -->
+          <div class="health-bar">
+            <div class="health-dot-lg ok" id="health-dot-lg"></div>
+            <span class="health-label" id="health-label">System Healthy</span>
+            <span class="health-detail" id="health-detail">All services operating normally</span>
+            <div class="health-chips" id="health-chips"></div>
+          </div>
+
+          <!-- Mini Stat Cards -->
+          <div class="mini-stats">
+            <div class="mini-stat accent">
+              <div class="ms-icon">⏱️</div>
+              <div class="ms-val uptime-counter" id="ms-uptime">--:--:--</div>
+              <div class="ms-label">System Uptime</div>
             </div>
-            <div class="stat">
-              <div class="stat-head">
-                <div class="stat-ico i2">🌐</div>
-                <span class="stat-tag ok" id="st-ifaces">Active</span>
-              </div>
-              <div class="stat-val" id="sv-ifaces">--</div>
-              <div class="stat-desc">Network Interfaces</div>
+            <div class="mini-stat green">
+              <div class="ms-icon">🔌</div>
+              <div class="ms-val" id="ms-pppoe-state">--</div>
+              <div class="ms-label">PPPoE Session</div>
+              <div class="ms-sub" id="ms-pppoe-sub">--</div>
             </div>
-            <div class="stat">
-              <div class="stat-head">
-                <div class="stat-ico i3">📡</div>
-                <span class="stat-tag" id="st-services">--</span>
-              </div>
-              <div class="stat-val" id="sv-services">--</div>
-              <div class="stat-desc">Active Services</div>
+            <div class="mini-stat purple">
+              <div class="ms-icon">📡</div>
+              <div class="ms-val" id="ms-dhcp-count">--</div>
+              <div class="ms-label">DHCP Leases</div>
+              <div class="ms-sub" id="ms-dhcp-sub">active clients</div>
             </div>
-            <div class="stat">
-              <div class="stat-head">
-                <div class="stat-ico i4">⏱️</div>
-                <span class="stat-tag ok" id="st-uptime">Online</span>
-              </div>
-              <div class="stat-val" id="sv-uptime">--</div>
-              <div class="stat-desc">System Uptime</div>
+            <div class="mini-stat cyan">
+              <div class="ms-icon">🔍</div>
+              <div class="ms-val" id="ms-dns-hits">--</div>
+              <div class="ms-label">DNS Cache</div>
+              <div class="ms-sub" id="ms-dns-sub">forwarder active</div>
+            </div>
+            <div class="mini-stat orange">
+              <div class="ms-icon">🔄</div>
+              <div class="ms-val" id="ms-nat-sessions">--</div>
+              <div class="ms-label">NAT Sessions</div>
+              <div class="ms-sub" id="ms-nat-sub">inside/outside</div>
+            </div>
+            <div class="mini-stat accent">
+              <div class="ms-icon">🌐</div>
+              <div class="ms-val" id="ms-ifaces">--</div>
+              <div class="ms-label">Interfaces</div>
+              <div class="ms-sub" id="ms-ifaces-sub">total</div>
             </div>
           </div>
 
-          <!-- Charts -->
-          <div class="charts" id="dashboard-charts">
-            <div class="chart-card">
-              <h4>CPU Usage <span id="cpu-val">--%</span></h4>
-              <div class="bar-chart" id="cpu-chart"></div>
-              <div class="bar-labels" id="cpu-labels"></div>
-            </div>
-            <div class="chart-card">
-              <h4>Memory <span id="mem-val">--%</span></h4>
-              <div class="donut-wrap">
-                <div class="donut" id="mem-donut"></div>
-                <div class="donut-legend" id="mem-legend"></div>
+          <!-- Real-time Charts Row 1: CPU + Memory -->
+          <div class="chart-row">
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">📊 CPU Usage (60s history)</div>
+                <div class="mc-value" id="mc-cpu-val">--%</div>
               </div>
+              <div class="bar-chart-full" id="cpu-chart-full"></div>
+              <div class="mc-range"><span>-60s</span><span>-30s</span><span>now</span></div>
             </div>
-            <div class="chart-card">
-              <h4>Disk Usage <span id="disk-val">--%</span></h4>
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">🧠 Memory Usage (60s history)</div>
+                <div class="mc-value" id="mc-mem-val">--%</div>
+              </div>
+              <div class="bar-chart-full" id="mem-chart-full"></div>
+              <div class="mc-range"><span>-60s</span><span>-30s</span><span>now</span></div>
+            </div>
+          </div>
+
+          <!-- Real-time Charts Row 2: Network Throughput + NAT -->
+          <div class="chart-row">
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">📈 Network Throughput</div>
+                <div class="mc-value" id="mc-tp-val">-- <small>rx / tx</small></div>
+              </div>
+              <div class="throughput-chart" id="tp-chart"></div>
+              <div class="tp-legend">
+                <div class="tp-legend-item"><div class="tp-legend-dot" style="background:var(--cyan)"></div>RX (in)</div>
+                <div class="tp-legend-item"><div class="tp-legend-dot" style="background:var(--purple)"></div>TX (out)</div>
+              </div>
+              <div class="mc-range"><span>-60s</span><span>-30s</span><span>now</span></div>
+            </div>
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">🔄 NAT Sessions (60s history)</div>
+                <div class="mc-value" id="mc-nat-val">--</div>
+              </div>
+              <div class="bar-chart-full" id="nat-chart-full"></div>
+              <div class="mc-range"><span>-60s</span><span>-30s</span><span>now</span></div>
+            </div>
+          </div>
+
+          <!-- Real-time Chart Row 3: PPPoE + Disk + CPU Cores -->
+          <div class="chart-row-3">
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">🔌 PPPoE Uptime</div>
+                <div class="mc-value" id="mc-pppoe-val">--<small>s</small></div>
+              </div>
+              <div class="bar-chart-full" id="pppoe-chart-full"></div>
+              <div class="mc-range"><span>-60s</span><span>-30s</span><span>now</span></div>
+            </div>
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">💾 Disk Usage</div>
+                <div class="mc-value" id="mc-disk-val">--%</div>
+              </div>
               <div class="donut-wrap">
-                <div class="donut" id="disk-donut"></div>
+                <div class="donut" id="mem-donut" style="width:80px;height:80px"></div>
                 <div class="donut-legend" id="disk-legend"></div>
               </div>
             </div>
+            <div class="monitor-chart">
+              <div class="mc-head">
+                <div class="mc-title">⚠️ Alerts</div>
+                <span class="alerts-count zero" id="alert-count">0</span>
+              </div>
+              <div class="alerts-body" id="alerts-body">
+                <div class="alerts-empty"><span class="ae-icon">✓</span> No active alerts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interface Statistics -->
+          <div class="iface-stats-grid" id="iface-stats-grid">
+            <!-- Populated dynamically -->
           </div>
 
           <!-- Service Status & Quick Actions -->
@@ -1606,8 +2268,23 @@
     let currentPage = 'dashboard';
     let autoRefreshTimer = null;
     let apiHealthy = true;
+
+    // History buffers (60 data points = 60 seconds at 1s interval)
+    const MAX_HISTORY = 60;
     let cpuHistory = [];
-    const MAX_HISTORY = 12;
+    let memHistory = [];
+    let natHistory = [];
+    let pppoeHistory = [];
+    let txHistory = [];
+    let rxHistory = [];
+    let ifaceHistory = {};  // { ifaceName: { rxBytes: [...], txBytes: [...], rxPkts: [...], txPkts: [...], errors: [...], drops: [] } }
+
+    // Alerts state
+    let alerts = [];
+    let lastAlertId = 0;
+
+    // Previous values for throughput calculation
+    let prevIfaceStats = {};
 
     const PAGES = {
       dashboard: 'Dashboard',
@@ -1652,7 +2329,6 @@
 
       container.appendChild(d);
 
-      // Auto-remove after 4 seconds
       setTimeout(() => {
         d.style.animation = 'slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards';
         setTimeout(() => d.remove(), 300);
@@ -1692,13 +2368,13 @@
     }
 
     // ============================================================
-    // Auto-refresh
+    // Auto-refresh (2-second interval for monitoring)
     // ============================================================
     function toggleAutoRefresh() {
       const enabled = document.getElementById('auto-refresh').checked;
       if (enabled) {
         startAutoRefresh();
-        toast('Auto-refresh enabled', 'info', 'Updating every 5 seconds');
+        toast('Auto-refresh enabled', 'info', 'Updating every 2 seconds');
       } else {
         stopAutoRefresh();
         toast('Auto-refresh disabled', 'info');
@@ -1709,7 +2385,7 @@
       stopAutoRefresh();
       autoRefreshTimer = setInterval(() => {
         load(currentPage);
-      }, 5000);
+      }, 2000);
     }
 
     function stopAutoRefresh() {
@@ -1779,16 +2455,133 @@
     }
 
     // ============================================================
+    // Utility: Format bytes
+    // ============================================================
+    function formatBytes(bytes) {
+      if (!bytes) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
+
+    // Format bytes/s for throughput
+    function formatThroughput(bytesPerSec) {
+      if (!bytesPerSec || bytesPerSec === 0) return '0 B/s';
+      if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
+      if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+      return (bytesPerSec / (1024 * 1024)).toFixed(1) + ' MB/s';
+    }
+
+    // ============================================================
+    // Alerts System
+    // ============================================================
+    function addAlert(type, message, category) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      // Avoid duplicate alerts within 10 seconds
+      const recent = alerts.find(a => a.category === category && (now - a.time) < 10000);
+      if (recent) return;
+      alerts.unshift({
+        id: ++lastAlertId,
+        type: type,    // 'warn', 'err', 'info'
+        message: message,
+        category: category,
+        time: now,
+        timeStr: timeStr
+      });
+      // Keep max 20 alerts
+      if (alerts.length > 20) alerts.pop();
+    }
+
+    function clearAlert(category) {
+      alerts = alerts.filter(a => a.category !== category);
+    }
+
+    function renderAlerts() {
+      const body = document.getElementById('alerts-body');
+      const countEl = document.getElementById('alert-count');
+      if (!body || !countEl) return;
+
+      const count = alerts.length;
+      countEl.textContent = count;
+      countEl.className = 'alerts-count ' + (count > 0 ? 'has-alerts' : 'zero');
+
+      if (count === 0) {
+        body.innerHTML = '<div class="alerts-empty"><span class="ae-icon">✓</span> No active alerts</div>';
+        return;
+      }
+
+      body.innerHTML = alerts.map(a => {
+        const iconEmoji = a.type === 'err' ? '⚠️' : a.type === 'warn' ? '⚠️' : 'ℹ️';
+        return '<div class="alert-item">'
+          + '<div class="alert-icon ' + a.type + '">' + iconEmoji + '</div>'
+          + '<div class="alert-content">'
+          + '<div class="alert-msg">' + escapeHtml(a.message) + '</div>'
+          + '<div class="alert-time">' + a.timeStr + '</div>'
+          + '</div>'
+          + '<span class="alert-badge ' + a.type + '">' + a.type.toUpperCase() + '</span>'
+          + '</div>';
+      }).join('');
+    }
+
+    // ============================================================
+    // Health Bar
+    // ============================================================
+    function updateHealthBar(cpuPct, memPct, pppoeOk, servicesActive, totalServices) {
+      const dotEl = document.getElementById('health-dot-lg');
+      const labelEl = document.getElementById('health-label');
+      const detailEl = document.getElementById('health-detail');
+      const chipsEl = document.getElementById('health-chips');
+
+      let overallStatus = 'ok';
+      let details = [];
+
+      if (cpuPct >= 90) { overallStatus = 'err'; details.push('Critical CPU'); }
+      else if (cpuPct >= 75) { overallStatus = 'warn'; details.push('High CPU'); }
+
+      if (memPct >= 90) { overallStatus = 'err'; details.push('Critical Memory'); }
+      else if (memPct >= 80) { overallStatus = 'warn'; details.push('High Memory'); }
+
+      if (!pppoeOk) { if (overallStatus === 'ok') overallStatus = 'warn'; details.push('PPPoE Offline'); }
+
+      dotEl.className = 'health-dot-lg ' + overallStatus;
+
+      if (overallStatus === 'ok') {
+        labelEl.textContent = 'System Healthy';
+        labelEl.style.color = 'var(--green)';
+        detailEl.textContent = 'All ' + totalServices + ' services operating normally';
+      } else if (overallStatus === 'warn') {
+        labelEl.textContent = 'System Warning';
+        labelEl.style.color = 'var(--yellow)';
+        detailEl.textContent = details.join(', ');
+      } else {
+        labelEl.textContent = 'System Critical';
+        labelEl.style.color = 'var(--red)';
+        detailEl.textContent = details.join(', ');
+      }
+
+      // Service chips
+      let chipsHtml = '';
+      chipsHtml += '<div class="health-chip ' + (pppoeOk ? 'ok' : 'off') + '"><span class="chip-dot"></span>PPPoE ' + (pppoeOk ? 'On' : 'Off') + '</div>';
+      chipsHtml += '<div class="health-chip ' + (servicesActive >= 3 ? 'ok' : servicesActive > 0 ? 'warn' : 'off') + '"><span class="chip-dot"></span>Services ' + servicesActive + '/' + totalServices + '</div>';
+      chipsHtml += '<div class="health-chip ' + (cpuPct < 75 ? 'ok' : cpuPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>CPU ' + cpuPct + '%</div>';
+      chipsHtml += '<div class="health-chip ' + (memPct < 80 ? 'ok' : memPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>MEM ' + memPct + '%</div>';
+      chipsEl.innerHTML = chipsHtml;
+    }
+
+    // ============================================================
     // Dashboard
     // ============================================================
     async function loadDashboard() {
-      const [health, pppoe, nat, dhcp, dns, system] = await Promise.all([
+      const [health, pppoe, nat, dhcp, dns, system, ifaces] = await Promise.all([
         api('/api/health'),
         api('/api/pppoe/status'),
         api('/api/nat/status'),
         api('/api/dhcp/status'),
         api('/api/dns/status'),
-        api('/api/system')
+        api('/api/system'),
+        api('/api/interfaces')
       ]);
 
       // Health chip
@@ -1807,51 +2600,139 @@
         document.getElementById('h-tag').textContent = health.version;
       }
 
-      // PPPoE stat
+      const sys = system.system || {};
+      const cpu = sys.cpu || {};
+      const mem = sys.memory || {};
+      const disk = sys.disk || {};
+      const cpuPct = cpu.percent || 0;
+      const memPct = mem.percent || 0;
+
+      // PPPoE data
       const hasPppoe = pppoe.pppoe_clients && pppoe.pppoe_clients.length > 0;
-      document.getElementById('sv-pppoe').textContent = hasPppoe ? 'Connected' : 'Idle';
-      const stPppoe = document.getElementById('st-pppoe');
-      stPppoe.textContent = hasPppoe ? 'Online' : 'Offline';
-      stPppoe.className = 'stat-tag ' + (hasPppoe ? 'ok' : 'warn');
+      const pppoeClient = hasPppoe ? pppoe.pppoe_clients[0] : null;
       document.getElementById('nb-pppoe').textContent = hasPppoe ? 'Online' : 'Off';
 
-      // Interfaces stat
-      const ifaces = await api('/api/interfaces');
+      // Interface count
       const ifaceCount = ifaces.interfaces ? ifaces.interfaces.length : 0;
-      document.getElementById('sv-ifaces').textContent = ifaceCount;
       document.getElementById('nb-ifaces').textContent = ifaceCount;
 
-      // Services stat
+      // Services count
       let activeServices = 0;
       if (nat.interfaces && nat.interfaces.length > 0) activeServices++;
       if (dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '') activeServices++;
       if (dns.status === 'active') activeServices++;
-      document.getElementById('sv-services').textContent = activeServices + '/3';
-      const stServices = document.getElementById('st-services');
-      stServices.textContent = activeServices === 3 ? 'All Active' : activeServices + ' Active';
-      stServices.className = 'stat-tag ' + (activeServices === 3 ? 'ok' : activeServices > 0 ? 'warn' : 'err');
 
+      // === Update mini stat cards ===
       // Uptime
-      if (system.system && system.system.uptime) {
-        const up = system.system.uptime;
-        document.getElementById('sv-uptime').textContent = up;
+      document.getElementById('ms-uptime').textContent = sys.uptime || '--:--:--';
+
+      // PPPoE
+      if (hasPppoe) {
+        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
+        document.getElementById('ms-pppoe-state').textContent = stateMap[pppoeClient.client_state] || 'Unknown';
+        document.getElementById('ms-pppoe-sub').textContent = pppoeClient.ipv4_local || 'No IP';
       } else {
-        document.getElementById('sv-uptime').textContent = '--';
+        document.getElementById('ms-pppoe-state').textContent = 'Idle';
+        document.getElementById('ms-pppoe-sub').textContent = 'Not configured';
       }
 
-      // System info card
-      loadSystemInfo(health, pppoe, nat, dhcp, dns);
+      // DHCP
+      const dhcpEnabled = dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '';
+      document.getElementById('ms-dhcp-count').textContent = dhcpEnabled ? 'On' : 'Off';
+      document.getElementById('ms-dhcp-sub').textContent = dhcpEnabled ? 'active server' : 'disabled';
 
-      // Charts
-      if (system.system && system.system.cpu) {
-        updateCpuChart(system.system.cpu);
+      // DNS
+      const dnsActive = dns.status === 'active';
+      document.getElementById('ms-dns-hits').textContent = dnsActive ? 'On' : 'Off';
+      document.getElementById('ms-dns-sub').textContent = dnsActive ? (dns.cache_size || 0) + ' cache' : 'disabled';
+
+      // NAT
+      const natSessions = (nat.sessions || []).length;
+      document.getElementById('ms-nat-sessions').textContent = natSessions;
+      document.getElementById('ms-nat-sub').textContent = (nat.interfaces || []).length > 0 ? 'active' : 'disabled';
+
+      // Interfaces
+      document.getElementById('ms-ifaces').textContent = ifaceCount;
+      document.getElementById('ms-ifaces-sub').textContent = 'total';
+
+      // === Health bar ===
+      updateHealthBar(cpuPct, memPct, hasPppoe, activeServices, 3);
+
+      // === Charts: CPU history ===
+      cpuHistory.push(cpuPct);
+      if (cpuHistory.length > MAX_HISTORY) cpuHistory.shift();
+      renderBarChart('cpu-chart-full', cpuHistory, cpuPct + '%', 'spark-accent', 100);
+      document.getElementById('mc-cpu-val').innerHTML = cpuPct + '% <small>current</small>';
+
+      // === Charts: Memory history ===
+      memHistory.push(memPct);
+      if (memHistory.length > MAX_HISTORY) memHistory.shift();
+      renderBarChart('mem-chart-full', memHistory, memPct + '%', 'spark-purple', 100);
+      document.getElementById('mc-mem-val').innerHTML = memPct + '% <small>of ' + formatBytes(mem.total) + '</small>';
+
+      // === Charts: NAT session history ===
+      natHistory.push(natSessions);
+      if (natHistory.length > MAX_HISTORY) natHistory.shift();
+      const natMax = Math.max(10, Math.max.apply(null, natHistory));
+      renderBarChart('nat-chart-full', natHistory, natSessions + '', 'spark-orange', natMax);
+      document.getElementById('mc-nat-val').innerHTML = natSessions + ' <small>sessions</small>';
+
+      // === Charts: PPPoE uptime history ===
+      const pppoeUptime = pppoeClient ? (pppoeClient.session_uptime_seconds || 0) : 0;
+      pppoeHistory.push(pppoeUptime);
+      if (pppoeHistory.length > MAX_HISTORY) pppoeHistory.shift();
+      const pppoeMax = Math.max(60, Math.max.apply(null, pppoeHistory));
+      renderBarChart('pppoe-chart-full', pppoeHistory, pppoeUptime + 's', 'spark-cyan', pppoeMax);
+      document.getElementById('mc-pppoe-val').innerHTML = pppoeUptime + '<small>s</small>';
+
+      // === Charts: Disk donut ===
+      updateDiskDonut(disk);
+
+      // === Network throughput chart ===
+      renderThroughputChart(ifaces.interfaces || []);
+
+      // === Interface stats cards ===
+      renderInterfaceStats(ifaces.interfaces || []);
+
+      // === Alerts based on current state ===
+      // CPU alerts
+      if (cpuPct >= 90) addAlert('err', 'CPU usage critical at ' + cpuPct + '%', 'cpu-high');
+      else if (cpuPct >= 75) addAlert('warn', 'CPU usage elevated at ' + cpuPct + '%', 'cpu-high');
+      else clearAlert('cpu-high');
+
+      // Memory alerts
+      if (memPct >= 90) addAlert('err', 'Memory usage critical at ' + memPct + '%', 'mem-high');
+      else if (memPct >= 80) addAlert('warn', 'Memory usage elevated at ' + memPct + '%', 'mem-high');
+      else clearAlert('mem-high');
+
+      // Interface down alerts
+      if (ifaces.interfaces) {
+        ifaces.interfaces.forEach(iface => {
+          if (iface.state === 'down' && iface.name !== 'local0') {
+            addAlert('err', 'Interface ' + iface.name + ' is DOWN', 'iface-down-' + iface.name);
+          } else {
+            clearAlert('iface-down-' + iface.name);
+          }
+        });
       }
-      if (system.system && system.system.memory) {
-        updateMemoryDonut(system.system.memory);
+
+      // PPPoE disconnect alert
+      if (!hasPppoe) {
+        // Only alert if PPPoE was previously connected (we have pppoe history with data)
+        if (pppoeHistory.length > 1 && pppoeHistory[pppoeHistory.length - 2] > 0) {
+          addAlert('err', 'PPPoE session disconnected', 'pppoe-down');
+        }
+      } else {
+        clearAlert('pppoe-down');
       }
-      if (system.system && system.system.disk) {
-        updateDiskDonut(system.system.disk);
-      }
+
+      // DNS/DHCP disabled alerts
+      if (!dnsActive) addAlert('info', 'DNS forwarding is disabled', 'dns-off');
+      else clearAlert('dns-off');
+      if (!dhcpEnabled) addAlert('info', 'DHCP server is disabled', 'dhcp-off');
+      else clearAlert('dhcp-off');
+
+      renderAlerts();
 
       // VPP status in sidebar
       const vppText = document.getElementById('vpp-status-text');
@@ -1859,6 +2740,9 @@
         vppText.textContent = 'Running';
         vppText.style.color = 'var(--green)';
       }
+
+      // System info card
+      loadSystemInfo(health, pppoe, nat, dhcp, dns);
     }
 
     function loadSystemInfo(health, pppoe, nat, dhcp, dns) {
@@ -1874,64 +2758,194 @@
     }
 
     // ============================================================
-    // CPU Bar Chart (CSS-only)
+    // CSS Bar Chart Renderer (for monitoring charts)
     // ============================================================
-    function updateCpuChart(cpu) {
-      const percent = cpu.percent || 0;
-      document.getElementById('cpu-val').textContent = percent + '%';
+    function renderBarChart(elementId, data, currentLabel, colorClass, maxVal) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
 
-      // Add to history
-      cpuHistory.push(percent);
-      if (cpuHistory.length > MAX_HISTORY) cpuHistory.shift();
-
-      const chartEl = document.getElementById('cpu-chart');
-      const labelsEl = document.getElementById('cpu-labels');
-
-      let barsHtml = '';
-      let labelsHtml = '';
-      const now = new Date();
-
-      cpuHistory.forEach((val, i) => {
-        const height = Math.max(4, val);
-        const age = cpuHistory.length - 1 - i;
-        const opacity = 0.4 + (1 - age / MAX_HISTORY) * 0.6;
-        barsHtml += '<div class="bar accent" style="height:' + height + '%;opacity:' + opacity + '" data-val="' + val + '%"></div>';
-
-        const t = new Date(now.getTime() - (MAX_HISTORY - 1 - i) * 5000);
-        labelsHtml += '<span>' + t.getSeconds() + 's</span>';
-      });
-
-      chartEl.innerHTML = barsHtml;
-      labelsEl.innerHTML = labelsHtml;
+      let html = '';
+      const len = data.length;
+      for (let i = 0; i < MAX_HISTORY; i++) {
+        const val = i < len ? data[i] : 0;
+        const pct = maxVal > 0 ? Math.max(2, (val / maxVal) * 100) : 2;
+        const age = len - 1 - i;
+        const opacity = i >= len ? 0.15 : (0.35 + (1 - age / MAX_HISTORY) * 0.65);
+        html += '<div class="bar ' + colorClass + '" style="height:' + pct + '%;opacity:' + opacity + '" data-val="' + val + '"></div>';
+      }
+      el.innerHTML = html;
     }
 
     // ============================================================
-    // Memory Donut (CSS-only)
+    // Network Throughput Chart (dual rx/tx bars)
     // ============================================================
-    function updateMemoryDonut(mem) {
-      const percent = mem.percent || 0;
-      const used = mem.used || 0;
-      const total = mem.total || 1;
-      const free = total - used;
+    function renderThroughputChart(interfaces) {
+      const el = document.getElementById('tp-chart');
+      if (!el) return;
 
-      document.getElementById('mem-val').textContent = percent + '%';
+      // Calculate total rx/tx bytes across all interfaces
+      let totalRx = 0, totalTx = 0;
+      interfaces.forEach(iface => {
+        totalRx += (iface.rx_bytes || 0);
+        totalTx += (iface.tx_bytes || 0);
+      });
 
-      const donut = document.getElementById('mem-donut');
-      const legend = document.getElementById('mem-legend');
+      // Calculate throughput from previous snapshot
+      let rxRate = 0, txRate = 0;
+      if (prevIfaceStats.totalRx !== undefined) {
+        rxRate = Math.max(0, totalRx - prevIfaceStats.totalRx);
+        txRate = Math.max(0, totalTx - prevIfaceStats.totalTx);
+      }
+      prevIfaceStats.totalRx = totalRx;
+      prevIfaceStats.totalTx = totalTx;
 
-      // CSS conic gradient for donut
-      donut.style.background = 'conic-gradient(var(--accent) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
-      donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">Used</div></div>';
+      rxHistory.push(rxRate);
+      txHistory.push(txRate);
+      if (rxHistory.length > MAX_HISTORY) rxHistory.shift();
+      if (txHistory.length > MAX_HISTORY) txHistory.shift();
 
-      // Add center circle (hole)
-      const hole = document.createElement('div');
-      hole.style.cssText = 'position:absolute;top:18px;left:18px;right:18px;bottom:18px;background:var(--bg-2);border-radius:50%;';
-      donut.appendChild(hole);
+      const maxTP = Math.max(1024, Math.max.apply(null, rxHistory.concat(txHistory)));
 
-      legend.innerHTML = ''
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Used<span class="legend-val">' + formatBytes(used) + '</span></div>'
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>Free<span class="legend-val">' + formatBytes(free) + '</span></div>'
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>Total<span class="legend-val">' + formatBytes(total) + '</span></div>';
+      let html = '';
+      for (let i = 0; i < MAX_HISTORY; i++) {
+        const rx = i < rxHistory.length ? rxHistory[i] : 0;
+        const tx = i < txHistory.length ? txHistory[i] : 0;
+        const rxAge = rxHistory.length - 1 - i;
+        const txAge = txHistory.length - 1 - i;
+        const rxH = maxTP > 0 ? Math.max(1, (rx / maxTP) * 100) : 1;
+        const txH = maxTP > 0 ? Math.max(1, (tx / maxTP) * 100) : 1;
+        const rxOp = i >= rxHistory.length ? 0.15 : (0.35 + (1 - rxAge / MAX_HISTORY) * 0.65);
+        const txOp = i >= txHistory.length ? 0.15 : (0.35 + (1 - txAge / MAX_HISTORY) * 0.65);
+
+        html += '<div class="tp-group">'
+          + '<div class="tp-rx" style="height:' + rxH + '%;background:var(--cyan);opacity:' + rxOp + ';transition:height 0.6s cubic-bezier(0.4,0,0.2,1)"></div>'
+          + '<div class="tp-tx" style="height:' + txH + '%;background:var(--purple);opacity:' + txOp + ';transition:height 0.6s cubic-bezier(0.4,0,0.2,1)"></div>'
+          + '</div>';
+      }
+      el.innerHTML = html;
+
+      document.getElementById('mc-tp-val').innerHTML = formatThroughput(rxRate) + ' / ' + formatThroughput(txRate) + ' <small>rx / tx</small>';
+    }
+
+    // ============================================================
+    // Interface Statistics Cards
+    // ============================================================
+    function renderInterfaceStats(interfaces) {
+      const grid = document.getElementById('iface-stats-grid');
+      if (!grid) return;
+
+      // Only show non-loopback interfaces
+      const showIfaces = interfaces.filter(i => i.name !== 'local0');
+      if (showIfaces.length === 0) {
+        grid.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      showIfaces.forEach(iface => {
+        const name = iface.name;
+        const state = iface.state || 'down';
+        const stateClass = state === 'up' ? 'b-green' : 'b-yellow';
+        const stateText = state === 'up' ? 'UP' : 'DOWN';
+
+        // Calculate throughput for this interface
+        if (!ifaceHistory[name]) {
+          ifaceHistory[name] = { rx: [], tx: [], rxPkts: [], txPkts: [], errors: [], drops: [] };
+        }
+        const ih = ifaceHistory[name];
+
+        const rxBytes = iface.rx_bytes || 0;
+        const txBytes = iface.tx_bytes || 0;
+        const rxPkts = iface.rx_packets || iface.rx_pkts || 0;
+        const txPkts = iface.tx_packets || iface.tx_pkts || 0;
+        const rxErrors = iface.rx_errors || 0;
+        const txErrors = iface.tx_errors || 0;
+        const rxDrops = iface.rx_drops || 0;
+        const txDrops = iface.tx_drops || 0;
+
+        // Push to history
+        ih.rx.push(rxBytes);
+        ih.tx.push(txBytes);
+        ih.rxPkts.push(rxPkts);
+        ih.txPkts.push(txPkts);
+        ih.errors.push(rxErrors + txErrors);
+        ih.drops.push(rxDrops + txDrops);
+        if (ih.rx.length > MAX_HISTORY) { ih.rx.shift(); ih.tx.shift(); }
+        if (ih.rxPkts.length > MAX_HISTORY) { ih.rxPkts.shift(); ih.txPkts.shift(); }
+        if (ih.errors.length > MAX_HISTORY) ih.errors.shift();
+        if (ih.drops.length > MAX_HISTORY) ih.drops.shift();
+
+        // Mini sparklines
+        const rxSparks = ih.rx.slice(-20);
+        const txSparks = ih.tx.slice(-20);
+        const errSparks = ih.errors.slice(-20);
+        const dropSparks = ih.drops.slice(-20);
+
+        const typeMap = { wan0: 'WAN', lan0: 'LAN', lan1: 'LAN', 'pppoe-wan0': 'PPPoE' };
+        const typeLabel = typeMap[name] || '';
+        const badgeClass = { wan0: 'b-accent', lan0: 'b-green', lan1: 'b-green', 'pppoe-wan0': 'b-cyan' };
+
+        html += '<div class="iface-stat-card">'
+          + '<div class="iface-stat-head">'
+          + '<div class="if-name"><span class="badge ' + (badgeClass[name] || 'b-neutral') + '">' + typeLabel + '</span>' + name + '</div>'
+          + '<span class="badge ' + stateClass + '"><span class="dot"></span> ' + stateText + '</span>'
+          + '</div>'
+          + '<div class="iface-stat-body">'
+          // RX bytes
+          + '<div class="if-metric"><span class="im-k">⬇ RX Bytes</span>'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + renderMiniSparkline(rxSparks, 'cyan')
+          + '<span class="im-v">' + formatBytes(rxBytes) + '</span>'
+          + '</div></div>'
+          // TX bytes
+          + '<div class="if-metric"><span class="im-k">⬆ TX Bytes</span>'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + renderMiniSparkline(txSparks, 'purple')
+          + '<span class="im-v">' + formatBytes(txBytes) + '</span>'
+          + '</div></div>'
+          // RX packets
+          + '<div class="if-metric"><span class="im-k">RX Packets</span>'
+          + '<span class="im-v">' + formatNumber(rxPkts) + '</span></div>'
+          // TX packets
+          + '<div class="if-metric"><span class="im-k">TX Packets</span>'
+          + '<span class="im-v">' + formatNumber(txPkts) + '</span></div>'
+          // Errors
+          + '<div class="if-metric"><span class="im-k">Errors</span>'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + renderMiniSparkline(errSparks, 'red')
+          + '<span class="im-v" style="color:' + ((rxErrors + txErrors) > 0 ? 'var(--red)' : 'var(--text-1)') + '">' + (rxErrors + txErrors) + '</span>'
+          + '</div></div>'
+          // Drops
+          + '<div class="if-metric"><span class="im-k">Drops</span>'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + renderMiniSparkline(dropSparks, 'orange')
+          + '<span class="im-v" style="color:' + ((rxDrops + txDrops) > 0 ? 'var(--yellow)' : 'var(--text-1)') + '">' + (rxDrops + txDrops) + '</span>'
+          + '</div></div>'
+          + '</div></div>';
+      });
+
+      grid.innerHTML = html;
+    }
+
+    function renderMiniSparkline(data, colorClass) {
+      if (!data || data.length === 0) return '<div class="spark-chart" style="width:60px;height:16px"></div>';
+
+      const max = Math.max(1, Math.max.apply(null, data));
+      let html = '<div class="spark-chart" style="width:60px;height:16px;gap:1px">';
+      const show = data.slice(-15);
+      show.forEach((val, i) => {
+        const pct = (val / max) * 100;
+        html += '<div class="spark-bar ' + colorClass + '" style="height:' + Math.max(2, pct) + '%;border-radius:1px"></div>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function formatNumber(n) {
+      if (!n) return '0';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return '' + n;
     }
 
     // ============================================================
@@ -1943,30 +2957,22 @@
       const total = disk.total || 1;
       const free = total - used;
 
-      document.getElementById('disk-val').textContent = percent + '%';
+      document.getElementById('mc-disk-val').innerHTML = percent + '% <small>of ' + formatBytes(total) + '</small>';
 
-      const donut = document.getElementById('disk-donut');
+      const donut = document.getElementById('mem-donut');
       const legend = document.getElementById('disk-legend');
 
       donut.style.background = 'conic-gradient(var(--purple) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
       donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">Used</div></div>';
 
       const hole = document.createElement('div');
-      hole.style.cssText = 'position:absolute;top:18px;left:18px;right:18px;bottom:18px;background:var(--bg-2);border-radius:50%;';
+      hole.style.cssText = 'position:absolute;top:14px;left:14px;right:14px;bottom:14px;background:var(--bg-2);border-radius:50%;';
       donut.appendChild(hole);
 
       legend.innerHTML = ''
         + '<div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Used<span class="legend-val">' + formatBytes(used) + '</span></div>'
         + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>Free<span class="legend-val">' + formatBytes(free) + '</span></div>'
         + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>Total<span class="legend-val">' + formatBytes(total) + '</span></div>';
-    }
-
-    function formatBytes(bytes) {
-      if (!bytes) return '0 B';
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-      return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
     }
 
     // ============================================================
@@ -2090,8 +3096,6 @@
     // Interfaces
     // ============================================================
     async function loadIfaces() {
-      showLoading('if-tb', 'Loading interfaces...');
-      // Show loading in table format
       document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Loading interfaces...</div></td></tr>';
 
       const d = await api('/api/interfaces');
@@ -2151,7 +3155,6 @@
     async function loadRoutes() {
       document.getElementById('rt-tb').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Loading routes...</div></td></tr>';
 
-      // Use hardcoded routes since we don't have a routes API
       document.getElementById('rt-tb').innerHTML = ''
         + '<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">Default</span></td></tr>'
         + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">Direct</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">Connected</span></td></tr>'
