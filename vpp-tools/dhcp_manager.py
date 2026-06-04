@@ -6,6 +6,7 @@ import json
 import argparse
 import subprocess
 import os
+import signal
 
 def run_cmd(cmd):
     """Run a command"""
@@ -20,12 +21,19 @@ def run_cmd(cmd):
     except Exception as e:
         return '', str(e), 1
 
+def is_dnsmasq_running():
+    """Check if dnsmasq is running"""
+    stdout, stderr, rc = run_cmd('pgrep dnsmasq')
+    return rc == 0
+
 def dhcp_enable(interface='veth-lan0', start_ip='192.168.1.100', end_ip='192.168.1.200',
                 gateway='192.168.1.1', lease_time=86400):
     """Enable DHCP server using dnsmasq"""
-    # Create dnsmasq config (use bind-dynamic instead of bind-interfaces)
-    config = f"""# VectorOS DHCP Configuration
-interface={interface}
+    # Kill existing dnsmasq
+    run_cmd('pkill -9 dnsmasq')
+
+    # Create config file
+    config = f"""interface={interface}
 bind-dynamic
 dhcp-range={start_ip},{end_ip},{lease_time}s
 dhcp-option=option:router,{gateway}
@@ -33,31 +41,33 @@ dhcp-option=option:dns-server,8.8.8.8,1.1.1.1
 log-dhcp
 """
 
-    # Write config
-    config_path = '/etc/dnsmasq.d/vectoros.conf'
+    config_path = '/etc/vectoros-dhcp.conf'
     try:
-        os.makedirs('/etc/dnsmasq.d', exist_ok=True)
         with open(config_path, 'w') as f:
             f.write(config)
     except Exception as e:
         return {'error': f'Failed to write config: {e}'}
 
-    # Restart dnsmasq
-    stdout, stderr, rc = run_cmd('systemctl restart dnsmasq')
-    if rc != 0:
-        return {'error': f'Failed to start dnsmasq: {stderr}'}
+    # Start dnsmasq
+    try:
+        subprocess.Popen(['dnsmasq', f'--conf-file={config_path}'])
+        import time
+        time.sleep(1)
 
-    return {'status': 'ok', 'message': 'DHCP server enabled'}
+        if is_dnsmasq_running():
+            return {'status': 'ok', 'message': 'DHCP server enabled'}
+        else:
+            return {'error': 'Failed to start dnsmasq'}
+    except Exception as e:
+        return {'error': f'Failed to start dnsmasq: {e}'}
 
 def dhcp_disable():
     """Disable DHCP server"""
-    stdout, stderr, rc = run_cmd('systemctl stop dnsmasq')
-    if rc != 0:
-        return {'error': f'Failed to stop dnsmasq: {stderr}'}
+    run_cmd('pkill -9 dnsmasq')
 
     # Remove config
     try:
-        os.remove('/etc/dnsmasq.d/vectoros.conf')
+        os.remove('/etc/vectoros-dhcp.conf')
     except:
         pass
 
@@ -65,11 +75,11 @@ def dhcp_disable():
 
 def dhcp_show():
     """Show DHCP server status and leases"""
-    result = {'status': 'unknown', 'leases': []}
+    result = {'status': 'inactive', 'leases': []}
 
     # Check if dnsmasq is running
-    stdout, stderr, rc = run_cmd('systemctl is-active dnsmasq')
-    result['status'] = 'active' if rc == 0 else 'inactive'
+    if is_dnsmasq_running():
+        result['status'] = 'active'
 
     # Read leases file
     try:
