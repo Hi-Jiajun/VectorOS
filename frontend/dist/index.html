@@ -478,7 +478,7 @@
       setTimeout(() => { d.style.opacity = '0'; d.style.transform = 'translateX(100%)'; d.style.transition = 'all 0.3s'; setTimeout(() => d.remove(), 300); }, 3000);
     }
 
-    async function api(u, opts) { try { return await (await fetch(u, opts)).json(); } catch(e) { return { error: e.message }; } }
+    let authToken = localStorage.getItem("vectoros-token") || ""; async function api(u, opts) { try { opts = opts || {}; opts.headers = opts.headers || {}; if (authToken) opts.headers["Authorization"] = "Bearer " + authToken; const res = await fetch(u, opts); if (res.status === 401) { const loginRes = await fetch("/api/auth/login", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: "admin", password: "vectoros"}) }); const loginData = await loginRes.json(); if (loginData.data && loginData.data.token) { authToken = loginData.data.token; localStorage.setItem("vectoros-token", authToken); opts.headers["Authorization"] = "Bearer " + authToken; const retryRes = await fetch(u, opts); return await retryRes.json(); } return { error: "Authentication failed" }; } return await res.json(); } catch(e) { return { error: e.message }; } }
 
     function fmt(n) { if (!n) return '0'; if (n >= 1e9) return (n/1e9).toFixed(1) + 'G'; if (n >= 1e6) return (n/1e6).toFixed(1) + 'M'; if (n >= 1e3) return (n/1e3).toFixed(1) + 'K'; return n; }
 
