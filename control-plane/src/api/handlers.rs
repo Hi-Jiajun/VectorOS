@@ -190,6 +190,61 @@ pub async fn get_routes() -> Json<Value> {
     Json(json!({ "routes": [] }))
 }
 
+pub async fn get_system_status() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/system_monitor.py");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn get_config_status() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/config_manager.py");
+    cmd.arg("get");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn save_config(Json(config): Json<Value>) -> Json<Value> {
+    let config_str = serde_json::to_string(&config).unwrap_or_default();
+
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/config_manager.py");
+    cmd.arg("set");
+    cmd.arg("--section").arg("all");
+    cmd.arg("--key").arg("config");
+    cmd.arg("--value").arg(&config_str);
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
 pub async fn get_dns_status() -> Json<Value> {
     let mut cmd = std::process::Command::new("python3");
     cmd.arg("/root/VectorOS/vpp-tools/dns_manager.py");

@@ -7,6 +7,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/health", get(handlers::health))
         .route("/api/config", get(handlers::get_config))
+        .route("/api/config/save", post(handlers::save_config))
         .route("/api/interfaces", get(handlers::get_interfaces))
         .route("/api/interfaces/:name/up", post(handlers::iface_up))
         .route("/api/interfaces/:name/down", post(handlers::iface_down))
@@ -20,4 +21,6 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/dns/status", get(handlers::get_dns_status))
         .route("/api/dns/enable", post(handlers::enable_dns))
         .route("/api/routes", get(handlers::get_routes))
+        .route("/api/system", get(handlers::get_system_status))
+        .route("/api/config/status", get(handlers::get_config_status))
 }

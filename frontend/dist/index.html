@@ -947,22 +947,32 @@
         <div id="p-system" class="page">
           <div class="grid-2">
             <div class="card">
-              <div class="card-head"><h3>⚙️ 服务</h3></div>
+              <div class="card-head"><h3>📊 系统资源</h3><button class="btn btn-ghost" onclick="loadSystem()">刷新</button></div>
+              <div class="card-body" id="sys-el">
+                <div class="loading"><div class="spinner"></div>加载中...</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>⚙️ 服务状态</h3></div>
               <div class="card-body">
                 <div class="info-row"><span class="info-k">VectorOS</span><span class="badge b-green"><span class="dot"></span> 运行中</span></div>
                 <div class="info-row"><span class="info-k">VPP</span><span class="badge b-green"><span class="dot"></span> 运行中</span></div>
                 <div class="info-row"><span class="info-k">PPPoE</span><span class="badge b-green"><span class="dot"></span> 已加载</span></div>
-                <div class="info-row"><span class="info-k">RDMA</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>
+                <div class="info-row"><span class="info-k">DPDK</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>
               </div>
             </div>
-            <div class="card">
-              <div class="card-head"><h3>🔗 API</h3></div>
-              <div class="card-body">
-                <div class="info-row"><span class="info-k">/api/health</span><span class="badge b-neutral">GET</span></div>
-                <div class="info-row"><span class="info-k">/api/config</span><span class="badge b-neutral">GET</span></div>
-                <div class="info-row"><span class="info-k">/api/pppoe/clients</span><span class="badge b-neutral">GET</span></div>
-                <div class="info-row"><span class="info-k">/api/interfaces</span><span class="badge b-neutral">GET</span></div>
-              </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-head"><h3>🔗 API 端点</h3></div>
+            <div class="card-body">
+              <div class="info-row"><span class="info-k">/api/health</span><span class="badge b-neutral">GET</span></div>
+              <div class="info-row"><span class="info-k">/api/interfaces</span><span class="badge b-neutral">GET</span></div>
+              <div class="info-row"><span class="info-k">/api/pppoe/status</span><span class="badge b-neutral">GET</span></div>
+              <div class="info-row"><span class="info-k">/api/pppoe/create</span><span class="badge b-neutral">POST</span></div>
+              <div class="info-row"><span class="info-k">/api/nat/enable</span><span class="badge b-neutral">POST</span></div>
+              <div class="info-row"><span class="info-k">/api/dhcp/enable</span><span class="badge b-neutral">POST</span></div>
+              <div class="info-row"><span class="info-k">/api/dns/enable</span><span class="badge b-neutral">POST</span></div>
+              <div class="info-row"><span class="info-k">/api/system</span><span class="badge b-neutral">GET</span></div>
             </div>
           </div>
         </div>
@@ -1004,6 +1014,43 @@
       else if(p==='nat')loadNat();
       else if(p==='dhcp')loadDhcp();
       else if(p==='dns')loadDns();
+      else if(p==='system')loadSystem();
+    }
+
+    async function loadSystem(){
+      const d=await api('/api/system'),el=document.getElementById('sys-el');
+      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
+
+      const sys=d.system||{};
+      const cpu=sys.cpu||{};
+      const mem=sys.memory||{};
+      const disk=sys.disk||{};
+
+      const formatBytes=(bytes)=>{
+        if(bytes<1024)return bytes+' B';
+        if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';
+        if(bytes<1024*1024*1024)return (bytes/(1024*1024)).toFixed(1)+' MB';
+        return (bytes/(1024*1024*1024)).toFixed(1)+' GB';
+      };
+
+      el.innerHTML='<div class="info-row"><span class="info-k">CPU 使用率</span><span class="info-v">'+cpu.percent+'%</span></div>'
+        +'<div class="info-row"><span class="info-k">CPU 核心</span><span class="info-v">'+cpu.count+'</span></div>'
+        +'<div class="info-row"><span class="info-k">内存使用</span><span class="info-v">'+mem.percent+'% ('+formatBytes(mem.used)+' / '+formatBytes(mem.total)+')</span></div>'
+        +'<div class="info-row"><span class="info-k">磁盘使用</span><span class="info-v">'+disk.percent+'% ('+formatBytes(disk.used)+' / '+formatBytes(disk.total)+')</span></div>'
+        +'<div style="margin-top:16px">'
+        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px;margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">CPU</span><span style="font-size:12px;color:var(--text-1)">'+cpu.percent+'%</span></div>'
+        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--accent);height:100%;width:'+cpu.percent+'%;transition:width 0.3s"></div></div>'
+        +'</div>'
+        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px;margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">内存</span><span style="font-size:12px;color:var(--text-1)">'+mem.percent+'%</span></div>'
+        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--green);height:100%;width:'+mem.percent+'%;transition:width 0.3s"></div></div>'
+        +'</div>'
+        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">磁盘</span><span style="font-size:12px;color:var(--text-1)">'+disk.percent+'%</span></div>'
+        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--purple);height:100%;width:'+disk.percent+'%;transition:width 0.3s"></div></div>'
+        +'</div>'
+        +'</div>';
     }
 
     async function loadDns(){
