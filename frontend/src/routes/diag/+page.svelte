@@ -10,6 +10,7 @@
   // Ping state
   let pingHost = '';
   let pingCount = 4;
+  let pingInterval = 1;
   let pingResult: any = null;
   let pingLoading = false;
 
@@ -21,6 +22,7 @@
 
   // DNS state
   let dnsDomain = '';
+  let dnsRecordType = 'all';
   let dnsServer = '';
   let dnsResult: any = null;
   let dnsLoading = false;
@@ -51,7 +53,7 @@
       const res = await fetch('/api/diag/ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host: pingHost.trim(), count: pingCount })
+        body: JSON.stringify({ host: pingHost.trim(), count: pingCount, interval: pingInterval })
       });
       const data = await res.json();
       if (data.error) {
@@ -96,7 +98,7 @@
       dnsLoading = true;
       error = '';
       dnsResult = null;
-      const body: any = { domain: dnsDomain.trim() };
+      const body: any = { domain: dnsDomain.trim(), record_type: dnsRecordType };
       if (dnsServer.trim()) body.server = dnsServer.trim();
       const res = await fetch('/api/diag/dns', {
         method: 'POST',
@@ -201,6 +203,10 @@
         <div class="form-group" style="width: 100px;">
           <label for="ping-count">Count</label>
           <input type="number" id="ping-count" bind:value={pingCount} min="1" max="100" />
+        </div>
+        <div class="form-group" style="width: 120px;">
+          <label for="ping-interval">Interval (s)</label>
+          <input type="number" id="ping-interval" bind:value={pingInterval} min="0.1" max="60" step="0.1" />
         </div>
         <div class="form-group" style="align-self: flex-end;">
           <button class="btn-primary" on:click={runPing} disabled={pingLoading}>
@@ -363,6 +369,16 @@
             on:keydown={(e) => handleKeydown(e, runDns)}
           />
         </div>
+        <div class="form-group" style="width: 140px;">
+          <label for="dns-type">Record Type</label>
+          <select id="dns-type" bind:value={dnsRecordType}>
+            <option value="all">All</option>
+            <option value="A">A (IPv4)</option>
+            <option value="AAAA">AAAA (IPv6)</option>
+            <option value="MX">MX (Mail)</option>
+            <option value="NS">NS (Nameserver)</option>
+          </select>
+        </div>
         <div class="form-group grow">
           <label for="dns-server">DNS Server (optional)</label>
           <input
@@ -384,47 +400,57 @@
           <h3>DNS Records for {dnsResult.domain}</h3>
           <p class="result-meta">Server: {dnsResult.server}</p>
 
-          {#if dnsResult.a_records && dnsResult.a_records.length > 0}
-            <div class="dns-section">
-              <h4>A Records (IPv4)</h4>
-              {#each dnsResult.a_records as record}
-                <div class="dns-record">{record}</div>
-              {/each}
-            </div>
+          {#if dnsRecordType === 'all' || dnsRecordType === 'A'}
+            {#if dnsResult.a_records && dnsResult.a_records.length > 0}
+              <div class="dns-section">
+                <h4>A Records (IPv4)</h4>
+                {#each dnsResult.a_records as record}
+                  <div class="dns-record">{record}</div>
+                {/each}
+              </div>
+            {/if}
           {/if}
 
-          {#if dnsResult.aaaa_records && dnsResult.aaaa_records.length > 0}
-            <div class="dns-section">
-              <h4>AAAA Records (IPv6)</h4>
-              {#each dnsResult.aaaa_records as record}
-                <div class="dns-record">{record}</div>
-              {/each}
-            </div>
+          {#if dnsRecordType === 'all' || dnsRecordType === 'AAAA'}
+            {#if dnsResult.aaaa_records && dnsResult.aaaa_records.length > 0}
+              <div class="dns-section">
+                <h4>AAAA Records (IPv6)</h4>
+                {#each dnsResult.aaaa_records as record}
+                  <div class="dns-record">{record}</div>
+                {/each}
+              </div>
+            {/if}
           {/if}
 
-          {#if dnsResult.mx_records && dnsResult.mx_records.length > 0}
-            <div class="dns-section">
-              <h4>MX Records (Mail)</h4>
-              {#each dnsResult.mx_records as record}
-                <div class="dns-record">{record}</div>
-              {/each}
-            </div>
+          {#if dnsRecordType === 'all' || dnsRecordType === 'MX'}
+            {#if dnsResult.mx_records && dnsResult.mx_records.length > 0}
+              <div class="dns-section">
+                <h4>MX Records (Mail)</h4>
+                {#each dnsResult.mx_records as record}
+                  <div class="dns-record">{record}</div>
+                {/each}
+              </div>
+            {/if}
           {/if}
 
-          {#if dnsResult.ns_records && dnsResult.ns_records.length > 0}
-            <div class="dns-section">
-              <h4>NS Records (Nameservers)</h4>
-              {#each dnsResult.ns_records as record}
-                <div class="dns-record">{record}</div>
-              {/each}
-            </div>
+          {#if dnsRecordType === 'all' || dnsRecordType === 'NS'}
+            {#if dnsResult.ns_records && dnsResult.ns_records.length > 0}
+              <div class="dns-section">
+                <h4>NS Records (Nameservers)</h4>
+                {#each dnsResult.ns_records as record}
+                  <div class="dns-record">{record}</div>
+                {/each}
+              </div>
+            {/if}
           {/if}
 
-          {#if dnsResult.soa_record}
-            <div class="dns-section">
-              <h4>SOA Record</h4>
-              <div class="dns-record">{dnsResult.soa_record}</div>
-            </div>
+          {#if dnsRecordType === 'all'}
+            {#if dnsResult.soa_record}
+              <div class="dns-section">
+                <h4>SOA Record</h4>
+                <div class="dns-record">{dnsResult.soa_record}</div>
+              </div>
+            {/if}
           {/if}
 
           {#if (!dnsResult.a_records || dnsResult.a_records.length === 0) &&
@@ -654,6 +680,21 @@
   }
 
   input:focus {
+    outline: none;
+    border-color: #00ff88;
+  }
+
+  select {
+    background: #0f0f23;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    padding: 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  select:focus {
     outline: none;
     border-color: #00ff88;
   }

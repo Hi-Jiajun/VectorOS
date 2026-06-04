@@ -1,9 +1,34 @@
 :root {
   --color-bg: #0f0f23;
+  --color-bg-card: #1a1a2e;
   --color-surface: #1a1a2e;
+  --color-bg-input: #0f0f23;
+  --color-bg-hover: #2a2a4e;
   --color-primary: #00ff88;
   --color-text: #e0e0e0;
+  --color-text-secondary: #e0e0e0;
   --color-text-muted: #888;
+  --color-border: #333;
+  --color-border-light: #555;
+
+  --color-success: #00ff88;
+  --color-success-bg: rgba(0, 255, 136, 0.1);
+  --color-success-border: rgba(0, 255, 136, 0.3);
+  --color-danger: #ff4444;
+  --color-danger-bg: rgba(255, 68, 68, 0.1);
+  --color-danger-border: rgba(255, 68, 68, 0.3);
+  --color-warning: #ffaa00;
+  --color-warning-bg: rgba(255, 170, 0, 0.1);
+  --color-warning-border: rgba(255, 170, 0, 0.3);
+  --color-info: #44aaff;
+  --color-info-bg: rgba(68, 170, 255, 0.1);
+  --color-info-border: rgba(68, 170, 255, 0.3);
+
+  --radius-sm: 0.3rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --transition-fast: 0.15s ease;
 }
 
 * {
