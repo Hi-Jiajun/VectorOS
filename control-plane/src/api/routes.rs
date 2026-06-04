@@ -8,7 +8,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
     Router::new()
         // OpenAPI / Swagger UI
         .route("/api-docs/openapi.json", get(|| async { axum::Json(openapi::ApiDoc::openapi()) }))
-        .merge(openapi::swagger_ui())
+        
         // Public routes (no auth required)
         .route("/api/health", get(handlers::health))
         .route("/api/auth/login", post(handlers::login))

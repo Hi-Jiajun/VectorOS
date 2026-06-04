@@ -1,5 +1,4 @@
-use utoipa::{openapi, OpenApi};
-use utoipa_swagger_ui::SwaggerUi;
+use utoipa::OpenApi;
 
 use crate::api::handlers;
 use crate::auth::{LoginRequest, LoginResponse};
@@ -240,19 +239,15 @@ pub struct ApiDoc;
 struct SecurityAddon;
 
 impl utoipa::Modify for SecurityAddon {
-    fn modify(&self, openapi: &mut openapi::OpenApi) {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
                 "bearer_auth",
-                openapi::security::SecurityScheme::Http(
-                    openapi::security::Http::new(openapi::security::HttpAuthScheme::Bearer),
+                utoipa::openapi::security::SecurityScheme::Http(
+                    utoipa::openapi::security::Http::new(utoipa::openapi::security::HttpAuthScheme::Bearer),
                 ),
             );
         }
     }
 }
 
-pub fn swagger_ui() -> SwaggerUi {
-    SwaggerUi::new("/swagger-ui/{*path}")
-        .url("/api-docs/openapi.json", ApiDoc::openapi())
-}
