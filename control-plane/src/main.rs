@@ -45,6 +45,10 @@ async fn main() -> Result<()> {
     db::init(&cli.db)?;
     info!("Database initialized: {}", cli.db);
 
+    // Start the system monitor collector background task
+    tokio::spawn(services::monitor::start_collector());
+    info!("System monitor collector started");
+
     let config = config::load(&cli.config).unwrap_or_else(|e| {
         info!("Using default config: {}", e);
         config::Config::default()

@@ -41,6 +41,25 @@
     txPacketsPerSec: number;
   }
 
+  interface BoundInterface {
+    vpp_name: string;
+    vf_name: string;
+    method: string;
+    pci: string;
+    bound: boolean;
+    sw_if_index: number;
+    state: string;
+    mtu: number;
+  }
+
+  interface AvailableVf {
+    vf_name: string;
+    pci: string;
+    driver: string;
+    bound: boolean;
+    suggested_vpp_name: string;
+  }
+
   // ── Interface type classification ──────────────────────────────────
 
   type InterfaceCategory = 'wan' | 'lan' | 'pppoe' | 'mgmt' | 'other';
@@ -90,6 +109,18 @@
   let ipRemoveValue = '';
   let promiscuous = false;
 
+  // Binding state
+  let boundInterfaces: BoundInterface[] = [];
+  let availableVfs: AvailableVf[] = [];
+  let bindingInProgress = false;
+  let showBindingPanel = false;
+
+  // Bind form
+  let bindVfName = '';
+  let bindVppName = '';
+  let bindMethod: 'rdma' | 'dpdk' = 'rdma';
+  let bindPci = '';
+
   // Traffic rate calculation
   let prevSample: TrafficSample | null = null;
   let currentRates: RateData = { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 };
@@ -131,6 +162,7 @@
     });
 
     await fetchInterfaces();
+    await fetchBindings();
     listInterval = setInterval(fetchInterfaces, 3000);
     statsInterval = setInterval(pollStats, 3000);
   });
@@ -173,6 +205,100 @@
     } finally {
       loading = false;
     }
+  }
+
+  async function fetchBindings() {
+    try {
+      const res = await fetch('/api/interfaces/bound');
+      const data = await res.json();
+      if (!data.error) {
+        boundInterfaces = data.interfaces || [];
+        availableVfs = data.available_vfs || [];
+      }
+    } catch {
+      // Binding fetch errors are silent
+    }
+  }
+
+  async function bindInterface() {
+    if (!bindVfName || !bindVppName) {
+      message = 'VF name and VPP name are required';
+      messageType = 'error';
+      return;
+    }
+    bindingInProgress = true;
+    try {
+      const body: Record<string, string> = {
+        vf_name: bindVfName,
+        vpp_name: bindVppName,
+        method: bindMethod,
+      };
+      if (bindPci.trim()) {
+        body.pci = bindPci.trim();
+      }
+      const res = await fetch('/api/interfaces/bind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) {
+        message = data.error;
+        messageType = 'error';
+      } else {
+        message = data.message || `Bound ${bindVfName} to VPP as ${bindVppName}`;
+        messageType = 'ok';
+        bindVfName = '';
+        bindVppName = '';
+        bindPci = '';
+        showBindingPanel = false;
+        await fetchBindings();
+        await fetchInterfaces();
+      }
+    } catch {
+      message = 'Failed to bind interface';
+      messageType = 'error';
+    } finally {
+      bindingInProgress = false;
+    }
+  }
+
+  async function unbindInterface(vppName: string) {
+    bindingInProgress = true;
+    try {
+      const res = await fetch('/api/interfaces/unbind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vpp_name: vppName }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        message = data.error;
+        messageType = 'error';
+      } else {
+        message = data.message || `Unbound ${vppName} from VPP`;
+        messageType = 'ok';
+        if (selectedIface === vppName) {
+          selectedIface = '';
+          stats = null;
+        }
+        await fetchBindings();
+        await fetchInterfaces();
+      }
+    } catch {
+      message = 'Failed to unbind interface';
+      messageType = 'error';
+    } finally {
+      bindingInProgress = false;
+    }
+  }
+
+  function prefillBind(vf: AvailableVf) {
+    bindVfName = vf.vf_name;
+    bindVppName = vf.suggested_vpp_name;
+    bindPci = vf.pci;
+    bindMethod = 'rdma';
+    showBindingPanel = true;
   }
 
   async function fetchStats(name: string) {
@@ -469,6 +595,125 @@
       <span class="toast-close">&times;</span>
     </div>
   {/if}
+
+  <!-- ── VF Binding Panel ── -->
+  <div class="card binding-panel">
+    <div class="card-header" style="cursor: pointer" on:click={() => showBindingPanel = !showBindingPanel}>
+      <h2>
+        VF Interface Binding
+        <span class="binding-count">
+          {boundInterfaces.length} bound
+          {#if availableVfs.length > 0}
+            &middot; {availableVfs.length} available
+          {/if}
+        </span>
+      </h2>
+      <span class="expand-icon">{showBindingPanel ? '&#9650;' : '&#9660;'}</span>
+    </div>
+
+    {#if showBindingPanel}
+      <div class="binding-content">
+        <!-- Bound interfaces -->
+        {#if boundInterfaces.length > 0}
+          <div class="binding-section">
+            <div class="section-label">Bound Interfaces</div>
+            {#each boundInterfaces as bi}
+              <div class="binding-row">
+                <div class="binding-info">
+                  <span class="binding-vpp">{bi.vpp_name}</span>
+                  <span class="binding-arrow">&larr;</span>
+                  <span class="binding-vf">{bi.vf_name}</span>
+                  <span class="binding-meta">({bi.method}{bi.pci ? `, ${bi.pci}` : ''})</span>
+                </div>
+                <div class="binding-actions">
+                  <span class="binding-state" class:state-up={bi.state === 'up'} class:state-down={bi.state !== 'up'}>
+                    {bi.state || '?'}
+                  </span>
+                  <button
+                    class="btn-unbind"
+                    on:click|stopPropagation={() => unbindInterface(bi.vpp_name)}
+                    disabled={bindingInProgress}
+                    title="Unbind from VPP"
+                  >
+                    Unbind
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Available VFs -->
+        {#if availableVfs.length > 0}
+          <div class="binding-section">
+            <div class="section-label">Available VF Interfaces</div>
+            {#each availableVfs as vf}
+              <div class="binding-row vf-available">
+                <div class="binding-info">
+                  <span class="binding-vf">{vf.vf_name}</span>
+                  {#if vf.pci}
+                    <span class="binding-meta">({vf.pci})</span>
+                  {/if}
+                  {#if vf.driver}
+                    <span class="binding-driver">{vf.driver}</span>
+                  {/if}
+                </div>
+                <button
+                  class="btn-bind"
+                  on:click|stopPropagation={() => prefillBind(vf)}
+                  disabled={bindingInProgress}
+                  title="Bind to VPP"
+                >
+                  Bind to VPP
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Manual bind form -->
+        <div class="binding-section">
+          <div class="section-label">Manual Binding</div>
+          <div class="bind-form">
+            <div class="bind-form-row">
+              <div class="form-group">
+                <label for="bind-vf">VF Interface</label>
+                <input type="text" id="bind-vf" bind:value={bindVfName} placeholder="enp1s0" />
+              </div>
+              <div class="form-group">
+                <label for="bind-vpp">VPP Name</label>
+                <input type="text" id="bind-vpp" bind:value={bindVppName} placeholder="wan0" />
+              </div>
+              <div class="form-group">
+                <label for="bind-method">Method</label>
+                <select id="bind-method" bind:value={bindMethod}>
+                  <option value="rdma">RDMA (no driver change)</option>
+                  <option value="dpdk">DPDK (vfio-pci)</option>
+                </select>
+              </div>
+              {#if bindMethod === 'dpdk'}
+                <div class="form-group">
+                  <label for="bind-pci">PCI Address</label>
+                  <input type="text" id="bind-pci" bind:value={bindPci} placeholder="0000:01:00.0" />
+                </div>
+              {/if}
+              <button
+                class="btn-apply bind-btn"
+                on:click={bindInterface}
+                disabled={bindingInProgress || !bindVfName || !bindVppName}
+              >
+                {#if bindingInProgress}
+                  <span class="btn-spinner"></span> Binding...
+                {:else}
+                  Bind
+                {/if}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
 
   <div class="two-col">
     <!-- ── Interface List ── -->
@@ -1223,5 +1468,187 @@
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+  }
+
+  /* ── Binding Panel ────────────────────────────────────── */
+  .binding-panel {
+    border-top: 2px solid #4dabf733;
+  }
+
+  .binding-count {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #888;
+    margin-left: 0.5rem;
+  }
+
+  .expand-icon {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .binding-content {
+    margin-top: 0.5rem;
+  }
+
+  .binding-section {
+    margin-bottom: 1rem;
+  }
+
+  .binding-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .binding-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #0f0f23;
+    border-radius: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .binding-row.vf-available {
+    border: 1px dashed #333;
+    background: transparent;
+  }
+
+  .binding-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .binding-vpp {
+    color: #00ff88;
+    font-weight: 600;
+  }
+
+  .binding-arrow {
+    color: #555;
+  }
+
+  .binding-vf {
+    color: #4dabf7;
+  }
+
+  .binding-meta {
+    color: #666;
+    font-size: 0.75rem;
+  }
+
+  .binding-driver {
+    color: #888;
+    font-size: 0.7rem;
+    background: #16213e;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+  }
+
+  .binding-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .binding-state {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+  }
+  .binding-state.state-up { background: #0d3320; color: #00ff88; }
+  .binding-state.state-down { background: #331010; color: #ff6666; }
+
+  .btn-unbind {
+    background: #331010;
+    color: #ff6666;
+    border: 1px solid #ff444444;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-unbind:hover { background: #441818; border-color: #ff4444; }
+  .btn-unbind:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-bind {
+    background: #0d3320;
+    color: #00ff88;
+    border: 1px solid #00ff8844;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-bind:hover { background: #0d4428; border-color: #00ff88; }
+  .btn-bind:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Bind Form ────────────────────────────────────────── */
+  .bind-form {
+    background: #0f0f23;
+    padding: 0.75rem;
+    border-radius: 0.4rem;
+  }
+
+  .bind-form-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .bind-form-row .form-group {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .bind-form-row .form-group label {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .bind-form-row .form-group input,
+  .bind-form-row .form-group select {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 0.3rem;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+  }
+
+  .bind-form-row .form-group input:focus,
+  .bind-form-row .form-group select:focus {
+    outline: none;
+    border-color: #00ff88;
+  }
+
+  .bind-btn {
+    flex-shrink: 0;
+    margin-bottom: 0;
   }
 </style>

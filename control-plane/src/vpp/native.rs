@@ -186,6 +186,181 @@ fn run_vppctl(args: &[&str]) -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
+// ── Interface Binding ────────────────────────────────────────────
+
+/// Path to the interface bind Python script
+const INTERFACE_BIND_SCRIPT: &str = "/root/VectorOS/vpp-tools/interface_bind.py";
+
+/// A VF interface bound (or bindable) to VPP
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoundInterface {
+    /// VPP interface name (e.g. "wan0")
+    pub vpp_name: String,
+    /// Linux VF interface name (e.g. "enp1s0")
+    pub vf_name: String,
+    /// Binding method: "rdma" or "dpdk"
+    pub method: String,
+    /// PCI address (if known)
+    pub pci: String,
+    /// Whether currently bound in VPP
+    pub bound: bool,
+    /// VPP sw_if_index (0 if not bound)
+    pub sw_if_index: u32,
+    /// Current state: "up", "down", or ""
+    pub state: String,
+    /// MTU value
+    pub mtu: u32,
+}
+
+/// Result of a bind/unbind operation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BindResult {
+    pub status: String,
+    pub message: String,
+    pub vpp_name: String,
+    pub vf_name: String,
+    pub method: Option<String>,
+    pub pci: Option<String>,
+}
+
+/// List of all bound and available VF interfaces
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoundInterfaceList {
+    pub interfaces: Vec<BoundInterface>,
+    pub available_vfs: Vec<AvailableVf>,
+    pub count: u32,
+}
+
+/// A VF interface available for binding
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AvailableVf {
+    pub vf_name: String,
+    pub pci: String,
+    pub driver: String,
+    pub bound: bool,
+    pub suggested_vpp_name: String,
+}
+
+/// Run the interface_bind.py helper and parse JSON output
+fn run_bind_script(args: &[&str]) -> Result<serde_json::Value> {
+    let mut cmd_args: Vec<&str> = vec![INTERFACE_BIND_SCRIPT];
+    cmd_args.extend_from_slice(args);
+
+    let output = Command::new("python3")
+        .args(&cmd_args)
+        .output()
+        .context("Failed to execute interface_bind.py")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("interface_bind.py failed: {}", stderr);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    serde_json::from_str(&stdout).context("Failed to parse interface_bind.py output")
+}
+
+/// Bind a VF interface to VPP.
+///
+/// `method` can be "rdma" (default, no driver change) or "dpdk" (requires PCI address and vfio-pci).
+/// If `pci` is not provided, it is auto-detected from sysfs.
+pub fn bind_interface(vf_name: &str, vpp_name: &str, method: &str, pci: Option<&str>) -> Result<BindResult> {
+    let mut args: Vec<&str> = vec![
+        "bind",
+        "--vf", vf_name,
+        "--vpp-name", vpp_name,
+        "--method", method,
+    ];
+    if let Some(p) = pci {
+        args.extend_from_slice(&["--pci", p]);
+    }
+
+    let val = run_bind_script(&args)?;
+
+    Ok(BindResult {
+        status: val["status"].as_str().unwrap_or("error").to_string(),
+        message: val["message"].as_str().unwrap_or("").to_string(),
+        vpp_name: val["vpp_name"].as_str().unwrap_or(vpp_name).to_string(),
+        vf_name: val["vf_name"].as_str().unwrap_or(vf_name).to_string(),
+        method: val["method"].as_str().map(String::from),
+        pci: val["pci"].as_str().map(String::from),
+    })
+}
+
+/// Unbind an interface from VPP.
+pub fn unbind_interface(vpp_name: &str) -> Result<BindResult> {
+    let val = run_bind_script(&["unbind", "--vpp-name", vpp_name])?;
+
+    Ok(BindResult {
+        status: val["status"].as_str().unwrap_or("error").to_string(),
+        message: val["message"].as_str().unwrap_or("").to_string(),
+        vpp_name: val["vpp_name"].as_str().unwrap_or(vpp_name).to_string(),
+        vf_name: val["vf_name"].as_str().unwrap_or("").to_string(),
+        method: val["method"].as_str().map(String::from),
+        pci: val["pci"].as_str().map(String::from),
+    })
+}
+
+/// List all VF interfaces currently bound to VPP, plus available unbound VFs.
+pub fn list_bound_interfaces() -> Result<BoundInterfaceList> {
+    let val = run_bind_script(&["list"])?;
+
+    let mut interfaces = Vec::new();
+    if let Some(arr) = val["interfaces"].as_array() {
+        for item in arr {
+            interfaces.push(BoundInterface {
+                vpp_name: item["vpp_name"].as_str().unwrap_or("").to_string(),
+                vf_name: item["vf_name"].as_str().unwrap_or("").to_string(),
+                method: item["method"].as_str().unwrap_or("").to_string(),
+                pci: item["pci"].as_str().unwrap_or("").to_string(),
+                bound: item["bound"].as_bool().unwrap_or(false),
+                sw_if_index: item["sw_if_index"].as_u64().unwrap_or(0) as u32,
+                state: item["state"].as_str().unwrap_or("").to_string(),
+                mtu: item["mtu"].as_u64().unwrap_or(0) as u32,
+            });
+        }
+    }
+
+    let mut available_vfs = Vec::new();
+    if let Some(arr) = val["available_vfs"].as_array() {
+        for item in arr {
+            available_vfs.push(AvailableVf {
+                vf_name: item["vf_name"].as_str().unwrap_or("").to_string(),
+                pci: item["pci"].as_str().unwrap_or("").to_string(),
+                driver: item["driver"].as_str().unwrap_or("").to_string(),
+                bound: item["bound"].as_bool().unwrap_or(false),
+                suggested_vpp_name: item["suggested_vpp_name"].as_str().unwrap_or("").to_string(),
+            });
+        }
+    }
+
+    Ok(BoundInterfaceList {
+        interfaces,
+        available_vfs,
+        count: val["count"].as_u64().unwrap_or(0) as u32,
+    })
+}
+
+/// Configure an already-bound VPP interface (IP, MTU, bring up).
+pub fn configure_bound_interface(vpp_name: &str, ip: Option<&str>, mtu: Option<u32>) -> Result<serde_json::Value> {
+    let mut script_args: Vec<String> = vec![
+        "configure".to_string(),
+        "--vpp-name".to_string(),
+        vpp_name.to_string(),
+    ];
+
+    if let Some(i) = ip {
+        script_args.extend_from_slice(&["--ip".to_string(), i.to_string()]);
+    }
+
+    if let Some(m) = mtu {
+        script_args.extend_from_slice(&["--mtu".to_string(), m.to_string()]);
+    }
+
+    let str_refs: Vec<&str> = script_args.iter().map(|s| s.as_str()).collect();
+    run_bind_script(&str_refs)
+}
+
 /// Get list of interfaces
 pub fn get_interfaces() -> Result<Vec<InterfaceInfo>> {
     let output = run_vppctl(&["show", "interface"])?;

@@ -20,9 +20,18 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/interfaces/:name/down", post(handlers::iface_down))
         .route("/api/interfaces/:name/config", post(handlers::configure_interface))
         .route("/api/interfaces/:name/stats", get(handlers::get_interface_stats))
+        .route("/api/interfaces/bind", post(handlers::bind_interface))
+        .route("/api/interfaces/unbind", post(handlers::unbind_interface))
+        .route("/api/interfaces/bound", get(handlers::list_bound_interfaces))
+        .route("/api/interfaces/:name/configure-bound", post(handlers::configure_bound_interface))
         .route("/api/pppoe/clients", get(handlers::get_pppoe_clients))
         .route("/api/pppoe/status", get(handlers::get_pppoe_status))
         .route("/api/pppoe/create", post(handlers::create_pppoe_client))
+        // PPPoE auto-connect
+        .route("/api/pppoe/autoconnect/start", post(handlers::start_pppoe_autoconnect))
+        .route("/api/pppoe/autoconnect/stop", post(handlers::stop_pppoe_autoconnect))
+        .route("/api/pppoe/autoconnect/status", get(handlers::get_pppoe_autoconnect_status))
+        .route("/api/pppoe/autoconnect/config", post(handlers::configure_pppoe_autoconnect))
         .route("/api/nat/status", get(handlers::get_nat_status))
         .route("/api/nat/enable", post(handlers::enable_nat))
         .route("/api/dhcp/status", get(handlers::get_dhcp_status))
@@ -154,6 +163,11 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/services/:name/stop", post(handlers::stop_service))
         .route("/api/services/:name/restart", post(handlers::restart_service))
         .route("/api/services/:name/reload", post(handlers::reload_service))
+        // Monitoring
+        .route("/api/monitor/metrics", get(handlers::get_monitor_metrics))
+        .route("/api/monitor/history", get(handlers::get_monitor_history))
+        .route("/api/monitor/alerts", get(handlers::get_monitor_alerts))
+        .route("/api/monitor/alerts/ack", post(handlers::acknowledge_alert))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }

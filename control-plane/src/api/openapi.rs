@@ -155,6 +155,11 @@ use crate::auth::{LoginRequest, LoginResponse};
         handlers::stop_service,
         handlers::restart_service,
         handlers::reload_service,
+        // Monitoring
+        handlers::get_monitor_metrics,
+        handlers::get_monitor_history,
+        handlers::get_monitor_alerts,
+        handlers::acknowledge_alert,
     ),
     components(schemas(
         LoginRequest,
@@ -205,6 +210,7 @@ use crate::auth::{LoginRequest, LoginResponse};
         crate::services::diag::DnsRequest,
         crate::services::diag::PortScanRequest,
         crate::services::firewall::TimeRange,
+        crate::services::monitor::AlertAckRequest,
     )),
     tags(
         (name = "System", description = "System health and status"),
@@ -230,6 +236,7 @@ use crate::auth::{LoginRequest, LoginResponse};
         (name = "Configuration", description = "VyOS-style hierarchical configuration management"),
         (name = "Routes", description = "Routing table management"),
         (name = "Services", description = "System service management (start, stop, restart, reload)"),
+        (name = "Monitoring", description = "System monitoring, metrics history, and alerts"),
     ),
     modifiers(&SecurityAddon),
     security(("bearer_auth" = []))

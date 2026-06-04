@@ -251,6 +251,131 @@ pub async fn get_interface_stats(Path(name): Path<String>) -> Json<Value> {
     }
 }
 
+// ── Interface Binding handlers ──────────────────────────────────
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BindInterfaceRequest {
+    /// Linux VF interface name (e.g. "enp1s0")
+    pub vf_name: String,
+    /// VPP interface name (e.g. "wan0")
+    pub vpp_name: String,
+    /// Binding method: "rdma" (default) or "dpdk"
+    #[serde(default = "default_bind_method")]
+    pub method: String,
+    /// PCI address (optional, auto-detected if not provided)
+    pub pci: Option<String>,
+}
+
+fn default_bind_method() -> String {
+    "rdma".to_string()
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UnbindInterfaceRequest {
+    /// VPP interface name to unbind (e.g. "wan0")
+    pub vpp_name: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ConfigureBoundRequest {
+    /// IP address with CIDR (e.g. "192.168.1.1/24")
+    pub ip: Option<String>,
+    /// MTU value
+    pub mtu: Option<u32>,
+}
+
+/// Bind a VF interface to VPP.
+///
+/// Creates a VPP interface from a physical VF using RDMA host-interface (default)
+/// or DPDK driver binding.
+#[utoipa::path(
+    post,
+    path = "/api/interfaces/bind",
+    tag = "Interfaces",
+    request_body = BindInterfaceRequest,
+    responses(
+        (status = 200, description = "Interface bound", body = Value),
+        (status = 400, description = "Bind error", body = Value)
+    )
+)]
+pub async fn bind_interface(Json(req): Json<BindInterfaceRequest>) -> Json<Value> {
+    match crate::vpp::native::bind_interface(
+        &req.vf_name,
+        &req.vpp_name,
+        &req.method,
+        req.pci.as_deref(),
+    ) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Unbind an interface from VPP.
+///
+/// Removes the VPP interface and restores the VF to the kernel driver.
+#[utoipa::path(
+    post,
+    path = "/api/interfaces/unbind",
+    tag = "Interfaces",
+    request_body = UnbindInterfaceRequest,
+    responses(
+        (status = 200, description = "Interface unbound", body = Value),
+        (status = 400, description = "Unbind error", body = Value)
+    )
+)]
+pub async fn unbind_interface(Json(req): Json<UnbindInterfaceRequest>) -> Json<Value> {
+    match crate::vpp::native::unbind_interface(&req.vpp_name) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// List all VF interfaces bound to VPP and available unbound VFs.
+///
+/// Returns both currently bound interfaces with their binding metadata
+/// and VF interfaces that exist on the system but are not yet bound.
+#[utoipa::path(
+    get,
+    path = "/api/interfaces/bound",
+    tag = "Interfaces",
+    responses(
+        (status = 200, description = "Bound interfaces list", body = Value)
+    )
+)]
+pub async fn list_bound_interfaces() -> Json<Value> {
+    match crate::vpp::native::list_bound_interfaces() {
+        Ok(list) => Json(json!(list)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Configure a bound interface (IP, MTU, bring up).
+#[utoipa::path(
+    post,
+    path = "/api/interfaces/{name}/configure-bound",
+    tag = "Interfaces",
+    params(
+        ("name" = String, Path, description = "VPP interface name")
+    ),
+    request_body = ConfigureBoundRequest,
+    responses(
+        (status = 200, description = "Interface configured", body = Value)
+    )
+)]
+pub async fn configure_bound_interface(
+    Path(name): Path<String>,
+    Json(req): Json<ConfigureBoundRequest>,
+) -> Json<Value> {
+    match crate::vpp::native::configure_bound_interface(
+        &name,
+        req.ip.as_deref(),
+        req.mtu,
+    ) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
 /// List all PPPoE clients.
 #[utoipa::path(
     get,
@@ -3093,6 +3218,279 @@ pub async fn reload_service(
 ) -> Json<Value> {
     match state.service_manager.reload_service(&name).await {
         Ok(info) => Json(json!({ "status": "ok", "service": info })),
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PPPoE Auto-Connect handlers
+// ---------------------------------------------------------------------------
+
+/// Request body for starting auto-connect.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PppoeAutoConnectStartRequest {
+    /// PPPoE username (optional, uses config default if empty).
+    #[serde(default)]
+    pub username: String,
+    /// PPPoE password (optional, uses config default if empty).
+    #[serde(default)]
+    pub password: String,
+}
+
+/// Request body for configuring auto-connect.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PppoeAutoConnectConfigRequest {
+    /// Enable/disable auto-connect.
+    pub enabled: Option<bool>,
+    /// Maximum retries before giving up. 0 = infinite.
+    pub max_retries: Option<u32>,
+    /// Initial retry interval in seconds.
+    pub retry_interval: Option<u64>,
+    /// Exponential backoff multiplier.
+    pub backoff_factor: Option<f64>,
+    /// Maximum retry interval cap in seconds.
+    pub max_retry_interval: Option<u64>,
+    /// Interval between connection status checks in seconds.
+    pub check_interval: Option<u64>,
+    /// Interval between health checks while connected in seconds.
+    pub health_check_interval: Option<u64>,
+}
+
+/// Start PPPoE auto-connect.
+#[utoipa::path(
+    post,
+    path = "/api/pppoe/autoconnect/start",
+    tag = "PPPoE",
+    request_body = PppoeAutoConnectStartRequest,
+    responses(
+        (status = 200, description = "Auto-connect started", body = Value)
+    )
+)]
+pub async fn start_pppoe_autoconnect(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<PppoeAutoConnectStartRequest>,
+) -> Json<Value> {
+    // Get credentials from request or fall back to config
+    let pppoe = state.config.network.pppoe.as_ref();
+    let username = if req.username.is_empty() {
+        pppoe.map(|p| p.username.clone()).unwrap_or_default()
+    } else {
+        req.username
+    };
+    let password = if req.password.is_empty() {
+        pppoe.map(|p| p.password.clone()).unwrap_or_default()
+    } else {
+        req.password
+    };
+
+    // Enable the service
+    {
+        let mut config = state.pppoe_auto.config_for_write().await;
+        config.enabled = true;
+    }
+
+    match state.pppoe_auto.start(username, password).await {
+        Ok(()) => {
+            let status = state.pppoe_auto.get_status().await;
+            Json(json!({ "status": "ok", "message": "Auto-connect started", "autoconnect": status }))
+        }
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+/// Stop PPPoE auto-connect.
+#[utoipa::path(
+    post,
+    path = "/api/pppoe/autoconnect/stop",
+    tag = "PPPoE",
+    responses(
+        (status = 200, description = "Auto-connect stopped", body = Value)
+    )
+)]
+pub async fn stop_pppoe_autoconnect(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    {
+        let mut config = state.pppoe_auto.config_for_write().await;
+        config.enabled = false;
+    }
+
+    match state.pppoe_auto.stop().await {
+        Ok(()) => {
+            let status = state.pppoe_auto.get_status().await;
+            Json(json!({ "status": "ok", "message": "Auto-connect stopped", "autoconnect": status }))
+        }
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+/// Get PPPoE auto-connect status.
+#[utoipa::path(
+    get,
+    path = "/api/pppoe/autoconnect/status",
+    tag = "PPPoE",
+    responses(
+        (status = 200, description = "Auto-connect status", body = Value)
+    )
+)]
+pub async fn get_pppoe_autoconnect_status(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    let status = state.pppoe_auto.get_status().await;
+    Json(json!(status))
+}
+
+/// Configure PPPoE auto-connect parameters.
+#[utoipa::path(
+    post,
+    path = "/api/pppoe/autoconnect/config",
+    tag = "PPPoE",
+    request_body = PppoeAutoConnectConfigRequest,
+    responses(
+        (status = 200, description = "Auto-connect configured", body = Value)
+    )
+)]
+pub async fn configure_pppoe_autoconnect(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<PppoeAutoConnectConfigRequest>,
+) -> Json<Value> {
+    {
+        let mut config = state.pppoe_auto.config_for_write().await;
+        if let Some(enabled) = req.enabled {
+            config.enabled = enabled;
+        }
+        if let Some(max_retries) = req.max_retries {
+            config.max_retries = max_retries;
+        }
+        if let Some(retry_interval) = req.retry_interval {
+            config.retry_interval = retry_interval;
+        }
+        if let Some(backoff_factor) = req.backoff_factor {
+            config.backoff_factor = backoff_factor;
+        }
+        if let Some(max_retry_interval) = req.max_retry_interval {
+            config.max_retry_interval = max_retry_interval;
+        }
+        if let Some(check_interval) = req.check_interval {
+            config.check_interval = check_interval;
+        }
+        if let Some(health_check_interval) = req.health_check_interval {
+            config.health_check_interval = health_check_interval;
+        }
+    }
+
+    state.pppoe_auto.update_config(state.pppoe_auto.get_config().await).await;
+    let status = state.pppoe_auto.get_status().await;
+    Json(json!({ "status": "ok", "message": "Auto-connect configured", "autoconnect": status }))
+}
+
+// ── Monitoring handlers ──────────────────────────────────────────────
+
+/// Get current system metrics.
+#[utoipa::path(
+    get,
+    path = "/api/monitor/metrics",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "Current system metrics", body = Value)
+    )
+)]
+pub async fn get_monitor_metrics() -> Json<Value> {
+    match crate::services::monitor::get_current_metrics() {
+        Ok(Some(metrics)) => {
+            let health_score = crate::services::monitor::compute_health_score(&metrics);
+            Json(json!({
+                "status": "ok",
+                "health_score": health_score,
+                "metrics": metrics
+            }))
+        }
+        Ok(None) => Json(json!({
+            "status": "ok",
+            "health_score": 0,
+            "metrics": null,
+            "message": "No metrics collected yet"
+        })),
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+/// Get historical metrics for the last N hours.
+#[utoipa::path(
+    get,
+    path = "/api/monitor/history",
+    tag = "Monitoring",
+    params(
+        ("hours" = Option<u32>, Query, description = "Hours of history (default 1)"),
+        ("limit" = Option<u32>, Query, description = "Max data points (default 200)")
+    ),
+    responses(
+        (status = 200, description = "Historical metrics", body = Value)
+    )
+)]
+pub async fn get_monitor_history(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Json<Value> {
+    let hours = params.get("hours")
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(1);
+    let limit = params.get("limit")
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(200);
+
+    match crate::services::monitor::get_history(hours, limit) {
+        Ok(history) => Json(json!({
+            "status": "ok",
+            "hours": hours,
+            "count": history.len(),
+            "history": history
+        })),
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+/// Get active (unacknowledged) alerts.
+#[utoipa::path(
+    get,
+    path = "/api/monitor/alerts",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "Active alerts", body = Value)
+    )
+)]
+pub async fn get_monitor_alerts() -> Json<Value> {
+    match crate::services::monitor::get_active_alerts() {
+        Ok(alerts) => Json(json!({
+            "status": "ok",
+            "count": alerts.len(),
+            "alerts": alerts
+        })),
+        Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
+    }
+}
+
+/// Acknowledge an alert.
+#[utoipa::path(
+    post,
+    path = "/api/monitor/alerts/ack",
+    tag = "Monitoring",
+    request_body = crate::services::monitor::AlertAckRequest,
+    responses(
+        (status = 200, description = "Alert acknowledged", body = Value)
+    )
+)]
+pub async fn acknowledge_alert(
+    Json(req): Json<crate::services::monitor::AlertAckRequest>,
+) -> Json<Value> {
+    match crate::services::monitor::acknowledge_alert(req.alert_id, &req.acked_by) {
+        Ok(true) => Json(json!({
+            "status": "ok",
+            "message": format!("Alert {} acknowledged", req.alert_id)
+        })),
+        Ok(false) => Json(json!({
+            "status": "error",
+            "error": format!("Alert {} not found or already acknowledged", req.alert_id)
+        })),
         Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
     }
 }

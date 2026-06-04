@@ -30,6 +30,7 @@
 <div class="app">
   <nav>
     <a href="/">Dashboard</a>
+    <a href="/monitor">Monitor</a>
     <a href="/services">Services</a>
     <a href="/pppoe">PPPoE</a>
     <a href="/interfaces">Interfaces</a>

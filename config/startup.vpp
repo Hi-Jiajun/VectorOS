@@ -1,0 +1,64 @@
+! VectorOS VPP Startup Configuration
+! ====================================
+! This file is loaded by VPP on startup to configure interfaces.
+!
+! VF Interface Bindings:
+!   enp1s0 (WAN) -> wan0
+!   enp2s0 (LAN) -> lan0
+!   enp3s0 (LAN) -> lan1
+!
+! To apply: vppctl exec /etc/vectoros/startup.vpp
+! Or load at VPP startup via /etc/vpp/startup.conf:
+!   startup { exec /etc/vectoros/startup.vpp }
+
+! ── Logging ──────────────────────────────────────────────────────
+comment { VectorOS Interface Configuration }
+
+! ── Create host interfaces for VF binding (RDMA method) ──────────
+! Method 1: RDMA host-interface (no driver change, simplest)
+! create interface rdma host-if enp1s0 name wan0
+! create interface rdma host-if enp2s0 name lan0
+! create interface rdma host-if enp3s0 name lan1
+
+! Method 2: Host interfaces (alternative if RDMA not available)
+! create interface host wan0 host-if enp1s0
+! create interface host lan0 host-if enp2s0
+! create interface host lan1 host-if enp3s0
+
+! Method 3: DPDK binding (requires PCI addresses and vfio-pci driver)
+! create interface dpdk dev 0000:01:00.0 name wan0
+! create interface dpdk dev 0000:01:00.1 name lan0
+! create interface dpdk dev 0000:01:00.2 name lan1
+
+! ── Interface Configuration ──────────────────────────────────────
+! The following commands are executed after interface creation.
+! They are commented out and applied dynamically by the control plane.
+
+! WAN interface (wan0)
+! set interface ip address wan0 0.0.0.0/0
+! set interface mtu packet 1500 wan0
+! set interface state wan0 up
+
+! LAN interface (lan0)
+! set interface ip address lan0 192.168.1.1/24
+! set interface mtu packet 1500 lan0
+! set interface state lan0 up
+
+! LAN interface (lan1)
+! set interface ip address lan1 192.168.2.1/24
+! set interface mtu packet 1500 lan1
+! set interface state lan1 up
+
+! ── NAT Configuration ────────────────────────────────────────────
+! nat44 ei enable
+! nat44 ei add interface inside lan0
+! nat44 ei add interface outside wan0
+
+! ── DHCP Server (on LAN interface) ──────────────────────────────
+! dhcp4 server add-interface sw_if_index 2
+! dhcp4 server add-range 192.168.1.100 192.168.1.200
+! dhcp4 server set interface 2
+
+! ── IP Forwarding ────────────────────────────────────────────────
+! ip6 add del 0::0/0 via fib 0
+! set ip6 fib table 0 0::/0

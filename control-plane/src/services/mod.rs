@@ -12,6 +12,8 @@ pub mod ipv6;
 pub mod logger;
 pub mod logs;
 pub mod manager;
+pub mod monitor;
+pub mod pppoe_auto;
 pub mod qos;
 pub mod traffic;
 pub mod vpn;

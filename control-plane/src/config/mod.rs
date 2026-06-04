@@ -31,6 +31,55 @@ pub struct PppoeConfig {
     pub username: String,
     pub password: String,
     pub interface: String,
+    /// Auto-connect configuration
+    #[serde(default)]
+    pub autoconnect: Option<PppoeAutoConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PppoeAutoConfig {
+    /// Whether auto-connect is enabled.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Maximum retries before giving up. 0 = infinite.
+    #[serde(default = "default_max_retries")]
+    pub max_retries: u32,
+    /// Initial retry interval in seconds.
+    #[serde(default = "default_retry_interval")]
+    pub retry_interval: u64,
+    /// Exponential backoff multiplier.
+    #[serde(default = "default_backoff_factor")]
+    pub backoff_factor: f64,
+    /// Maximum retry interval cap in seconds.
+    #[serde(default = "default_max_retry_interval")]
+    pub max_retry_interval: u64,
+    /// Interval between connection status checks in seconds.
+    #[serde(default = "default_check_interval")]
+    pub check_interval: u64,
+    /// Interval between health checks while connected in seconds.
+    #[serde(default = "default_health_check_interval")]
+    pub health_check_interval: u64,
+}
+
+fn default_max_retries() -> u32 { 0 }
+fn default_retry_interval() -> u64 { 5 }
+fn default_backoff_factor() -> f64 { 2.0 }
+fn default_max_retry_interval() -> u64 { 300 }
+fn default_check_interval() -> u64 { 10 }
+fn default_health_check_interval() -> u64 { 60 }
+
+impl Default for PppoeAutoConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_retries: default_max_retries(),
+            retry_interval: default_retry_interval(),
+            backoff_factor: default_backoff_factor(),
+            max_retry_interval: default_max_retry_interval(),
+            check_interval: default_check_interval(),
+            health_check_interval: default_health_check_interval(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
