@@ -1836,7 +1836,7 @@
                 <div class="mc-value" id="mc-disk-val">--%</div>
               </div>
               <div class="donut-wrap" style="display:flex;align-items:center;gap:16px">
-                <div class="donut" id="mem-donut" style="width:76px;height:76px;border-radius:50%;position:relative;flex-shrink:0"></div>
+                <div class="donut" id="disk-donut" style="width:76px;height:76px;border-radius:50%;position:relative;flex-shrink:0"></div>
                 <div class="donut-legend" id="disk-legend" style="display:flex;flex-direction:column;gap:6px;flex:1"></div>
               </div>
             </div>
@@ -3092,7 +3092,7 @@
     function updateDiskDonut(disk) {
       const percent = disk.percent || 0, used = disk.used || 0, total = disk.total || 1, free = total - used;
       document.getElementById('mc-disk-val').innerHTML = percent + '% <small>' + t('of_total', {n: formatBytes(total)}) + '</small>';
-      const donut = document.getElementById('mem-donut');
+      const donut = document.getElementById('disk-donut');
       const legend = document.getElementById('disk-legend');
       if (!donut || !legend) return;
       donut.style.background = 'conic-gradient(var(--purple) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
