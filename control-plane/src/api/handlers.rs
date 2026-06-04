@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 use std::process::Command;
 use std::sync::Arc;
 use crate::api::AppState;
+use crate::auth::{LoginRequest, LoginResponse};
 
 #[derive(Debug, Deserialize)]
 pub struct PppoeConfig {
@@ -46,6 +47,29 @@ fn run_vpp_cmd(action: &str, args: &[(&str, &str)]) -> Result<Value, String> {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse output: {}", e))
+}
+
+pub async fn login(Json(req): Json<LoginRequest>) -> Json<Value> {
+    if crate::auth::verify_credentials(&req.username, &req.password) {
+        match crate::auth::generate_token(&req.username) {
+            Ok(token) => Json(json!({
+                "success": true,
+                "data": {
+                    "token": token,
+                    "expires_in": 86400
+                }
+            })),
+            Err(e) => Json(json!({
+                "success": false,
+                "error": { "code": "TOKEN_ERROR", "message": e.to_string() }
+            })),
+        }
+    } else {
+        Json(json!({
+            "success": false,
+            "error": { "code": "INVALID_CREDENTIALS", "message": "Invalid username or password" }
+        }))
+    }
 }
 
 pub async fn health() -> Json<Value> {
@@ -219,41 +243,23 @@ pub async fn save_config(Json(config): Json<Value>) -> Json<Value> {
     }
 }
 
-pub async fn get_dns_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/dns_manager.py");
-    cmd.arg("show");
+// ── DNS handlers (native Rust) ──────────────────────────────────────
 
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+pub async fn get_dns_status() -> Json<Value> {
+    match crate::services::dns::show() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn enable_dns() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/dns_manager.py");
-    cmd.arg("enable");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::dns::enable(crate::services::dns::DnsEnableConfig::default()) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
-// ── FRRouting handlers ─────────────────────────────────────────────
+// ── FRRouting handlers (native Rust) ───────────────────────────────
 
 #[derive(Debug, Deserialize)]
 pub struct AddRouteRequest {
@@ -271,132 +277,62 @@ pub struct DelRouteRequest {
     pub distance: Option<u32>,
 }
 
-/// Run a Python FRR command
-fn run_frr_cmd(action: &str, args: &[(&str, &str)]) -> Result<Value, String> {
-    let mut cmd = Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/frr_manager.py");
-    cmd.arg(action);
-
-    for (key, value) in args {
-        cmd.arg(format!("--{}", key));
-        cmd.arg(value);
-    }
-
-    let output = cmd.output().map_err(|e| format!("Failed to run command: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Command failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse output: {}", e))
-}
-
 pub async fn get_frr_status() -> Json<Value> {
-    match run_frr_cmd("show", &[]) {
-        Ok(data) => Json(data),
+    match crate::services::frr::get_status() {
+        Ok(status) => Json(json!(status)),
         Err(e) => Json(json!({ "error": e })),
     }
 }
 
 pub async fn get_frr_routes() -> Json<Value> {
-    match run_frr_cmd("routes", &[]) {
-        Ok(data) => Json(data),
+    match crate::services::frr::show_routes() {
+        Ok(routes) => Json(json!({ "routes": routes })),
         Err(e) => Json(json!({ "error": e })),
     }
 }
 
 pub async fn add_frr_route(Json(req): Json<AddRouteRequest>) -> Json<Value> {
-    let mut args: Vec<(&str, &str)> = Vec::new();
-
-    // We need to pass owned strings so we can borrow them
-    let prefix_buf = req.prefix;
-    let nexthop_buf = req.nexthop.unwrap_or_default();
-    let interface_buf = req.interface.unwrap_or_default();
-    let distance_buf = req.distance.map(|d| d.to_string()).unwrap_or_default();
-
-    args.push(("prefix", &prefix_buf));
-    if !nexthop_buf.is_empty() {
-        args.push(("nexthop", &nexthop_buf));
-    }
-    if !interface_buf.is_empty() {
-        args.push(("interface", &interface_buf));
-    }
-    if !distance_buf.is_empty() {
-        args.push(("distance", &distance_buf));
-    }
-
-    match run_frr_cmd("add-route", &args) {
-        Ok(data) => Json(data),
+    match crate::services::frr::add_route(
+        &req.prefix,
+        req.nexthop.as_deref(),
+        req.interface.as_deref(),
+        req.distance,
+    ) {
+        Ok(msg) => Json(json!({ "status": "ok", "message": msg })),
         Err(e) => Json(json!({ "error": e })),
     }
 }
 
 pub async fn del_frr_route(Json(req): Json<DelRouteRequest>) -> Json<Value> {
-    let mut args: Vec<(&str, &str)> = Vec::new();
-
-    let prefix_buf = req.prefix;
-    let nexthop_buf = req.nexthop.unwrap_or_default();
-    let interface_buf = req.interface.unwrap_or_default();
-    let distance_buf = req.distance.map(|d| d.to_string()).unwrap_or_default();
-
-    args.push(("prefix", &prefix_buf));
-    if !nexthop_buf.is_empty() {
-        args.push(("nexthop", &nexthop_buf));
-    }
-    if !interface_buf.is_empty() {
-        args.push(("interface", &interface_buf));
-    }
-    if !distance_buf.is_empty() {
-        args.push(("distance", &distance_buf));
-    }
-
-    match run_frr_cmd("del-route", &args) {
-        Ok(data) => Json(data),
+    match crate::services::frr::del_route(
+        &req.prefix,
+        req.nexthop.as_deref(),
+        req.interface.as_deref(),
+        req.distance,
+    ) {
+        Ok(msg) => Json(json!({ "status": "ok", "message": msg })),
         Err(e) => Json(json!({ "error": e })),
     }
 }
 
-pub async fn get_dhcp_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/dhcp_manager.py");
-    cmd.arg("show");
+// ── DHCP handlers (native Rust) ────────────────────────────────────
 
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+pub async fn get_dhcp_status() -> Json<Value> {
+    match crate::services::dhcp::show() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn enable_dhcp() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/dhcp_manager.py");
-    cmd.arg("enable");
-    cmd.arg("--interface").arg("lan0");
-    cmd.arg("--start-ip").arg("192.168.1.100");
-    cmd.arg("--end-ip").arg("192.168.1.200");
-    cmd.arg("--gateway").arg("192.168.1.1");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    let config = crate::services::dhcp::DhcpEnableConfig::default();
+    match crate::services::dhcp::enable(config) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
-// --- Log Management ---
+// ── Log management handlers (native Rust) ──────────────────────────
 
 #[derive(Debug, Deserialize)]
 pub struct LogQuery {
@@ -408,56 +344,28 @@ pub struct LogQuery {
 }
 
 pub async fn get_logs(Json(query): Json<LogQuery>) -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/log_manager.py");
-    cmd.arg("show");
+    let q = crate::services::logs::LogQuery {
+        sources: query.sources,
+        level: query.level,
+        lines: query.lines,
+        filter: query.filter,
+        limit: query.limit,
+    };
 
-    if let Some(ref sources) = query.sources {
-        cmd.arg("--sources").arg(sources);
-    }
-    if let Some(ref level) = query.level {
-        cmd.arg("--level").arg(level);
-    }
-    if let Some(lines) = query.lines {
-        cmd.arg("--lines").arg(lines.to_string());
-    }
-    if let Some(ref filter) = query.filter {
-        cmd.arg("--filter").arg(filter);
-    }
-    if let Some(limit) = query.limit {
-        cmd.arg("--limit").arg(limit.to_string());
-    }
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::logs::show(q) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn clear_logs() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/log_manager.py");
-    cmd.arg("clear");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::logs::clear(None) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
-// --- Firewall Management ---
+// ── Firewall management handlers (native Rust) ─────────────────────
 
 #[derive(Debug, Deserialize)]
 pub struct FirewallRuleRequest {
@@ -476,159 +384,73 @@ pub struct FirewallRuleDelete {
 }
 
 pub async fn get_firewall_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/firewall_manager.py");
-    cmd.arg("show");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::firewall::show() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn add_firewall_rule(Json(req): Json<FirewallRuleRequest>) -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/firewall_manager.py");
-    cmd.arg("add-rule");
-    cmd.arg("--action").arg(&req.action);
+    let rule_req = crate::services::firewall::AddRuleRequest {
+        action: req.action,
+        src_ip: req.src_ip,
+        dst_ip: req.dst_ip,
+        src_port: req.src_port,
+        dst_port: req.dst_port,
+        protocol: req.protocol,
+        description: req.description,
+    };
 
-    if let Some(ref src_ip) = req.src_ip {
-        cmd.arg("--src-ip").arg(src_ip);
-    }
-    if let Some(ref dst_ip) = req.dst_ip {
-        cmd.arg("--dst-ip").arg(dst_ip);
-    }
-    if let Some(src_port) = req.src_port {
-        cmd.arg("--src-port").arg(src_port.to_string());
-    }
-    if let Some(dst_port) = req.dst_port {
-        cmd.arg("--dst-port").arg(dst_port.to_string());
-    }
-    if let Some(ref protocol) = req.protocol {
-        cmd.arg("--protocol").arg(protocol);
-    }
-    if let Some(ref description) = req.description {
-        cmd.arg("--description").arg(description);
-    }
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::firewall::add_rule(rule_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn delete_firewall_rule(Json(req): Json<FirewallRuleDelete>) -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/firewall_manager.py");
-    cmd.arg("del-rule");
-    cmd.arg("--id").arg(req.id.to_string());
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::firewall::del_rule(req.id) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn enable_firewall() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/firewall_manager.py");
-    cmd.arg("enable");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::firewall::enable() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn disable_firewall() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/firewall_manager.py");
-    cmd.arg("disable");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::firewall::disable() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
-// IPv6 handlers
-pub async fn get_ipv6_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/ipv6_manager.py");
-    cmd.arg("show");
+// ── IPv6 handlers (native Rust) ────────────────────────────────────
 
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+pub async fn get_ipv6_status() -> Json<Value> {
+    match crate::services::ipv6::show() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn get_ipv6_neighbors() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/ipv6_manager.py");
-    cmd.arg("show-ndp");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::services::ipv6::show_ndp() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn get_dhcpv6_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/dhcpv6_manager.py");
-    cmd.arg("show");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
-    }
+    // DHCPv6 is not yet implemented natively; return a stub response
+    Json(json!({
+        "status": "inactive",
+        "message": "DHCPv6 management not yet implemented"
+    }))
 }
+
+// ── Backup management handlers ─────────────────────────────────────
+

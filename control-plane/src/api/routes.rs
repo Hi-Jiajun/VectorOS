@@ -5,7 +5,10 @@ use crate::api::{handlers, AppState};
 
 pub fn api_routes() -> Router<Arc<AppState>> {
     Router::new()
+        // Public routes (no auth required)
         .route("/api/health", get(handlers::health))
+        .route("/api/auth/login", post(handlers::login))
+        // Protected routes
         .route("/api/config", get(handlers::get_config))
         .route("/api/config/save", post(handlers::save_config))
         .route("/api/interfaces", get(handlers::get_interfaces))

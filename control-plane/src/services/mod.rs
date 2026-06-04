@@ -1,5 +1,7 @@
+pub mod dhcp;
+pub mod dns;
+pub mod firewall;
 pub mod frr;
+pub mod ipv6;
 pub mod logger;
-
-// Services module for VectorOS control plane
-// Provides integration with network services: FRRouting, DHCP, DNS, etc.
+pub mod logs;

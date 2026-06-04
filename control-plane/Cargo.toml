@@ -38,3 +38,9 @@ byteorder = "1"
 
 # System info
 num_cpus = "1"
+
+# Authentication
+jsonwebtoken = "9"
+bcrypt = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
