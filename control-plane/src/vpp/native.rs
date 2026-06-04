@@ -506,9 +506,9 @@ pub fn get_vpp_performance() -> Result<VppPerformance> {
             sessions_discovery: raw["pppoe"]["discovery"].as_u64().unwrap_or(0) as u32,
         },
         memory: VppMemory {
-            used: raw["memory"]["used_mb"].as_u64().unwrap_or(0),
-            free: raw["memory"]["free_mb"].as_u64().unwrap_or(0),
-            total: raw["memory"]["total_mb"].as_u64().unwrap_or(0),
+            used: raw["memory"]["used_mb"].as_f64().unwrap_or(0.0) as u64,
+            free: raw["memory"]["free_mb"].as_f64().unwrap_or(0.0) as u64,
+            total: raw["memory"]["total_mb"].as_f64().unwrap_or(0.0) as u64,
             percent: raw["memory"]["percent"].as_f64().unwrap_or(0.0),
         },
         threads: VppThreads {

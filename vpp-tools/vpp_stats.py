@@ -144,13 +144,10 @@ def get_memory():
             parts = line.split()
             try:
                 # Parse "total: 512.00M, used: 320.76M, free: 191.24M"
-                total_str = parts[1].rstrip("Mm,")
-                used_str = parts[3].rstrip("Mm,")
-                free_str = parts[5].rstrip("Mm,")
-
-                total = float(total_str)
-                used = float(used_str)
-                free = float(free_str)
+                # parts: ['total:', '512.00M,', 'used:', '320.76M,', 'free:', '191.24M,', ...]
+                total = float(parts[1].rstrip("Mm,"))
+                used = float(parts[3].rstrip("Mm,"))
+                free = float(parts[5].rstrip("Mm,"))
 
                 return {
                     "total_mb": total,
@@ -158,8 +155,8 @@ def get_memory():
                     "free_mb": free,
                     "percent": (used / total * 100) if total > 0 else 0
                 }
-            except (ValueError, IndexError):
-                pass
+            except (ValueError, IndexError) as e:
+                continue
 
     return {"total_mb": 0, "used_mb": 0, "free_mb": 0, "percent": 0}
 
