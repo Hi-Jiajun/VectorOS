@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""VectorOS VPP Performance Metrics Collector
-
-Collects VPP-specific performance metrics via vppctl commands:
-- Packet processing rate (packets/second)
-- Interface throughput (bytes/second)
-- NAT session count and rate
-- PPPoE session statistics
-- Memory usage (VPP heap)
-- Worker thread utilization
-- Drop/error counters
-
-Stores previous values in a temp file for rate calculation between calls.
-"""
+"""VectorOS VPP Performance Metrics Collector"""
 
 import json
 import os
@@ -32,363 +20,283 @@ def run_vppctl(cmd_args, timeout=10):
             timeout=timeout,
         )
         return result.stdout.strip(), result.returncode
-    except FileNotFoundError:
-        return "", 1
-    except subprocess.TimeoutExpired:
-        return "", 1
     except Exception:
         return "", 1
 
 
 def parse_show_interface(output):
-    """Parse 'show interface' output into per-interface stats.
-
-    VPP 'show interface' output looks like:
-
-        Name               Idx    State  MTU (L3/IP4/IP6/MH/V4/V6)
-        GigabitEthernet0/0/0  1     up   9000  ...
-        ...
-        rx                    packets                    bytes
-        GigabitEthernet0/0/0   123456                 98765432
-        ...
-
-    We return a dict mapping interface name -> {rx_packets, tx_packets, rx_bytes, tx_bytes}.
-    """
+    """Parse 'show interface' output into per-interface stats."""
     interfaces = {}
     if not output:
         return interfaces
 
-    section = None  # "header", "rx", "tx"
+    current_iface = None
     for line in output.split("\n"):
         stripped = line.strip()
         if not stripped:
-            section = None
             continue
 
-        # Detect section transitions
-        if stripped.startswith("rx") and "packets" in stripped:
-            section = "rx"
-            continue
-        if stripped.startswith("tx") and "packets" in stripped:
-            section = "tx"
+        # Skip header line
+        if "Name" in stripped and "Idx" in stripped:
             continue
 
-        if section in ("rx", "tx"):
+        # Check if this line starts a new interface
+        # Interface lines start with a name (no leading whitespace in original)
+        if not line.startswith(" "):
             parts = stripped.split()
-            if len(parts) >= 2:
+            if len(parts) >= 4:
                 name = parts[0]
                 try:
-                    pkts = int(parts[1])
-                    byt = int(parts[2]) if len(parts) >= 3 else 0
-                except ValueError:
-                    continue
-                if name not in interfaces:
-                    interfaces[name] = {
+                    idx = int(parts[1])
+                    # This is an interface header line
+                    current_iface = name
+                    interfaces[current_iface] = {
+                        "name": name,
+                        "sw_if_index": idx,
+                        "state": parts[2],
                         "rx_packets": 0,
                         "tx_packets": 0,
                         "rx_bytes": 0,
                         "tx_bytes": 0,
+                        "drops": 0,
+                        "errors": 0,
                     }
-                if section == "rx":
-                    interfaces[name]["rx_packets"] = pkts
-                    interfaces[name]["rx_bytes"] = byt
-                else:
-                    interfaces[name]["tx_packets"] = pkts
-                    interfaces[name]["tx_bytes"] = byt
+                except ValueError:
+                    pass
+            continue
+
+        # Parse counter lines (indented)
+        if current_iface and stripped:
+            parts = stripped.split()
+            if len(parts) >= 2:
+                counter_name = parts[0]
+                try:
+                    value = int(parts[-1])
+                    if counter_name == "rx" and len(parts) >= 3:
+                        if parts[1] == "packets":
+                            interfaces[current_iface]["rx_packets"] = value
+                        elif parts[1] == "bytes":
+                            interfaces[current_iface]["rx_bytes"] = value
+                    elif counter_name == "tx" and len(parts) >= 3:
+                        if parts[1] == "packets":
+                            interfaces[current_iface]["tx_packets"] = value
+                        elif parts[1] == "bytes":
+                            interfaces[current_iface]["tx_bytes"] = value
+                    elif counter_name == "drops":
+                        interfaces[current_iface]["drops"] = value
+                    elif counter_name in ("tx-error", "rx-error"):
+                        interfaces[current_iface]["errors"] += value
+                except ValueError:
+                    pass
 
     return interfaces
 
 
-def parse_nat_sessions(output):
-    """Parse 'show nat44 ei sessions' to count active sessions."""
-    count = 0
-    total_rate = 0.0
-    if not output:
-        return count, total_rate
+def get_nat_sessions():
+    """Get NAT session count."""
+    output, rc = run_vppctl(["show", "nat44", "ei", "sessions"])
+    if rc != 0:
+        return 0
 
+    total = 0
     for line in output.split("\n"):
-        stripped = line.strip()
-        if not stripped:
-            continue
-        # Lines starting with a number or protocol are session entries
-        if stripped and stripped[0].isdigit():
-            count += 1
-        # Look for "established" or "syn" states
-        if "established" in stripped.lower():
-            count += 1
-
-    return count, total_rate
-
-
-def parse_pppoe_sessions(output):
-    """Parse 'show pppoe client' output for session stats."""
-    result = {
-        "total_clients": 0,
-        "sessions_active": 0,
-        "sessions_discovery": 0,
-    }
-    if not output:
-        return result
-
-    for line in output.split("\n"):
-        stripped = line.strip()
-        if "sw-if-index" not in stripped:
-            continue
-        result["total_clients"] += 1
-        if "PPPOE_CLIENT_SESSION" in stripped:
-            result["sessions_active"] += 1
-        elif "PPPOE_CLIENT_DISCOVERY" in stripped:
-            result["sessions_discovery"] += 1
-
-    return result
-
-
-def parse_vpp_memory(output):
-    """Parse 'show memory' output for VPP heap usage."""
-    result = {
-        "used": 0,
-        "free": 0,
-        "total": 0,
-        "percent": 0.0,
-    }
-    if not output:
-        return result
-
-    for line in output.split("\n"):
-        stripped = line.strip().lower()
-        # Look for lines with "used" and "free" keywords
-        if "used:" in stripped or "allocated" in stripped:
-            parts = stripped.split()
-            for i, p in enumerate(parts):
-                if p in ("used:", "allocated:", "used", "allocated"):
+        if "sessions" in line.lower():
+            parts = line.split()
+            for i, part in enumerate(parts):
+                if part == "sessions" and i > 0:
                     try:
-                        val = int(parts[i + 1])
-                        result["used"] = val
-                    except (ValueError, IndexError):
+                        total += int(parts[i-1])
+                    except ValueError:
                         pass
-        if "free:" in stripped or "available" in stripped:
-            parts = stripped.split()
-            for i, p in enumerate(parts):
-                if p in ("free:", "available:", "free", "available"):
-                    try:
-                        val = int(parts[i + 1])
-                        result["free"] = val
-                    except (ValueError, IndexError):
-                        pass
-
-    result["total"] = result["used"] + result["free"]
-    if result["total"] > 0:
-        result["percent"] = round((result["used"] / result["total"]) * 100, 2)
-
-    return result
+    return total
 
 
-def parse_threads(output):
-    """Parse 'show threads' for worker thread info."""
-    result = {
-        "worker_threads": 0,
-        "thread_details": [],
-    }
-    if not output:
-        return result
+def get_pppoe_status():
+    """Get PPPoE client status."""
+    output, rc = run_vppctl(["show", "pppoe", "client"])
+    if rc != 0:
+        return {"active": 0, "discovery": 0, "total": 0}
+
+    active = 0
+    discovery = 0
+    total = 0
 
     for line in output.split("\n"):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("Name") or stripped.startswith("---"):
-            continue
-        # Thread lines typically have: name, lcore, pid, type
-        if "worker" in stripped.lower() or "vpp" in stripped.lower():
-            result["worker_threads"] += 1
-            parts = stripped.split()
-            if len(parts) >= 2:
-                result["thread_details"].append({
-                    "name": parts[0],
-                    "lcore": parts[1] if len(parts) > 1 else "",
-                })
+        if "sw-if-index" in line:
+            total += 1
+            if "SESSION" in line:
+                active += 1
+            elif "DISCOVERY" in line:
+                discovery += 1
 
-    return result
+    return {"active": active, "discovery": discovery, "total": total}
 
 
-def parse_errors(output):
-    """Parse 'show errors' for drop/error counters."""
-    result = {
-        "total_drops": 0,
-        "total_errors": 0,
-        "counters": [],
-    }
-    if not output:
-        return result
+def get_memory():
+    """Get VPP memory usage."""
+    output, rc = run_vppctl(["show", "memory"])
+    if rc != 0:
+        return {"total_mb": 0, "used_mb": 0, "free_mb": 0, "percent": 0}
 
     for line in output.split("\n"):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("Count") or stripped.startswith("---"):
-            continue
-        # Error lines typically: "error-name   counter_value"
-        parts = stripped.split()
-        if len(parts) >= 2:
+        if "total:" in line and "used:" in line:
+            parts = line.split()
             try:
-                val = int(parts[-1])
-                name = " ".join(parts[:-1])
-                result["counters"].append({"name": name, "count": val})
-                if "drop" in name.lower():
-                    result["total_drops"] += val
-                else:
-                    result["total_errors"] += val
+                total_idx = parts.index("total:") + 1
+                used_idx = parts.index("used:") + 1
+                free_idx = parts.index("free:") + 1
+
+                total = float(parts[total_idx].rstrip("Mm"))
+                used = float(parts[used_idx].rstrip("Mm"))
+                free = float(parts[free_idx].rstrip("Mm"))
+
+                return {
+                    "total_mb": total,
+                    "used_mb": used,
+                    "free_mb": free,
+                    "percent": (used / total * 100) if total > 0 else 0
+                }
+            except (ValueError, IndexError):
+                pass
+
+    return {"total_mb": 0, "used_mb": 0, "free_mb": 0, "percent": 0}
+
+
+def get_threads():
+    """Get VPP thread info."""
+    output, rc = run_vppctl(["show", "threads"])
+    if rc != 0:
+        return {"count": 0, "threads": []}
+
+    threads = []
+    for line in output.split("\n"):
+        parts = line.split()
+        if len(parts) >= 3:
+            try:
+                thread_id = int(parts[0])
+                name = parts[1]
+                threads.append({"id": thread_id, "name": name})
             except ValueError:
-                continue
+                pass
 
-    return result
-
-
-def load_previous():
-    """Load previous snapshot from temp file."""
-    try:
-        with open(PREV_FILE, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+    return {"count": len(threads), "threads": threads}
 
 
-def save_previous(data):
-    """Save current snapshot to temp file."""
-    try:
-        with open(PREV_FILE, "w") as f:
-            json.dump(data, f)
-    except OSError:
-        pass
+def get_errors():
+    """Get VPP error counters."""
+    output, rc = run_vppctl(["show", "errors"])
+    if rc != 0:
+        return {"total": 0, "counters": []}
+
+    counters = []
+    total = 0
+    for line in output.split("\n"):
+        parts = line.split()
+        if len(parts) >= 3:
+            try:
+                count = int(parts[0])
+                if count > 0:
+                    counters.append({
+                        "count": count,
+                        "node": parts[1] if len(parts) > 1 else "",
+                        "reason": " ".join(parts[2:]) if len(parts) > 2 else ""
+                    })
+                    total += count
+            except ValueError:
+                pass
+
+    return {"total": total, "counters": counters[:20]}  # Top 20
 
 
-def calculate_rate(current, previous, key):
-    """Calculate per-second rate for a given metric key."""
-    if previous is None:
-        return 0.0
-    c = current.get(key, 0)
-    p = previous.get(key, 0)
-    dt = current.get("_timestamp", 0) - previous.get("_timestamp", 0)
-    if dt <= 0:
-        return 0.0
-    return round((c - p) / dt, 2)
+def calculate_rates(current, previous, elapsed):
+    """Calculate per-second rates."""
+    if not previous or elapsed <= 0:
+        return {}
 
+    rates = {}
+    for iface_name, curr_stats in current.get("interfaces", {}).items():
+        prev_stats = previous.get("interfaces", {}).get(iface_name, {})
+        if prev_stats:
+            rates[iface_name] = {
+                "rx_pps": (curr_stats.get("rx_packets", 0) - prev_stats.get("rx_packets", 0)) / elapsed,
+                "tx_pps": (curr_stats.get("tx_packets", 0) - prev_stats.get("tx_packets", 0)) / elapsed,
+                "rx_bps": (curr_stats.get("rx_bytes", 0) - prev_stats.get("rx_bytes", 0)) * 8 / elapsed,
+                "tx_bps": (curr_stats.get("tx_bytes", 0) - prev_stats.get("tx_bytes", 0)) * 8 / elapsed,
+            }
 
-def collect_metrics():
-    """Collect all VPP performance metrics."""
-    now = time.time()
-    prev = load_previous()
-
-    # --- Interface throughput ---
-    iface_output, _ = run_vppctl(["show", "interface"])
-    iface_raw = parse_show_interface(iface_output)
-
-    # Sum all interfaces
-    total_rx_packets = sum(v["rx_packets"] for v in iface_raw.values())
-    total_tx_packets = sum(v["tx_packets"] for v in iface_raw.values())
-    total_rx_bytes = sum(v["rx_bytes"] for v in iface_raw.values())
-    total_tx_bytes = sum(v["tx_bytes"] for v in iface_raw.values())
-
-    # Calculate rates
-    prev_ifaces = prev.get("interfaces", {}) if prev else {}
-    prev_rx_pkts = prev_ifaces.get("_total_rx_packets", 0)
-    prev_tx_pkts = prev_ifaces.get("_total_tx_packets", 0)
-    prev_rx_bytes = prev_ifaces.get("_total_rx_bytes", 0)
-    prev_tx_bytes = prev_ifaces.get("_total_tx_bytes", 0)
-    prev_ts = prev.get("_timestamp", 0) if prev else 0
-    dt = now - prev_ts if prev_ts > 0 else 0
-
-    rx_pps = round((total_rx_packets - prev_rx_pkts) / dt, 2) if dt > 0 else 0.0
-    tx_pps = round((total_tx_packets - prev_tx_pkts) / dt, 2) if dt > 0 else 0.0
-    rx_bps = round((total_rx_bytes - prev_rx_bytes) / dt, 2) if dt > 0 else 0.0
-    tx_bps = round((total_tx_bytes - prev_tx_bytes) / dt, 2) if dt > 0 else 0.0
-
-    # Per-interface detail
-    iface_details = []
-    for name, stats in iface_raw.items():
-        prev_s = prev_ifaces.get(name, {}) if prev else {}
-        p_rx = prev_s.get("rx_packets", 0)
-        p_tx = prev_s.get("tx_packets", 0)
-        p_rxb = prev_s.get("rx_bytes", 0)
-        p_txb = prev_s.get("tx_bytes", 0)
-        iface_details.append({
-            "name": name,
-            "rx_packets": stats["rx_packets"],
-            "tx_packets": stats["tx_packets"],
-            "rx_bytes": stats["rx_bytes"],
-            "tx_bytes": stats["tx_bytes"],
-            "rx_pps": round((stats["rx_packets"] - p_rx) / dt, 2) if dt > 0 else 0.0,
-            "tx_pps": round((stats["tx_packets"] - p_tx) / dt, 2) if dt > 0 else 0.0,
-            "rx_bps": round((stats["rx_bytes"] - p_rxb) / dt, 2) if dt > 0 else 0.0,
-            "tx_bps": round((stats["tx_bytes"] - p_txb) / dt, 2) if dt > 0 else 0.0,
-        })
-
-    # --- NAT ---
-    nat_output, _ = run_vppctl(["show", "nat44", "ei", "sessions"])
-    nat_session_count, _ = parse_nat_sessions(nat_output)
-    prev_nat = prev.get("nat", {}) if prev else {}
-    prev_nat_sessions = prev_nat.get("session_count", 0)
-    nat_session_rate = round((nat_session_count - prev_nat_sessions) / dt, 2) if dt > 0 else 0.0
-
-    # --- PPPoE ---
-    pppoe_output, _ = run_vppctl(["show", "pppoe", "client"])
-    pppoe_stats = parse_pppoe_sessions(pppoe_output)
-
-    # --- Memory ---
-    mem_output, _ = run_vppctl(["show", "memory"])
-    mem_stats = parse_vpp_memory(mem_output)
-
-    # --- Threads ---
-    thread_output, _ = run_vppctl(["show", "threads"])
-    thread_stats = parse_threads(thread_output)
-
-    # --- Errors ---
-    error_output, _ = run_vppctl(["show", "errors"])
-    error_stats = parse_errors(error_output)
-
-    # --- Packet processing rate ---
-    packet_rate = {
-        "rx_packets_per_sec": rx_pps,
-        "tx_packets_per_sec": tx_pps,
-        "rx_bytes_per_sec": rx_bps,
-        "tx_bytes_per_sec": tx_bps,
-    }
-
-    # Build current snapshot for next rate calculation
-    current_snapshot = {
-        "_timestamp": now,
-        "interfaces": {
-            "_total_rx_packets": total_rx_packets,
-            "_total_tx_packets": total_tx_packets,
-            "_total_rx_bytes": total_rx_bytes,
-            "_total_tx_bytes": total_tx_bytes,
-        },
-        "nat": {"session_count": nat_session_count},
-    }
-    # Store per-interface totals
-    for name, stats in iface_raw.items():
-        current_snapshot["interfaces"][name] = stats
-
-    save_previous(current_snapshot)
-
-    return {
-        "timestamp": now,
-        "packet_rate": packet_rate,
-        "interfaces": iface_details,
-        "nat": {
-            "session_count": nat_session_count,
-            "session_rate": nat_session_rate,
-        },
-        "pppoe": pppoe_stats,
-        "memory": mem_stats,
-        "threads": thread_stats,
-        "errors": error_stats,
-    }
+    return rates
 
 
 def main():
+    now = time.time()
+
+    # Load previous snapshot
+    previous = None
+    if os.path.exists(PREV_FILE):
+        try:
+            with open(PREV_FILE) as f:
+                prev_data = json.load(f)
+                previous = prev_data.get("data")
+                prev_time = prev_data.get("timestamp", 0)
+        except Exception:
+            pass
+
+    # Collect current metrics
+    iface_output, _ = run_vppctl(["show", "interface"])
+    interfaces = parse_show_interface(iface_output)
+
+    nat_sessions = get_nat_sessions()
+    pppoe = get_pppoe_status()
+    memory = get_memory()
+    threads = get_threads()
+    errors = get_errors()
+
+    # Calculate rates
+    elapsed = now - (prev_time if previous else now)
+    rates = calculate_rates({"interfaces": interfaces}, previous, elapsed)
+
+    # Build result
+    result = {
+        "timestamp": now,
+        "packet_rate": {
+            "rx_packets_per_sec": sum(r.get("rx_pps", 0) for r in rates.values()),
+            "tx_packets_per_sec": sum(r.get("tx_pps", 0) for r in rates.values()),
+            "rx_bytes_per_sec": sum(r.get("rx_bps", 0) for r in rates.values()),
+            "tx_bytes_per_sec": sum(r.get("tx_bps", 0) for r in rates.values()),
+        },
+        "interfaces": [
+            {
+                "name": name,
+                "rx_packets": stats.get("rx_packets", 0),
+                "tx_packets": stats.get("tx_packets", 0),
+                "rx_bytes": stats.get("rx_bytes", 0),
+                "tx_bytes": stats.get("tx_bytes", 0),
+                "drops": stats.get("drops", 0),
+                "errors": stats.get("errors", 0),
+                "rx_pps": rates.get(name, {}).get("rx_pps", 0),
+                "tx_pps": rates.get(name, {}).get("tx_pps", 0),
+                "rx_bps": rates.get(name, {}).get("rx_bps", 0),
+                "tx_bps": rates.get(name, {}).get("tx_bps", 0),
+            }
+            for name, stats in interfaces.items()
+        ],
+        "nat": {
+            "sessions": nat_sessions,
+        },
+        "pppoe": pppoe,
+        "memory": memory,
+        "threads": threads,
+        "errors": errors,
+    }
+
+    # Save current snapshot
     try:
-        metrics = collect_metrics()
-        print(json.dumps(metrics, indent=2))
-    except Exception as e:
-        print(json.dumps({"error": str(e)}))
-        sys.exit(1)
+        with open(PREV_FILE, "w") as f:
+            json.dump({"timestamp": now, "data": {"interfaces": interfaces}}, f)
+    except Exception:
+        pass
+
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
