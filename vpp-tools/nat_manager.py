@@ -1,118 +1,98 @@
 #!/usr/bin/env python3
-"""VectorOS NAT Manager - Python wrapper for VPP NAT API"""
+"""VectorOS NAT Manager - Python wrapper for VPP NAT"""
 
 import sys
 import json
 import argparse
+import subprocess
 
-sys.path.insert(0, '/usr/lib/python3/dist-packages')
-from vpp_papi import VPPApiClient
+def run_vppctl(cmd):
+    """Run a vppctl command"""
+    try:
+        result = subprocess.run(
+            ['vppctl'] + cmd.split(),
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.stdout.strip(), result.stderr.strip(), result.returncode
+    except Exception as e:
+        return '', str(e), 1
 
-def connect():
-    api = VPPApiClient()
-    api.connect('vectoros-nat')
-    return api
-
-def nat_enable(api, inside_if, outside_if):
+def nat_enable(inside_if='lan0', outside_if='pppoe-wan0'):
     """Enable NAT44 EI on interfaces"""
-    try:
-        # Enable NAT44 EI plugin
-        result = api.api.nat44_ei_plugin_enable_disable(
-            enable=True,
-            sessions=65536,
-            users=8192
-        )
-        print(f'NAT enable result: {result}', file=sys.stderr)
+    errors = []
 
-        # Set inside interface (LAN)
-        result = api.api.nat44_ei_interface_add_del_feature(
-            sw_if_index=inside_if,
-            is_add=True,
-            is_inside=True
-        )
-        print(f'Inside interface result: {result}', file=sys.stderr)
+    # Enable NAT plugin
+    stdout, stderr, rc = run_vppctl('nat44 ei plugin enable sessions 65536 users 8192')
+    if rc != 0 and 'already enabled' not in stderr:
+        errors.append(f'NAT enable: {stderr}')
 
-        # Set outside interface (PPPoE)
-        result = api.api.nat44_ei_interface_add_del_feature(
-            sw_if_index=outside_if,
-            is_add=True,
-            is_inside=False
-        )
-        print(f'Outside interface result: {result}', file=sys.stderr)
+    # Set inside/outside interfaces
+    stdout, stderr, rc = run_vppctl(f'set interface nat44 ei in {inside_if} out {outside_if}')
+    if rc != 0:
+        errors.append(f'Interface config: {stderr}')
 
-        # Add interface address for NAT
-        result = api.api.nat44_ei_add_del_interface_addr(
-            sw_if_index=outside_if,
-            is_add=True
-        )
-        print(f'Interface addr result: {result}', file=sys.stderr)
+    # Add interface address
+    stdout, stderr, rc = run_vppctl(f'nat44 ei add interface address {outside_if}')
+    if rc != 0:
+        errors.append(f'Address config: {stderr}')
 
-        return {'status': 'ok', 'message': 'NAT enabled'}
-    except Exception as e:
-        return {'error': str(e)}
+    if errors:
+        return {'error': '; '.join(errors)}
+    return {'status': 'ok', 'message': 'NAT enabled'}
 
-def nat_disable(api):
+def nat_disable():
     """Disable NAT44 EI"""
-    try:
-        result = api.api.nat44_ei_plugin_enable_disable(enable=False)
-        return {'status': 'ok', 'message': 'NAT disabled'}
-    except Exception as e:
-        return {'error': str(e)}
+    # VPP doesn't have a direct disable command, need to remove interfaces
+    stdout, stderr, rc = run_vppctl('nat44 ei plugin disable')
+    if rc != 0:
+        return {'error': stderr}
+    return {'status': 'ok', 'message': 'NAT disabled'}
 
-def nat_show(api):
+def nat_show():
     """Show NAT status"""
-    try:
-        interfaces = []
-        try:
-            result = api.api.nat44_ei_interface_dump()
-            for iface in result:
-                interfaces.append({
-                    'sw_if_index': iface.sw_if_index,
-                    'is_inside': iface.is_inside,
-                })
-        except Exception as e:
-            print(f'Interface dump error: {e}', file=sys.stderr)
+    result = {'interfaces': [], 'sessions': []}
 
-        sessions = []
-        try:
-            result = api.api.nat44_ei_user_session_dump()
-            for session in result[:10]:
-                sessions.append({
-                    'src': str(session.in_src_address),
-                    'dst': str(session.in_dst_address),
-                    'outside_src': str(session.out_src_address),
-                    'outside_dst': str(session.out_dst_address),
-                })
-        except Exception as e:
-            print(f'Session dump error: {e}', file=sys.stderr)
+    # Get NAT interfaces
+    stdout, stderr, rc = run_vppctl('show nat44 ei interfaces')
+    if rc == 0 and stdout:
+        for line in stdout.split('\n'):
+            line = line.strip()
+            if line and 'NAT44 interfaces:' not in line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    result['interfaces'].append({
+                        'name': parts[0],
+                        'direction': parts[1]
+                    })
 
-        return {
-            'interfaces': interfaces,
-            'sessions': sessions,
-            'session_count': len(sessions)
-        }
-    except Exception as e:
-        return {'error': str(e)}
+    # Get NAT sessions
+    stdout, stderr, rc = run_vppctl('show nat44 ei sessions')
+    if rc == 0 and stdout:
+        for line in stdout.split('\n')[:10]:
+            line = line.strip()
+            if line:
+                result['sessions'].append(line)
+
+    return result
 
 def main():
     parser = argparse.ArgumentParser(description='VectorOS NAT Manager')
     parser.add_argument('action', choices=['enable', 'disable', 'show'])
-    parser.add_argument('--inside-if', type=int, default=2, help='Inside interface index (LAN)')
-    parser.add_argument('--outside-if', type=int, default=4, help='Outside interface index (PPPoE)')
+    parser.add_argument('--inside-if', default='lan0', help='Inside interface name (LAN)')
+    parser.add_argument('--outside-if', default='pppoe-wan0', help='Outside interface name (PPPoE)')
 
     args = parser.parse_args()
 
     try:
-        api = connect()
-
         if args.action == 'enable':
-            result = nat_enable(api, args.inside_if, args.outside_if)
+            result = nat_enable(args.inside_if, args.outside_if)
         elif args.action == 'disable':
-            result = nat_disable(api)
+            result = nat_disable()
         elif args.action == 'show':
-            result = nat_show(api)
+            result = nat_show()
 
-        api.disconnect()
         print(json.dumps(result))
 
     except Exception as e:
