@@ -23,4 +23,17 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/routes", get(handlers::get_routes))
         .route("/api/system", get(handlers::get_system_status))
         .route("/api/config/status", get(handlers::get_config_status))
+        .route("/api/frr/status", get(handlers::get_frr_status))
+        .route("/api/frr/routes", get(handlers::get_frr_routes))
+        .route("/api/frr/add-route", post(handlers::add_frr_route))
+        .route("/api/frr/del-route", post(handlers::del_frr_route))
+        // Log management
+        .route("/api/logs", post(handlers::get_logs))
+        .route("/api/logs/clear", post(handlers::clear_logs))
+        // Firewall management
+        .route("/api/firewall/status", get(handlers::get_firewall_status))
+        .route("/api/firewall/add-rule", post(handlers::add_firewall_rule))
+        .route("/api/firewall/del-rule", post(handlers::delete_firewall_rule))
+        .route("/api/firewall/enable", post(handlers::enable_firewall))
+        .route("/api/firewall/disable", post(handlers::disable_firewall))
 }

@@ -4,17 +4,20 @@
   let health: any = null;
   let interfaces: any[] = [];
   let routes: any[] = [];
+  let ipv6Status: any = null;
 
   onMount(async () => {
-    const [healthRes, ifacesRes, routesRes] = await Promise.all([
+    const [healthRes, ifacesRes, routesRes, ipv6Res] = await Promise.all([
       fetch('/api/health').then(r => r.json()),
       fetch('/api/interfaces').then(r => r.json()),
-      fetch('/api/routes').then(r => r.json())
+      fetch('/api/routes').then(r => r.json()),
+      fetch('/api/ipv6/status').then(r => r.json()).catch(() => null)
     ]);
 
     health = healthRes;
     interfaces = ifacesRes.interfaces;
     routes = routesRes.routes;
+    ipv6Status = ipv6Res;
   });
 </script>
 
@@ -46,6 +49,18 @@
       <h2>Routes</h2>
       <p class="count">{routes.length}</p>
       <p>routing entries</p>
+    </div>
+
+    <div class="card">
+      <h2>IPv6</h2>
+      <p class="count ipv6-status">{ipv6Status ? 'Active' : 'Inactive'}</p>
+      <p>IPv6 connectivity</p>
+    </div>
+
+    <div class="card">
+      <h2>IPv6 Neighbors</h2>
+      <p class="count">{ipv6Status?.neighbors?.length || 0}</p>
+      <p>NDP entries</p>
     </div>
   </div>
 </div>
@@ -90,5 +105,9 @@
     font-weight: bold;
     color: #00ff88;
     margin: 0.5rem 0;
+  }
+
+  .ipv6-status {
+    font-size: 2rem;
   }
 </style>

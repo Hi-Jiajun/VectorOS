@@ -42,6 +42,30 @@ DEFAULT_CONFIG = {
         'wan0': {'state': 'up', 'mtu': 1500},
         'lan0': {'state': 'up', 'mtu': 1500, 'ip': '192.168.1.1/24'},
         'lan1': {'state': 'up', 'mtu': 1500}
+    },
+    'ipv6': {
+        'enabled': False,
+        'lan_prefix': '2001:db8:1::/64',
+        'lan_address': '2001:db8:1::1/64',
+        'wan_prefix': '2001:db8:2::/64',
+        'upstream_dns': ['2001:4860:4860::8888', '2606:4700:4700::1111']
+    },
+    'dhcpv6': {
+        'enabled': False,
+        'interface': 'veth-lan0',
+        'range_start': '2001:db8:1::100',
+        'range_end': '2001:db8:1::200',
+        'gateway': '2001:db8:1::1',
+        'lease_time': 86400,
+        'enable_ia_pd': False,
+        'pd_prefix': '2001:db8:2::/48'
+    },
+    'nat66': {
+        'enabled': False,
+        'inside_if': 'lan0',
+        'outside_if': 'pppoe-wan0',
+        'inside_prefix': '2001:db8:1::/64',
+        'outside_prefix': '2001:db8:2::/64'
     }
 }
 

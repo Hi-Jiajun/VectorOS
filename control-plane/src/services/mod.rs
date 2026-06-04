@@ -1,2 +1,5 @@
+pub mod frr;
+pub mod logger;
+
 // Services module for VectorOS control plane
-// TODO: Implement DHCP, DNS, and other network services
+// Provides integration with network services: FRRouting, DHCP, DNS, etc.

@@ -25,7 +25,8 @@ def is_dnsmasq_running():
     stdout, stderr, rc = run_cmd('pgrep dnsmasq')
     return rc == 0
 
-def dns_enable(upstream='8.8.8.8,1.1.1.1', interface='veth-lan0', cache_size=1000):
+def dns_enable(upstream='8.8.8.8,1.1.1.1', interface='veth-lan0', cache_size=1000,
+               upstream_v6='2001:4860:4860::8888,2606:4700:4700::1111'):
     """Enable DNS forwarding using dnsmasq"""
     # Read existing DHCP config if any
     dhcp_config = ''
@@ -38,8 +39,13 @@ def dns_enable(upstream='8.8.8.8,1.1.1.1', interface='veth-lan0', cache_size=100
 
     # Create combined config
     upstream_lines = '\n'.join([f'server={s.strip()}' for s in upstream.split(',')])
+    # Add IPv6 upstream DNS servers
+    upstream_v6_lines = ''
+    if upstream_v6:
+        upstream_v6_lines = '\n'.join([f'server={s.strip()}' for s in upstream_v6.split(',')])
     config = f"""# VectorOS DNS Configuration
 {upstream_lines}
+{upstream_v6_lines}
 cache-size={cache_size}
 listen-address=127.0.0.1,192.168.1.1
 interface={interface}
@@ -95,6 +101,7 @@ def dns_show():
     result = {
         'status': 'inactive',
         'upstream': ['8.8.8.8', '1.1.1.1'],
+        'upstream_v6': ['2001:4860:4860::8888', '2606:4700:4700::1111'],
         'cache_size': 1000,
         'interface': 'veth-lan0'
     }
@@ -105,11 +112,21 @@ def dns_show():
     # Read config to get actual values
     try:
         with open('/etc/vectoros-dhcp.conf', 'r') as f:
+            ipv4_servers = []
+            ipv6_servers = []
             for line in f:
                 if line.startswith('server='):
-                    result['upstream'] = [s.strip() for s in line.split('=', 1)[1].split(',')]
+                    server = line.split('=', 1)[1].strip()
+                    if ':' in server:
+                        ipv6_servers.append(server)
+                    else:
+                        ipv4_servers.append(server)
                 elif line.startswith('cache-size='):
                     result['cache_size'] = int(line.split('=')[1].strip())
+            if ipv4_servers:
+                result['upstream'] = ipv4_servers
+            if ipv6_servers:
+                result['upstream_v6'] = ipv6_servers
     except:
         pass
 
@@ -118,7 +135,9 @@ def dns_show():
 def main():
     parser = argparse.ArgumentParser(description='VectorOS DNS Manager')
     parser.add_argument('action', choices=['enable', 'disable', 'show'])
-    parser.add_argument('--upstream', default='8.8.8.8,1.1.1.1', help='Upstream DNS servers')
+    parser.add_argument('--upstream', default='8.8.8.8,1.1.1.1', help='Upstream DNS servers (IPv4)')
+    parser.add_argument('--upstream-v6', default='2001:4860:4860::8888,2606:4700:4700::1111',
+                        help='Upstream DNS servers (IPv6)')
     parser.add_argument('--interface', default='veth-lan0', help='Interface name')
     parser.add_argument('--cache-size', type=int, default=1000, help='DNS cache size')
 
@@ -126,7 +145,7 @@ def main():
 
     try:
         if args.action == 'enable':
-            result = dns_enable(args.upstream, args.interface, args.cache_size)
+            result = dns_enable(args.upstream, args.interface, args.cache_size, args.upstream_v6)
         elif args.action == 'disable':
             result = dns_disable()
         elif args.action == 'show':

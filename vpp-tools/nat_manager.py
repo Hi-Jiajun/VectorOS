@@ -77,11 +77,69 @@ def nat_show():
 
     return result
 
+def nat66_enable(inside_if='lan0', outside_if='pppoe-wan0', inside_prefix='2001:db8:1::/64',
+                  outside_prefix='2001:db8:2::/64'):
+    """Enable NAT66 (IPv6-to-IPv6 Network Address Translation)
+
+    Uses VPP ip6 nat to translate between inside and outside IPv6 prefixes.
+    This is stateless NPTv6 (RFC 6296) style translation.
+    """
+    errors = []
+
+    # Enable IPv6 on both interfaces
+    stdout, stderr, rc = run_vppctl(f'set interface ip6 enable {inside_if}')
+    if rc != 0 and 'already' not in (stderr or ''):
+        errors.append(f'Enable IPv6 on {inside_if}: {stderr}')
+
+    stdout, stderr, rc = run_vppctl(f'set interface ip6 enable {outside_if}')
+    if rc != 0 and 'already' not in (stderr or ''):
+        errors.append(f'Enable IPv6 on {outside_if}: {stderr}')
+
+    # Configure NPTv6 (Network Prefix Translation for IPv6)
+    # VPP uses ip6 nat for this purpose
+    stdout, stderr, rc = run_vppctl(
+        f'ip6 nat prefix {inside_prefix} {outside_prefix} {inside_if} {outside_if}'
+    )
+    if rc != 0:
+        errors.append(f'NAT66 prefix config: {stderr}')
+
+    if errors:
+        return {'error': '; '.join(errors)}
+    return {'status': 'ok', 'message': 'NAT66 enabled'}
+
+
+def nat66_disable():
+    """Disable NAT66"""
+    stdout, stderr, rc = run_vppctl('ip6 nat del prefix')
+    if rc != 0:
+        return {'error': stderr}
+    return {'status': 'ok', 'message': 'NAT66 disabled'}
+
+
+def nat66_show():
+    """Show NAT66 status"""
+    result = {'prefixes': [], 'translations': []}
+
+    stdout, stderr, rc = run_vppctl('show ip6 nat')
+    if rc == 0 and stdout:
+        for line in stdout.split('\n'):
+            line = line.strip()
+            if line and 'NAT' not in line and '---' not in line:
+                result['prefixes'].append(line)
+
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description='VectorOS NAT Manager')
-    parser.add_argument('action', choices=['enable', 'disable', 'show'])
+    parser.add_argument('action', choices=['enable', 'disable', 'show',
+                                            'nat66-enable', 'nat66-disable', 'nat66-show'])
     parser.add_argument('--inside-if', default='lan0', help='Inside interface name (LAN)')
     parser.add_argument('--outside-if', default='pppoe-wan0', help='Outside interface name (PPPoE)')
+    parser.add_argument('--inside-prefix', default='2001:db8:1::/64',
+                        help='NAT66 inside prefix (default: 2001:db8:1::/64)')
+    parser.add_argument('--outside-prefix', default='2001:db8:2::/64',
+                        help='NAT66 outside prefix (default: 2001:db8:2::/64)')
 
     args = parser.parse_args()
 
@@ -92,6 +150,13 @@ def main():
             result = nat_disable()
         elif args.action == 'show':
             result = nat_show()
+        elif args.action == 'nat66-enable':
+            result = nat66_enable(args.inside_if, args.outside_if,
+                                  args.inside_prefix, args.outside_prefix)
+        elif args.action == 'nat66-disable':
+            result = nat66_disable()
+        elif args.action == 'nat66-show':
+            result = nat66_show()
 
         print(json.dumps(result))
 

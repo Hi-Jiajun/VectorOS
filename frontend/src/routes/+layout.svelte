@@ -7,9 +7,12 @@
     <a href="/">Dashboard</a>
     <a href="/pppoe">PPPoE</a>
     <a href="/interfaces">Interfaces</a>
-    <a href="/routes">Routes</a>
+    <a href="/frr">FRRouting</a>
+    <a href="/ipv6">IPv6</a>
     <a href="/dhcp">DHCP</a>
     <a href="/dns">DNS</a>
+    <a href="/firewall">Firewall</a>
+    <a href="/logs">Logs</a>
     <a href="/settings">Settings</a>
   </nav>
 

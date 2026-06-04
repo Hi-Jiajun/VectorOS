@@ -3,50 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VectorOS</title>
+  <title>VectorOS - Network Router</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-0: #06060a;
-      --bg-1: #0c0c14;
-      --bg-2: #12121c;
-      --bg-3: #1a1a28;
-      --bg-4: #222233;
-      --bg-5: #2a2a3d;
+      --bg-0: #0a0a0f;
+      --bg-1: #0f1017;
+      --bg-2: #16171f;
+      --bg-3: #1c1d27;
+      --bg-4: #252633;
+      --bg-5: #2e2f40;
+      --bg-glass: rgba(22, 23, 31, 0.7);
       --border: rgba(255,255,255,0.06);
       --border-2: rgba(255,255,255,0.1);
       --border-3: rgba(255,255,255,0.15);
       --accent: #6366f1;
       --accent-2: #818cf8;
       --accent-3: #a5b4fc;
-      --accent-bg: rgba(99, 102, 241, 0.08);
-      --accent-border: rgba(99, 102, 241, 0.2);
+      --accent-bg: rgba(99, 102, 241, 0.1);
+      --accent-border: rgba(99, 102, 241, 0.25);
       --green: #22c55e;
-      --green-bg: rgba(34, 197, 94, 0.08);
-      --green-border: rgba(34, 197, 94, 0.2);
+      --green-2: #4ade80;
+      --green-bg: rgba(34, 197, 94, 0.1);
+      --green-border: rgba(34, 197, 94, 0.25);
       --yellow: #eab308;
-      --yellow-bg: rgba(234, 179, 8, 0.08);
+      --yellow-bg: rgba(234, 179, 8, 0.1);
       --red: #ef4444;
-      --red-bg: rgba(239, 68, 68, 0.08);
+      --red-bg: rgba(239, 68, 68, 0.1);
       --cyan: #22d3ee;
-      --cyan-bg: rgba(34, 211, 238, 0.08);
+      --cyan-bg: rgba(34, 211, 238, 0.1);
+      --purple: #a855f7;
+      --purple-bg: rgba(168, 85, 247, 0.1);
+      --orange: #f97316;
+      --orange-bg: rgba(249, 115, 22, 0.1);
       --text-1: #f0f0f5;
       --text-2: #a0a0b8;
       --text-3: #606078;
       --text-4: #404058;
       --radius: 16px;
-      --radius-sm: 10px;
-      --radius-xs: 6px;
+      --radius-sm: 12px;
+      --radius-xs: 8px;
       --shadow: 0 4px 24px rgba(0,0,0,0.4);
       --shadow-lg: 0 12px 48px rgba(0,0,0,0.5);
-      --sidebar: 264px;
+      --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+      --sidebar: 260px;
     }
 
     body {
-      font-family: 'Outfit', -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg-0);
       color: var(--text-1);
       min-height: 100vh;
@@ -54,9 +61,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    ::-webkit-scrollbar { width: 5px; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--bg-5); }
 
     .layout { display: flex; height: 100vh; }
 
@@ -70,6 +79,8 @@
       position: fixed;
       height: 100vh;
       z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .brand {
@@ -81,17 +92,17 @@
     }
 
     .brand-logo {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #6366f1, #a78bfa, #22d3ee);
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #6366f1, #a855f7, #22d3ee);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 16px;
+      font-size: 18px;
       color: white;
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
       position: relative;
       overflow: hidden;
     }
@@ -103,7 +114,7 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
       animation: shimmer 3s infinite;
     }
 
@@ -113,7 +124,7 @@
     }
 
     .brand-text h1 {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       letter-spacing: -0.5px;
       background: linear-gradient(135deg, #fff, var(--text-2));
@@ -129,6 +140,7 @@
       letter-spacing: 0.5px;
     }
 
+    /* Navigation */
     .nav {
       flex: 1;
       padding: 8px;
@@ -143,30 +155,35 @@
       color: var(--text-4);
       text-transform: uppercase;
       letter-spacing: 1.5px;
-      padding: 12px 10px 6px;
+      padding: 14px 10px 6px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 10px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
       color: var(--text-2);
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 13px;
       font-weight: 500;
       position: relative;
       user-select: none;
     }
 
-    .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-1); }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-1);
+      transform: translateX(2px);
+    }
 
     .nav-item.active {
       background: var(--accent-bg);
       color: var(--accent-3);
+      box-shadow: inset 0 0 0 1px var(--accent-border);
     }
 
     .nav-item.active::before {
@@ -179,23 +196,29 @@
       height: 20px;
       background: var(--accent);
       border-radius: 0 3px 3px 0;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
     }
 
-    .nav-icon { width: 18px; text-align: center; font-size: 14px; }
+    .nav-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
 
     .nav-badge {
       margin-left: auto;
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
+      padding: 2px 8px;
+      border-radius: 5px;
       font-family: 'JetBrains Mono', monospace;
       background: var(--accent-bg);
       color: var(--accent-2);
     }
 
     .sidebar-foot {
-      padding: 12px 16px;
+      padding: 14px 16px;
       border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -203,48 +226,50 @@
     }
 
     .pulse {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--green);
-      box-shadow: 0 0 8px rgba(34,197,94,0.6);
+      box-shadow: 0 0 12px rgba(34,197,94,0.6);
       animation: pulse 2s ease infinite;
     }
 
     @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%,100% { opacity: 1; box-shadow: 0 0 12px rgba(34,197,94,0.6); }
+      50% { opacity: 0.5; box-shadow: 0 0 6px rgba(34,197,94,0.3); }
     }
 
     .foot-text { font-size: 11px; color: var(--text-3); }
     .foot-text b { color: var(--green); font-weight: 600; }
 
-    /* Main */
+    /* Main Area */
     .main {
       flex: 1;
       margin-left: var(--sidebar);
       display: flex;
       flex-direction: column;
       height: 100vh;
+      background: var(--bg-0);
     }
 
     /* Header */
     .header {
-      height: 56px;
-      background: var(--bg-1);
+      height: 60px;
+      background: var(--bg-glass);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 24px;
       flex-shrink: 0;
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .hdr-left { display: flex; align-items: center; gap: 12px; }
 
     .hdr-title {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.3px;
     }
@@ -252,40 +277,48 @@
     .hdr-tag {
       font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
+      padding: 3px 10px;
+      border-radius: 6px;
       font-family: 'JetBrains Mono', monospace;
       background: var(--accent-bg);
       color: var(--accent-2);
       border: 1px solid var(--accent-border);
     }
 
-    .hdr-right { display: flex; align-items: center; gap: 8px; }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
 
     .hdr-chip {
       display: flex;
       align-items: center;
       gap: 6px;
-      height: 32px;
-      padding: 0 12px;
+      height: 34px;
+      padding: 0 14px;
       background: var(--green-bg);
       border: 1px solid var(--green-border);
-      border-radius: 16px;
+      border-radius: 17px;
       font-size: 12px;
       font-weight: 600;
       color: var(--green);
+      transition: all 0.3s;
+    }
+
+    .hdr-chip.error {
+      background: var(--red-bg);
+      border-color: rgba(239, 68, 68, 0.25);
+      color: var(--red);
     }
 
     .hdr-chip .dot {
-      width: 6px;
-      height: 6px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: var(--green);
+      background: currentColor;
+      animation: pulse 2s ease infinite;
     }
 
     .hdr-btn {
-      height: 32px;
-      padding: 0 12px;
+      height: 34px;
+      padding: 0 14px;
       background: var(--bg-3);
       border: 1px solid var(--border);
       border-radius: var(--radius-xs);
@@ -294,52 +327,101 @@
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
 
-    .hdr-btn:hover { background: var(--bg-4); color: var(--text-1); }
+    .hdr-btn:hover { background: var(--bg-4); color: var(--text-1); border-color: var(--border-2); }
+    .hdr-btn:active { transform: scale(0.97); }
 
-    /* Content */
+    .auto-refresh-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-3);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .auto-refresh-toggle input { display: none; }
+
+    .toggle-track {
+      width: 36px;
+      height: 20px;
+      background: var(--bg-4);
+      border-radius: 10px;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      background: var(--text-3);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .auto-refresh-toggle input:checked + .toggle-track {
+      background: var(--accent);
+    }
+
+    .auto-refresh-toggle input:checked + .toggle-track::after {
+      left: 19px;
+      background: white;
+    }
+
+    /* Content Area */
     .content {
       flex: 1;
-      padding: 20px;
+      padding: 24px;
       overflow-y: auto;
       background: var(--bg-0);
     }
 
-    .page { display: none; animation: fadeIn 0.2s ease; }
+    .page {
+      display: none;
+      animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     .page.active { display: block; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Stats */
+    /* Stats Grid */
     .stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
     .stat {
       background: var(--bg-2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 20px;
       position: relative;
       overflow: hidden;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
     .stat:hover {
       border-color: var(--border-2);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
     }
 
     .stat::before {
@@ -348,10 +430,10 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent), transparent);
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
       opacity: 0;
-      transition: opacity 0.2s;
+      transition: opacity 0.3s;
     }
 
     .stat:hover::before { opacity: 1; }
@@ -360,49 +442,222 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .stat-ico {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 18px;
     }
 
-    .stat-ico.i1 { background: var(--accent-bg); }
-    .stat-ico.i2 { background: var(--green-bg); }
-    .stat-ico.i3 { background: rgba(167,139,250,0.08); }
-    .stat-ico.i4 { background: var(--cyan-bg); }
+    .stat-ico.i1 { background: var(--accent-bg); box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
+    .stat-ico.i2 { background: var(--green-bg); box-shadow: 0 0 20px rgba(34, 197, 94, 0.15); }
+    .stat-ico.i3 { background: var(--purple-bg); box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+    .stat-ico.i4 { background: var(--cyan-bg); box-shadow: 0 0 20px rgba(34, 211, 238, 0.15); }
 
     .stat-tag {
       font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
     }
 
     .stat-tag.ok { background: var(--green-bg); color: var(--green); }
+    .stat-tag.warn { background: var(--yellow-bg); color: var(--yellow); }
+    .stat-tag.err { background: var(--red-bg); color: var(--red); }
 
     .stat-val {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 800;
       font-family: 'JetBrains Mono', monospace;
-      letter-spacing: -1px;
-      margin-bottom: 2px;
+      letter-spacing: -1.5px;
+      margin-bottom: 4px;
+      line-height: 1.1;
     }
 
     .stat-desc {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-3);
+      font-weight: 500;
     }
 
-    /* Grid */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    /* Chart Cards */
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .chart-card:hover {
+      border-color: var(--border-2);
+      box-shadow: var(--shadow);
+    }
+
+    .chart-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-card h4 span {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-left: auto;
+    }
+
+    /* CSS Bar Chart */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      padding-top: 10px;
+    }
+
+    .bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .bar:hover {
+      filter: brightness(1.2);
+      transform: scaleY(1.05);
+      transform-origin: bottom;
+    }
+
+    .bar:hover::after {
+      content: attr(data-val);
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-5);
+      color: var(--text-1);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+      z-index: 10;
+    }
+
+    .bar.accent { background: linear-gradient(180deg, var(--accent-2), var(--accent)); }
+    .bar.green { background: linear-gradient(180deg, var(--green-2), var(--green)); }
+    .bar.purple { background: linear-gradient(180deg, #c084fc, var(--purple)); }
+    .bar.cyan { background: linear-gradient(180deg, #67e8f9, var(--cyan)); }
+    .bar.orange { background: linear-gradient(180deg, #fb923c, var(--orange)); }
+
+    .bar-labels {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .bar-labels span {
+      flex: 1;
+      text-align: center;
+      font-size: 9px;
+      color: var(--text-4);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Donut Chart */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .donut {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .donut-center .val {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+
+    .donut-center .label {
+      font-size: 10px;
+      color: var(--text-3);
+      margin-top: 2px;
+    }
+
+    .donut-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-val {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-1);
+    }
+
+    /* Grid Layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
     /* Card */
     .card {
@@ -410,51 +665,64 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .card:hover {
+      border-color: var(--border-2);
     }
 
     .card-head {
-      padding: 14px 16px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0,0,0,0.15);
+      background: rgba(0,0,0,0.2);
     }
 
     .card-head h3 {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       color: var(--text-1);
     }
 
-    .card-body { padding: 16px; }
+    .card-body { padding: 20px; }
 
     /* Table */
-    table { width: 100%; border-collapse: collapse; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
 
     th {
-      padding: 8px 14px;
+      padding: 12px 16px;
       text-align: left;
       font-size: 10px;
       font-weight: 700;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: 1px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0,0,0,0.25);
       border-bottom: 1px solid var(--border);
     }
 
     td {
-      padding: 10px 14px;
+      padding: 12px 16px;
       font-size: 13px;
       color: var(--text-2);
       border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: all 0.15s;
     }
 
-    tr:hover td { background: rgba(255,255,255,0.015); color: var(--text-1); }
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+      color: var(--text-1);
+    }
+
     tr:last-child td { border-bottom: none; }
 
     /* Badge */
@@ -462,20 +730,27 @@
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 3px 9px;
-      border-radius: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
       font-size: 11px;
       font-weight: 700;
+      letter-spacing: 0.3px;
     }
 
-    .badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
 
     .b-green { background: var(--green-bg); color: var(--green); }
     .b-yellow { background: var(--yellow-bg); color: var(--yellow); }
     .b-red { background: var(--red-bg); color: var(--red); }
     .b-accent { background: var(--accent-bg); color: var(--accent-2); }
-    .b-neutral { background: rgba(255,255,255,0.05); color: var(--text-2); }
+    .b-neutral { background: rgba(255,255,255,0.06); color: var(--text-2); }
     .b-cyan { background: var(--cyan-bg); color: var(--cyan); }
+    .b-purple { background: var(--purple-bg); color: var(--purple); }
 
     .mono {
       font-family: 'JetBrains Mono', monospace;
@@ -483,225 +758,486 @@
     }
 
     /* Form */
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 18px; }
 
     .form-label {
       display: block;
       font-size: 12px;
       font-weight: 600;
       color: var(--text-2);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .form-hint {
       font-size: 11px;
       color: var(--text-4);
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     .form-input, .form-select {
       width: 100%;
-      height: 40px;
-      padding: 0 12px;
+      height: 42px;
+      padding: 0 14px;
       background: var(--bg-1);
       border: 1px solid var(--border-2);
-      border-radius: 8px;
+      border-radius: var(--radius-xs);
       color: var(--text-1);
       font-size: 13px;
       font-family: inherit;
-      transition: all 0.15s;
+      transition: all 0.2s;
     }
 
     .form-input:focus, .form-select:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-bg);
+      box-shadow: 0 0 0 3px var(--accent-bg), var(--shadow-glow);
     }
 
     .form-input::placeholder { color: var(--text-4); }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
     .form-check {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 0;
+      gap: 10px;
+      padding: 8px 0;
       cursor: pointer;
     }
 
     .form-check input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       accent-color: var(--accent);
       cursor: pointer;
+      border-radius: 4px;
     }
 
     .form-check span { font-size: 13px; color: var(--text-2); }
 
     /* Buttons */
     .btn {
-      height: 40px;
-      padding: 0 16px;
+      height: 42px;
+      padding: 0 18px;
       border: 1px solid transparent;
-      border-radius: 8px;
+      border-radius: var(--radius-xs);
       font-size: 13px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
     }
 
+    .btn:active { transform: scale(0.97); }
+
     .btn-primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
       color: white;
-      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
     }
 
     .btn-primary:hover {
-      background: var(--accent-2);
-      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45);
       transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--green), #16a34a);
+      color: white;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
     }
 
     .btn-ghost {
       background: transparent;
       color: var(--text-2);
-      height: 28px;
-      padding: 0 10px;
+      height: 30px;
+      padding: 0 12px;
       font-size: 12px;
     }
 
     .btn-ghost:hover { background: rgba(255,255,255,0.04); color: var(--text-1); }
 
-    /* Info */
+    .btn-sm {
+      height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+
+    /* Info Row */
     .info-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
+      padding: 12px 0;
       border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
     }
 
     .info-row:last-child { border-bottom: none; }
+    .info-row:hover { background: rgba(255,255,255,0.01); margin: 0 -20px; padding: 12px 20px; }
 
-    .info-k { font-size: 12px; color: var(--text-3); }
-    .info-v { font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--text-1); }
+    .info-k { font-size: 13px; color: var(--text-3); font-weight: 500; }
+    .info-v {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-1);
+    }
 
-    /* Action */
+    /* Action Card */
     .action {
-      background: var(--bg-2);
+      background: var(--bg-3);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
+      border-radius: var(--radius-sm);
+      padding: 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .action:hover {
       border-color: var(--accent-border);
-      background: var(--bg-3);
+      background: var(--bg-4);
+      transform: translateX(4px);
+      box-shadow: var(--shadow-glow);
     }
 
     .action-ico {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 20px;
       background: var(--accent-bg);
+      flex-shrink: 0;
     }
 
-    .action-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .action-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
     .action-info p { font-size: 12px; color: var(--text-3); }
 
-    /* Empty */
+    /* Empty State */
     .empty {
       text-align: center;
-      padding: 40px 20px;
+      padding: 48px 24px;
       color: var(--text-3);
     }
 
-    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
-    .empty p { font-size: 13px; max-width: 280px; margin: 0 auto; line-height: 1.6; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
 
-    /* Loading */
+    .empty p {
+      font-size: 14px;
+      max-width: 300px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Loading State */
     .loading {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      padding: 48px;
       color: var(--text-3);
       font-size: 13px;
+      gap: 12px;
     }
 
     .spinner {
-      width: 28px;
-      height: 28px;
-      border: 2px solid var(--bg-4);
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--bg-4);
       border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 10px;
+      animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Toast */
-    .toasts {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
+    /* Retry Button */
+    .retry-btn {
+      margin-top: 12px;
+      height: 36px;
+      padding: 0 16px;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-xs);
+      color: var(--text-2);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
       gap: 6px;
     }
 
-    .toast {
-      background: var(--bg-3);
-      border: 1px solid var(--border-2);
-      border-radius: 10px;
-      padding: 12px 16px;
+    .retry-btn:hover { background: var(--bg-4); color: var(--text-1); }
+
+    /* Toast Notifications */
+    .toasts {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 8px;
-      min-width: 280px;
-      box-shadow: var(--shadow-lg);
-      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 380px;
     }
 
-    .toast-ok { border-left: 3px solid var(--green); }
-    .toast-err { border-left: 3px solid var(--red); }
+    .toast {
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 300px;
+      box-shadow: var(--shadow-lg);
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-    .toast-icon { font-size: 16px; }
-    .toast-msg { font-size: 13px; font-weight: 500; }
+    .toast-ok { border-left: 4px solid var(--green); }
+    .toast-err { border-left: 4px solid var(--red); }
+    .toast-info { border-left: 4px solid var(--cyan); }
+
+    .toast-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .toast-ok .toast-icon { background: var(--green-bg); color: var(--green); }
+    .toast-err .toast-icon { background: var(--red-bg); color: var(--red); }
+    .toast-info .toast-icon { background: var(--cyan-bg); color: var(--cyan); }
+
+    .toast-content { flex: 1; }
+
+    .toast-msg {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .toast-sub {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 2px;
+    }
+
+    .toast-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .toast-close:hover { background: rgba(255,255,255,0.05); color: var(--text-1); }
 
     @keyframes slideIn {
       from { transform: translateX(120%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
 
-    @media (max-width: 1400px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+
+    /* Service Status Cards */
+    .service-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .service-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .service-card:hover {
+      border-color: var(--border-2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .service-card .svc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .service-card .svc-title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .service-card .svc-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .svc-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .svc-row .k { color: var(--text-3); }
+    .svc-row .v {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    /* Responsive */
+    @media (max-width: 1400px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .charts { grid-template-columns: 1fr 1fr; }
+      .service-cards { grid-template-columns: 1fr 1fr; }
+    }
+
     @media (max-width: 1024px) {
       .sidebar { width: 56px; }
       .brand-text, .nav-label, .nav-item span:not(.nav-icon), .nav-badge, .foot-text { display: none; }
-      .nav-item { justify-content: center; padding: 10px; }
+      .nav-item { justify-content: center; padding: 12px; }
       .nav-item.active::before { display: none; }
       .brand { justify-content: center; padding: 12px; }
       .sidebar-foot { justify-content: center; }
       .main { margin-left: 56px; }
+      .charts { grid-template-columns: 1fr; }
+      .service-cards { grid-template-columns: 1fr; }
     }
+
+    @media (max-width: 768px) {
+      .stats { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .header { padding: 0 16px; }
+      .content { padding: 16px; }
+      .auto-refresh-label { display: none; }
+    }
+
+    /* Loading overlay for page */
+    .page-loading {
+      position: relative;
+    }
+
+    .page-loading::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: loading-bar 1.5s ease infinite;
+    }
+
+    @keyframes loading-bar {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Smooth transition for data updates */
+    .data-update {
+      animation: dataFlash 0.5s ease;
+    }
+
+    @keyframes dataFlash {
+      0% { background: rgba(99, 102, 241, 0.1); }
+      100% { background: transparent; }
+    }
+
+    /* Connection indicator */
+    .conn-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-4);
+      padding: 4px 10px;
+      background: var(--bg-3);
+      border-radius: 6px;
+      margin-right: 8px;
+    }
+
+    .conn-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .conn-dot.offline { background: var(--red); }
   </style>
 </head>
 <body>
@@ -717,27 +1253,27 @@
 
       <nav class="nav">
         <div class="nav-group">
-          <div class="nav-label">概览</div>
+          <div class="nav-label">Overview</div>
           <a class="nav-item active" data-page="dashboard" onclick="nav('dashboard')">
-            <span class="nav-icon">📊</span><span>仪表盘</span>
+            <span class="nav-icon">📊</span><span>Dashboard</span>
           </a>
         </div>
         <div class="nav-group">
-          <div class="nav-label">网络</div>
+          <div class="nav-label">Network</div>
           <a class="nav-item" data-page="pppoe" onclick="nav('pppoe')">
             <span class="nav-icon">🔌</span><span>PPPoE</span>
-            <span class="nav-badge">就绪</span>
+            <span class="nav-badge" id="nb-pppoe">--</span>
           </a>
           <a class="nav-item" data-page="interfaces" onclick="nav('interfaces')">
-            <span class="nav-icon">🌐</span><span>接口</span>
-            <span class="nav-badge">4</span>
+            <span class="nav-icon">🌐</span><span>Interfaces</span>
+            <span class="nav-badge" id="nb-ifaces">--</span>
           </a>
           <a class="nav-item" data-page="routes" onclick="nav('routes')">
-            <span class="nav-icon">🛣️</span><span>路由</span>
+            <span class="nav-icon">🛣️</span><span>Routes</span>
           </a>
         </div>
         <div class="nav-group">
-          <div class="nav-label">服务</div>
+          <div class="nav-label">Services</div>
           <a class="nav-item" data-page="dhcp" onclick="nav('dhcp')">
             <span class="nav-icon">📡</span><span>DHCP</span>
           </a>
@@ -749,89 +1285,129 @@
           </a>
         </div>
         <div class="nav-group">
-          <div class="nav-label">系统</div>
+          <div class="nav-label">System</div>
           <a class="nav-item" data-page="system" onclick="nav('system')">
-            <span class="nav-icon">⚙️</span><span>系统</span>
+            <span class="nav-icon">⚙️</span><span>System</span>
           </a>
         </div>
       </nav>
 
       <div class="sidebar-foot">
-        <span class="pulse"></span>
-        <span class="foot-text">VPP <b>运行中</b></span>
+        <span class="pulse" id="vpp-pulse"></span>
+        <span class="foot-text">VPP <b id="vpp-status-text">Running</b></span>
       </div>
     </aside>
 
     <main class="main">
       <header class="header">
         <div class="hdr-left">
-          <h2 class="hdr-title" id="h-title">仪表盘</h2>
+          <h2 class="hdr-title" id="h-title">Dashboard</h2>
           <span class="hdr-tag" id="h-tag">v0.1.0</span>
         </div>
         <div class="hdr-right">
-          <div class="hdr-chip"><span class="dot"></span><span>正常</span></div>
-          <button class="hdr-btn" onclick="refresh()">🔄 刷新</button>
+          <div class="conn-status">
+            <span class="conn-dot" id="conn-dot"></span>
+            <span id="conn-text">Connected</span>
+          </div>
+          <div class="hdr-chip" id="health-chip">
+            <span class="dot"></span>
+            <span id="health-text">Healthy</span>
+          </div>
+          <label class="auto-refresh-toggle" title="Auto-refresh every 5 seconds">
+            <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
+            <span class="toggle-track"></span>
+            <span class="auto-refresh-label">Auto</span>
+          </label>
+          <button class="hdr-btn" onclick="refreshAll()">🔄 Refresh</button>
         </div>
       </header>
 
       <div class="content">
         <!-- Dashboard -->
         <div id="p-dashboard" class="page active">
-          <div class="stats">
+          <div class="stats" id="dashboard-stats">
             <div class="stat">
               <div class="stat-head">
                 <div class="stat-ico i1">🔌</div>
-                <span class="stat-tag ok">就绪</span>
+                <span class="stat-tag" id="st-pppoe">--</span>
               </div>
-              <div class="stat-val" id="sv-pppoe">—</div>
-              <div class="stat-desc">PPPoE 状态</div>
+              <div class="stat-val" id="sv-pppoe">--</div>
+              <div class="stat-desc">PPPoE Status</div>
             </div>
             <div class="stat">
-              <div class="stat-head"><div class="stat-ico i2">🌐</div></div>
-              <div class="stat-val">4</div>
-              <div class="stat-desc">网络接口</div>
+              <div class="stat-head">
+                <div class="stat-ico i2">🌐</div>
+                <span class="stat-tag ok" id="st-ifaces">Active</span>
+              </div>
+              <div class="stat-val" id="sv-ifaces">--</div>
+              <div class="stat-desc">Network Interfaces</div>
             </div>
             <div class="stat">
-              <div class="stat-head"><div class="stat-ico i3">🛣️</div></div>
-              <div class="stat-val">—</div>
-              <div class="stat-desc">路由条目</div>
+              <div class="stat-head">
+                <div class="stat-ico i3">📡</div>
+                <span class="stat-tag" id="st-services">--</span>
+              </div>
+              <div class="stat-val" id="sv-services">--</div>
+              <div class="stat-desc">Active Services</div>
             </div>
             <div class="stat">
               <div class="stat-head">
                 <div class="stat-ico i4">⏱️</div>
-                <span class="stat-tag ok">运行</span>
+                <span class="stat-tag ok" id="st-uptime">Online</span>
               </div>
-              <div class="stat-val">✓</div>
-              <div class="stat-desc">系统状态</div>
+              <div class="stat-val" id="sv-uptime">--</div>
+              <div class="stat-desc">System Uptime</div>
             </div>
           </div>
 
+          <!-- Charts -->
+          <div class="charts" id="dashboard-charts">
+            <div class="chart-card">
+              <h4>CPU Usage <span id="cpu-val">--%</span></h4>
+              <div class="bar-chart" id="cpu-chart"></div>
+              <div class="bar-labels" id="cpu-labels"></div>
+            </div>
+            <div class="chart-card">
+              <h4>Memory <span id="mem-val">--%</span></h4>
+              <div class="donut-wrap">
+                <div class="donut" id="mem-donut"></div>
+                <div class="donut-legend" id="mem-legend"></div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <h4>Disk Usage <span id="disk-val">--%</span></h4>
+              <div class="donut-wrap">
+                <div class="donut" id="disk-donut"></div>
+                <div class="donut-legend" id="disk-legend"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Service Status & Quick Actions -->
           <div class="grid-2">
             <div class="card">
-              <div class="card-head"><h3>📋 系统信息</h3></div>
-              <div class="card-body">
-                <div class="info-row"><span class="info-k">VectorOS</span><span class="info-v" id="iv-ver">—</span></div>
-                <div class="info-row"><span class="info-k">VPP</span><span class="info-v">v26.06-rc0~703</span></div>
-                <div class="info-row"><span class="info-k">PPPoE 插件</span><span class="info-v" id="iv-pppoe">—</span></div>
-                <div class="info-row"><span class="info-k">NAT</span><span class="info-v" id="iv-nat">—</span></div>
-                <div class="info-row"><span class="info-k">DHCP</span><span class="info-v" id="iv-dhcp">—</span></div>
-                <div class="info-row"><span class="info-k">DNS</span><span class="info-v" id="iv-dns">—</span></div>
+              <div class="card-head">
+                <h3>📋 System Information</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">Refresh</button>
+              </div>
+              <div class="card-body" id="sys-info">
+                <div class="loading"><div class="spinner"></div>Loading...</div>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><h3>⚡ 快速操作</h3></div>
+              <div class="card-head"><h3>⚡ Quick Actions</h3></div>
               <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
                 <div class="action" onclick="nav('pppoe')">
                   <div class="action-ico">🔌</div>
-                  <div class="action-info"><h4>配置 PPPoE</h4><p>设置宽带账号密码</p></div>
+                  <div class="action-info"><h4>Configure PPPoE</h4><p>Setup broadband connection</p></div>
                 </div>
                 <div class="action" onclick="nav('interfaces')">
                   <div class="action-ico">🌐</div>
-                  <div class="action-info"><h4>管理接口</h4><p>查看接口状态</p></div>
+                  <div class="action-info"><h4>Manage Interfaces</h4><p>View and control network ports</p></div>
                 </div>
-                <div class="action" onclick="nav('routes')">
-                  <div class="action-ico">🛣️</div>
-                  <div class="action-info"><h4>路由表</h4><p>查看路由条目</p></div>
+                <div class="action" onclick="nav('system')">
+                  <div class="action-ico">⚙️</div>
+                  <div class="action-info"><h4>System Info</h4><p>View system resources</p></div>
                 </div>
               </div>
             </div>
@@ -842,42 +1418,47 @@
         <div id="p-pppoe" class="page">
           <div class="grid-2">
             <div class="card">
-              <div class="card-head"><h3>⚙️ 拨号配置</h3></div>
+              <div class="card-head"><h3>⚙️ PPPoE Configuration</h3></div>
               <div class="card-body">
                 <form onsubmit="savePppoe(event)">
                   <div class="form-group">
-                    <label class="form-label">宽带账号</label>
-                    <input type="text" class="form-input" id="pu" placeholder="ISP 提供的用户名" required>
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="pu" placeholder="ISP username" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">宽带密码</label>
-                    <input type="password" class="form-input" id="pp" placeholder="ISP 提供的密码" required>
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="pp" placeholder="ISP password" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">WAN 接口</label>
+                    <label class="form-label">WAN Interface</label>
                     <select class="form-select" id="pi">
-                      <option value="enp1s0">enp1s0 — CX4 LX 口1</option>
-                      <option value="enp2s0">enp2s0 — CX4 LX 口2</option>
-                      <option value="enp3s0">enp3s0 — CX4 LX 口2</option>
+                      <option value="enp1s0">enp1s0 -- CX4 LX Port 1</option>
+                      <option value="enp2s0">enp2s0 -- CX4 LX Port 2</option>
+                      <option value="enp3s0">enp3s0 -- CX4 LX Port 3</option>
                     </select>
-                    <div class="form-hint">选择 SR-IOV VF 接口</div>
+                    <div class="form-hint">Select SR-IOV VF interface</div>
                   </div>
                   <div class="form-row">
                     <div class="form-group"><label class="form-label">MTU</label><input type="number" class="form-input" id="pmtu" value="1492"></div>
                     <div class="form-group"><label class="form-label">MRU</label><input type="number" class="form-input" id="pmru" value="1492"></div>
                   </div>
                   <div class="form-group">
-                    <label class="form-check"><input type="checkbox" id="pdns" checked><span>使用运营商 DNS</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr4" checked><span>添加 IPv4 默认路由</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr6" checked><span>添加 IPv6 默认路由</span></label>
+                    <label class="form-check"><input type="checkbox" id="pdns" checked><span>Use ISP DNS</span></label>
+                    <label class="form-check"><input type="checkbox" id="pr4" checked><span>Add IPv4 default route</span></label>
+                    <label class="form-check"><input type="checkbox" id="pr6" checked><span>Add IPv6 default route</span></label>
                   </div>
-                  <button type="submit" class="btn btn-primary" style="width:100%">💾 保存并拨号</button>
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="pppoe-submit-btn">💾 Save & Connect</button>
                 </form>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><h3>📊 连接状态</h3><button class="btn btn-ghost" onclick="loadPppoe()">刷新</button></div>
-              <div class="card-body" id="pppoe-el"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+              <div class="card-head">
+                <h3>📊 Connection Status</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadPppoe()">Refresh</button>
+              </div>
+              <div class="card-body" id="pppoe-el">
+                <div class="loading"><div class="spinner"></div>Loading...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -885,10 +1466,13 @@
         <!-- Interfaces -->
         <div id="p-interfaces" class="page">
           <div class="card">
-            <div class="card-head"><h3>🌐 网络接口</h3><button class="btn btn-ghost" onclick="loadIfaces()">刷新</button></div>
+            <div class="card-head">
+              <h3>🌐 Network Interfaces</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadIfaces()">Refresh</button>
+            </div>
             <table>
-              <thead><tr><th>接口</th><th>类型</th><th>状态</th><th>MTU</th><th>说明</th><th>操作</th></tr></thead>
-              <tbody id="if-tb"><tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
+              <thead><tr><th>Interface</th><th>Type</th><th>Status</th><th>MTU</th><th>Description</th><th>Actions</th></tr></thead>
+              <tbody id="if-tb"><tr><td colspan="6"><div class="loading"><div class="spinner"></div>Loading...</div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -896,10 +1480,13 @@
         <!-- Routes -->
         <div id="p-routes" class="page">
           <div class="card">
-            <div class="card-head"><h3>🛣️ 路由表</h3><button class="btn btn-ghost" onclick="loadRoutes()">刷新</button></div>
+            <div class="card-head">
+              <h3>🛣️ Routing Table</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadRoutes()">Refresh</button>
+            </div>
             <table>
-              <thead><tr><th>目标</th><th>下一跳</th><th>接口</th><th>距离</th><th>类型</th></tr></thead>
-              <tbody id="rt-tb"><tr><td colspan="5"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
+              <thead><tr><th>Destination</th><th>Next Hop</th><th>Interface</th><th>Distance</th><th>Type</th></tr></thead>
+              <tbody id="rt-tb"><tr><td colspan="5"><div class="loading"><div class="spinner"></div>Loading...</div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -908,11 +1495,11 @@
         <div id="p-dhcp" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>📡 DHCP 服务</h3>
-              <button class="btn btn-ghost" onclick="loadDhcp()">刷新</button>
+              <h3>📡 DHCP Service</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadDhcp()">Refresh</button>
             </div>
             <div class="card-body" id="dhcp-el">
-              <div class="loading"><div class="spinner"></div>加载中...</div>
+              <div class="loading"><div class="spinner"></div>Loading...</div>
             </div>
           </div>
         </div>
@@ -921,11 +1508,11 @@
         <div id="p-dns" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🔍 DNS 转发</h3>
-              <button class="btn btn-ghost" onclick="loadDns()">刷新</button>
+              <h3>🔍 DNS Forwarding</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadDns()">Refresh</button>
             </div>
             <div class="card-body" id="dns-el">
-              <div class="loading"><div class="spinner"></div>加载中...</div>
+              <div class="loading"><div class="spinner"></div>Loading...</div>
             </div>
           </div>
         </div>
@@ -934,45 +1521,75 @@
         <div id="p-nat" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🔄 NAT 状态</h3>
-              <button class="btn btn-ghost" onclick="loadNat()">刷新</button>
+              <h3>🔄 NAT Status</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadNat()">Refresh</button>
             </div>
             <div class="card-body" id="nat-el">
-              <div class="loading"><div class="spinner"></div>加载中...</div>
+              <div class="loading"><div class="spinner"></div>Loading...</div>
             </div>
           </div>
         </div>
 
         <!-- System -->
         <div id="p-system" class="page">
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head"><h3>📊 系统资源</h3><button class="btn btn-ghost" onclick="loadSystem()">刷新</button></div>
-              <div class="card-body" id="sys-el">
-                <div class="loading"><div class="spinner"></div>加载中...</div>
+          <div class="service-cards">
+            <div class="service-card">
+              <div class="svc-header">
+                <span class="svc-title">🖥️ VectorOS</span>
+                <span class="badge b-green"><span class="dot"></span>Running</span>
+              </div>
+              <div class="svc-body" id="svc-vectoros">
+                <div class="svc-row"><span class="k">Version</span><span class="v" id="svc-ver">--</span></div>
+                <div class="svc-row"><span class="k">API Port</span><span class="v">8080</span></div>
               </div>
             </div>
-            <div class="card">
-              <div class="card-head"><h3>⚙️ 服务状态</h3></div>
-              <div class="card-body">
-                <div class="info-row"><span class="info-k">VectorOS</span><span class="badge b-green"><span class="dot"></span> 运行中</span></div>
-                <div class="info-row"><span class="info-k">VPP</span><span class="badge b-green"><span class="dot"></span> 运行中</span></div>
-                <div class="info-row"><span class="info-k">PPPoE</span><span class="badge b-green"><span class="dot"></span> 已加载</span></div>
-                <div class="info-row"><span class="info-k">DPDK</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>
+            <div class="service-card">
+              <div class="svc-header">
+                <span class="svc-title">⚡ VPP Data Plane</span>
+                <span class="badge b-green" id="svc-vpp-badge"><span class="dot"></span>Running</span>
+              </div>
+              <div class="svc-body" id="svc-vpp">
+                <div class="svc-row"><span class="k">Version</span><span class="v" id="svc-vpp-ver">--</span></div>
+                <div class="svc-row"><span class="k">Interfaces</span><span class="v" id="svc-vpp-ifaces">--</span></div>
+              </div>
+            </div>
+            <div class="service-card">
+              <div class="svc-header">
+                <span class="svc-title">🔌 PPPoE Client</span>
+                <span class="badge b-neutral" id="svc-pppoe-badge"><span class="dot"></span>Idle</span>
+              </div>
+              <div class="svc-body" id="svc-pppoe">
+                <div class="svc-row"><span class="k">State</span><span class="v" id="svc-pppoe-state">--</span></div>
+                <div class="svc-row"><span class="k">Interface</span><span class="v" id="svc-pppoe-iface">--</span></div>
               </div>
             </div>
           </div>
-          <div class="card" style="margin-top:16px">
-            <div class="card-head"><h3>🔗 API 端点</h3></div>
-            <div class="card-body">
-              <div class="info-row"><span class="info-k">/api/health</span><span class="badge b-neutral">GET</span></div>
-              <div class="info-row"><span class="info-k">/api/interfaces</span><span class="badge b-neutral">GET</span></div>
-              <div class="info-row"><span class="info-k">/api/pppoe/status</span><span class="badge b-neutral">GET</span></div>
-              <div class="info-row"><span class="info-k">/api/pppoe/create</span><span class="badge b-neutral">POST</span></div>
-              <div class="info-row"><span class="info-k">/api/nat/enable</span><span class="badge b-neutral">POST</span></div>
-              <div class="info-row"><span class="info-k">/api/dhcp/enable</span><span class="badge b-neutral">POST</span></div>
-              <div class="info-row"><span class="info-k">/api/dns/enable</span><span class="badge b-neutral">POST</span></div>
-              <div class="info-row"><span class="info-k">/api/system</span><span class="badge b-neutral">GET</span></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <h3>📊 System Resources</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadSystem()">Refresh</button>
+              </div>
+              <div class="card-body" id="sys-el">
+                <div class="loading"><div class="spinner"></div>Loading...</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>🔗 API Endpoints</h3></div>
+              <div class="card-body">
+                <div class="info-row"><span class="info-k">/api/health</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/system</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/interfaces</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/pppoe/status</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/pppoe/create</span><span class="badge b-accent">POST</span></div>
+                <div class="info-row"><span class="info-k">/api/nat/status</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/nat/enable</span><span class="badge b-accent">POST</span></div>
+                <div class="info-row"><span class="info-k">/api/dhcp/status</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/dhcp/enable</span><span class="badge b-accent">POST</span></div>
+                <div class="info-row"><span class="info-k">/api/dns/status</span><span class="badge b-green">GET</span></div>
+                <div class="info-row"><span class="info-k">/api/dns/enable</span><span class="badge b-accent">POST</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -983,249 +1600,421 @@
   <div class="toasts" id="toasts"></div>
 
   <script>
-    const PAGES={dashboard:'仪表盘',pppoe:'PPPoE 拨号',interfaces:'网络接口',routes:'路由表',dhcp:'DHCP',dns:'DNS',nat:'NAT',system:'系统信息'};
+    // ============================================================
+    // State
+    // ============================================================
+    let currentPage = 'dashboard';
+    let autoRefreshTimer = null;
+    let apiHealthy = true;
+    let cpuHistory = [];
+    const MAX_HISTORY = 12;
 
-    function nav(p){
-      document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-      document.getElementById('p-'+p).classList.add('active');
-      document.querySelector('[data-page="'+p+'"]').classList.add('active');
-      document.getElementById('h-title').textContent=PAGES[p]||p;
+    const PAGES = {
+      dashboard: 'Dashboard',
+      pppoe: 'PPPoE Dial-up',
+      interfaces: 'Network Interfaces',
+      routes: 'Routing Table',
+      dhcp: 'DHCP Server',
+      dns: 'DNS Forwarding',
+      nat: 'NAT',
+      system: 'System Info'
+    };
+
+    // ============================================================
+    // Navigation
+    // ============================================================
+    function nav(p) {
+      document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+      document.getElementById('p-' + p).classList.add('active');
+      document.querySelector('[data-page="' + p + '"]').classList.add('active');
+      document.getElementById('h-title').textContent = PAGES[p] || p;
+      currentPage = p;
       load(p);
     }
 
-    function toast(m,ok=true){
-      const c=document.getElementById('toasts'),d=document.createElement('div');
-      d.className='toast '+(ok?'toast-ok':'toast-err');
-      d.innerHTML='<span class="toast-icon">'+(ok?'✓':'✕')+'</span><span class="toast-msg">'+m+'</span>';
-      c.appendChild(d);
-      setTimeout(()=>{d.style.opacity='0';d.style.transform='translateX(100%)';d.style.transition='all 0.3s';setTimeout(()=>d.remove(),300);},3000);
+    // ============================================================
+    // Toast Notifications
+    // ============================================================
+    function toast(message, type = 'success', subtitle = '') {
+      const container = document.getElementById('toasts');
+      const d = document.createElement('div');
+      d.className = 'toast toast-' + (type === 'success' ? 'ok' : type === 'error' ? 'err' : 'info');
+
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      const icon = icons[type] || '✓';
+
+      d.innerHTML = '<div class="toast-icon">' + icon + '</div>'
+        + '<div class="toast-content"><div class="toast-msg">' + message + '</div>'
+        + (subtitle ? '<div class="toast-sub">' + subtitle + '</div>' : '')
+        + '</div>'
+        + '<button class="toast-close" onclick="this.parentElement.remove()">✕</button>';
+
+      container.appendChild(d);
+
+      // Auto-remove after 4 seconds
+      setTimeout(() => {
+        d.style.animation = 'slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+        setTimeout(() => d.remove(), 300);
+      }, 4000);
     }
 
-    async function api(u,opts={}){try{return await(await fetch(u,opts)).json();}catch(e){return{error:e.message};}}
-
-    async function refresh(){await Promise.all([loadDashboard(),loadPppoe(),loadIfaces(),loadRoutes()]);toast('已刷新');}
-
-    function load(p){
-      if(p==='dashboard')loadDashboard();
-      else if(p==='pppoe')loadPppoe();
-      else if(p==='interfaces')loadIfaces();
-      else if(p==='routes')loadRoutes();
-      else if(p==='nat')loadNat();
-      else if(p==='dhcp')loadDhcp();
-      else if(p==='dns')loadDns();
-      else if(p==='system')loadSystem();
-    }
-
-    async function loadSystem(){
-      const d=await api('/api/system'),el=document.getElementById('sys-el');
-      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-
-      const sys=d.system||{};
-      const cpu=sys.cpu||{};
-      const mem=sys.memory||{};
-      const disk=sys.disk||{};
-      const vpp=d.vpp||{};
-
-      const formatBytes=(bytes)=>{
-        if(!bytes)return '0 B';
-        if(bytes<1024)return bytes+' B';
-        if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';
-        if(bytes<1024*1024*1024)return (bytes/(1024*1024)).toFixed(1)+' MB';
-        return (bytes/(1024*1024*1024)).toFixed(1)+' GB';
-      };
-
-      el.innerHTML='<div class="info-row"><span class="info-k">CPU 使用率</span><span class="info-v">'+cpu.percent+'%</span></div>'
-        +'<div class="info-row"><span class="info-k">CPU 核心</span><span class="info-v">'+cpu.count+'</span></div>'
-        +'<div class="info-row"><span class="info-k">内存使用</span><span class="info-v">'+mem.percent+'% ('+formatBytes(mem.used)+' / '+formatBytes(mem.total)+')</span></div>'
-        +'<div class="info-row"><span class="info-k">磁盘使用</span><span class="info-v">'+disk.percent+'% ('+formatBytes(disk.used)+' / '+formatBytes(disk.total)+')</span></div>'
-        +'<div class="info-row"><span class="info-k">VPP 版本</span><span class="info-v" style="font-size:11px">'+(vpp.version||'N/A')+'</span></div>'
-        +'<div class="info-row"><span class="info-k">VPP 接口数</span><span class="info-v">'+(vpp.interface_count||0)+'</span></div>'
-        +'<div style="margin-top:16px">'
-        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">CPU</span><span style="font-size:12px;color:var(--text-1)">'+cpu.percent+'%</span></div>'
-        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--accent);height:100%;width:'+cpu.percent+'%;transition:width 0.3s"></div></div>'
-        +'</div>'
-        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">内存</span><span style="font-size:12px;color:var(--text-1)">'+mem.percent+'%</span></div>'
-        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--green);height:100%;width:'+mem.percent+'%;transition:width 0.3s"></div></div>'
-        +'</div>'
-        +'<div style="background:var(--bg-1);border-radius:8px;padding:12px">'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">磁盘</span><span style="font-size:12px;color:var(--text-1)">'+disk.percent+'%</span></div>'
-        +'<div style="background:var(--bg-4);border-radius:4px;height:8px;overflow:hidden"><div style="background:var(--purple);height:100%;width:'+disk.percent+'%;transition:width 0.3s"></div></div>'
-        +'</div>'
-        +'</div>';
-    }
-
-    async function loadDns(){
-      const d=await api('/api/dns/status'),el=document.getElementById('dns-el');
-      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-
-      if(d.status==='active'){
-        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
-          +'<div class="info-row"><span class="info-k">上游 DNS</span><span class="info-v">'+(d.upstream||[]).join(', ')+'</span></div>'
-          +'<div class="info-row"><span class="info-k">缓存大小</span><span class="info-v">'+d.cache_size+' 条</span></div>'
-          +'<div class="info-row"><span class="info-k">监听接口</span><span class="info-v">'+d.interface+'</span></div>'
-          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ DNS 转发已启用，LAN 客户端可解析域名</p></div>';
-      } else {
-        el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><p>DNS 转发未启用</p>'
-          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableDns()">启用 DNS 转发</button></div>';
+    // ============================================================
+    // API Helper
+    // ============================================================
+    async function api(url, opts = {}) {
+      try {
+        updateConnectionStatus(true);
+        const response = await fetch(url, opts);
+        const data = await response.json();
+        if (data.error) {
+          return { error: data.error };
+        }
+        return data;
+      } catch (e) {
+        updateConnectionStatus(false);
+        return { error: e.message };
       }
     }
 
-    async function enableDns(){
-      const d=await api('/api/dns/enable', {method:'POST'});
-      if(d.error){toast('DNS 启用失败: '+d.error,false);}
-      else{toast('DNS 转发已启用');loadDns();}
-    }
-
-    async function loadDhcp(){
-      const d=await api('/api/dhcp/status'),el=document.getElementById('dhcp-el');
-      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-
-      if(d.servers && d.servers.length > 0 && d.servers[0] !== ''){
-        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
-          +'<div class="info-row"><span class="info-k">接口</span><span class="info-v">lan0</span></div>'
-          +'<div class="info-row"><span class="info-k">地址范围</span><span class="info-v">192.168.1.100 - 192.168.1.200</span></div>'
-          +'<div class="info-row"><span class="info-k">网关</span><span class="info-v">192.168.1.1</span></div>'
-          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ DHCP 服务已启用</p></div>';
+    function updateConnectionStatus(connected) {
+      const dot = document.getElementById('conn-dot');
+      const text = document.getElementById('conn-text');
+      if (connected) {
+        dot.className = 'conn-dot';
+        text.textContent = 'Connected';
+        apiHealthy = true;
       } else {
-        el.innerHTML='<div class="empty"><div class="empty-icon">📡</div><p>DHCP 服务未启用</p>'
-          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableDhcp()">启用 DHCP</button></div>';
+        dot.className = 'conn-dot offline';
+        text.textContent = 'Disconnected';
+        apiHealthy = false;
       }
     }
 
-    async function enableDhcp(){
-      const d=await api('/api/dhcp/enable', {method:'POST'});
-      if(d.error){toast('DHCP 启用失败: '+d.error,false);}
-      else{toast('DHCP 已启用');loadDhcp();}
-    }
-
-    async function loadNat(){
-      const d=await api('/api/nat/status'),el=document.getElementById('nat-el');
-      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-
-      if(d.interfaces && d.interfaces.length > 0){
-        const inside=d.interfaces.find(i=>i.direction==='in');
-        const outside=d.interfaces.find(i=>i.direction==='out');
-
-        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
-          +'<div class="info-row"><span class="info-k">内部接口</span><span class="info-v">'+(inside?inside.name:'未配置')+'</span></div>'
-          +'<div class="info-row"><span class="info-k">外部接口</span><span class="info-v">'+(outside?outside.name:'未配置')+'</span></div>'
-          +'<div class="info-row"><span class="info-k">会话数</span><span class="info-v">'+d.sessions.length+'</span></div>'
-          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ NAT 已启用，LAN 客户端可通过 PPPoE 上网</p></div>';
+    // ============================================================
+    // Auto-refresh
+    // ============================================================
+    function toggleAutoRefresh() {
+      const enabled = document.getElementById('auto-refresh').checked;
+      if (enabled) {
+        startAutoRefresh();
+        toast('Auto-refresh enabled', 'info', 'Updating every 5 seconds');
       } else {
-        el.innerHTML='<div class="empty"><div class="empty-icon">🔄</div><p>NAT 未启用</p>'
-          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableNat()">启用 NAT</button></div>';
+        stopAutoRefresh();
+        toast('Auto-refresh disabled', 'info');
       }
     }
 
-    async function enableNat(){
-      const d=await api('/api/nat/enable', {method:'POST'});
-      if(d.error){toast('NAT 启用失败: '+d.error,false);}
-      else{toast('NAT 已启用');loadNat();}
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      autoRefreshTimer = setInterval(() => {
+        load(currentPage);
+      }, 5000);
     }
 
-    async function loadDashboard(){
-      const[h,s,nat,dhcp,dns]=await Promise.all([
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    // ============================================================
+    // Loading States
+    // ============================================================
+    function showLoading(elementId, message = 'Loading...') {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.innerHTML = '<div class="loading"><div class="spinner"></div>' + message + '</div>';
+      }
+    }
+
+    function showError(elementId, error, retryFn = null) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        let html = '<div class="empty"><div class="empty-icon">⚠️</div>'
+          + '<p style="color:var(--red)">' + escapeHtml(error) + '</p>';
+        if (retryFn) {
+          html += '<button class="retry-btn" onclick="' + retryFn + '">🔄 Retry</button>';
+        }
+        html += '</div>';
+        el.innerHTML = html;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ============================================================
+    // Refresh All
+    // ============================================================
+    async function refreshAll() {
+      toast('Refreshing all data...', 'info');
+      await Promise.all([
+        loadDashboard(),
+        loadPppoe(),
+        loadIfaces(),
+        loadRoutes()
+      ]);
+      toast('All data refreshed', 'success');
+    }
+
+    // ============================================================
+    // Load Router
+    // ============================================================
+    function load(page) {
+      switch (page) {
+        case 'dashboard': loadDashboard(); break;
+        case 'pppoe': loadPppoe(); break;
+        case 'interfaces': loadIfaces(); break;
+        case 'routes': loadRoutes(); break;
+        case 'nat': loadNat(); break;
+        case 'dhcp': loadDhcp(); break;
+        case 'dns': loadDns(); break;
+        case 'system': loadSystem(); break;
+      }
+    }
+
+    // ============================================================
+    // Dashboard
+    // ============================================================
+    async function loadDashboard() {
+      const [health, pppoe, nat, dhcp, dns, system] = await Promise.all([
         api('/api/health'),
         api('/api/pppoe/status'),
         api('/api/nat/status'),
         api('/api/dhcp/status'),
-        api('/api/dns/status')
+        api('/api/dns/status'),
+        api('/api/system')
       ]);
 
-      document.getElementById('sv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已配置':'未配置';
-      document.getElementById('iv-ver').textContent=h.version||'—';
-      document.getElementById('iv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已创建':'未创建';
-      document.getElementById('iv-api').textContent=s.interfaces?'已连接':'未连接';
-      document.getElementById('iv-msg').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'ID: '+s.pppoe_clients[0].pppox_sw_if_index:'—';
-
-      // Update NAT status
-      const natEl=document.getElementById('iv-nat');
-      if(natEl) natEl.textContent=nat.interfaces&&nat.interfaces.length>0?'已启用':'未启用';
-
-      // Update DHCP status
-      const dhcpEl=document.getElementById('iv-dhcp');
-      if(dhcpEl) dhcpEl.textContent=dhcp.status==='active'?'已启用':'未启用';
-
-      // Update DNS status
-      const dnsEl=document.getElementById('iv-dns');
-      if(dnsEl) dnsEl.textContent=dns.status==='active'?'已启用':'未启用';
-    }
-
-    async function loadPppoe(){
-      const d=await api('/api/pppoe/status'),el=document.getElementById('pppoe-el');
-      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-
-      if(d.pppoe_clients && d.pppoe_clients.length > 0){
-        const c=d.pppoe_clients[0];
-        const stateMap={0:'发现中',1:'请求中',2:'会话中'};
-        const stateClass={0:'b-yellow',1:'b-yellow',2:'b-green'};
-        const stateText=stateMap[c.client_state]||'未知';
-
-        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge '+stateClass[c.client_state]+'"><span class="dot"></span> '+stateText+'</span></div>'
-          +'<div class="info-row"><span class="info-k">用户名</span><span class="info-v">'+c.auth_user+'</span></div>'
-          +'<div class="info-row"><span class="info-k">接口</span><span class="info-v">pppoe-wan0 (idx '+c.pppox_sw_if_index+')</span></div>'
-          +'<div class="info-row"><span class="info-k">MTU/MRU</span><span class="info-v">'+c.mtu+' / '+c.mru+'</span></div>'
-          +'<div class="info-row"><span class="info-k">IPv4 本地</span><span class="info-v">'+c.ipv4_local+'</span></div>'
-          +'<div class="info-row"><span class="info-k">IPv4 对端</span><span class="info-v">'+c.ipv4_peer+'</span></div>'
-          +'<div class="info-row"><span class="info-k">DNS</span><span class="info-v">'+(c.use_peer_dns?'使用运营商DNS':'自定义')+'</span></div>'
-          +'<div class="info-row"><span class="info-k">默认路由</span><span class="info-v">'+(c.add_default_route4?'IPv4 ✓':'')+' '+(c.add_default_route6?'IPv6 ✓':'')+'</span></div>'
-          +'<div class="info-row"><span class="info-k">重连次数</span><span class="info-v">'+c.total_reconnects+'</span></div>'
-          +'<div class="info-row"><span class="info-k">会话时长</span><span class="info-v">'+c.session_uptime_seconds+'秒</span></div>'
-          +'<div style="margin-top:16px;display:flex;gap:8px">'
-          +'<button class="btn btn-primary" onclick="pppoeRestart()">重新拨号</button>'
-          +'<button class="btn btn-ghost" onclick="pppoeStop()">断开连接</button>'
-          +'</div>';
+      // Health chip
+      const healthChip = document.getElementById('health-chip');
+      const healthText = document.getElementById('health-text');
+      if (health.error) {
+        healthChip.className = 'hdr-chip error';
+        healthText.textContent = 'Error';
       } else {
-        el.innerHTML='<div class="empty"><div class="empty-icon">🔌</div><p>未配置 PPPoE</p><p style="font-size:12px;margin-top:8px;color:var(--text-3)">填写左侧表单创建拨号连接</p></div>';
+        healthChip.className = 'hdr-chip';
+        healthText.textContent = 'Healthy';
+      }
+
+      // Version tag
+      if (health.version) {
+        document.getElementById('h-tag').textContent = health.version;
+      }
+
+      // PPPoE stat
+      const hasPppoe = pppoe.pppoe_clients && pppoe.pppoe_clients.length > 0;
+      document.getElementById('sv-pppoe').textContent = hasPppoe ? 'Connected' : 'Idle';
+      const stPppoe = document.getElementById('st-pppoe');
+      stPppoe.textContent = hasPppoe ? 'Online' : 'Offline';
+      stPppoe.className = 'stat-tag ' + (hasPppoe ? 'ok' : 'warn');
+      document.getElementById('nb-pppoe').textContent = hasPppoe ? 'Online' : 'Off';
+
+      // Interfaces stat
+      const ifaces = await api('/api/interfaces');
+      const ifaceCount = ifaces.interfaces ? ifaces.interfaces.length : 0;
+      document.getElementById('sv-ifaces').textContent = ifaceCount;
+      document.getElementById('nb-ifaces').textContent = ifaceCount;
+
+      // Services stat
+      let activeServices = 0;
+      if (nat.interfaces && nat.interfaces.length > 0) activeServices++;
+      if (dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '') activeServices++;
+      if (dns.status === 'active') activeServices++;
+      document.getElementById('sv-services').textContent = activeServices + '/3';
+      const stServices = document.getElementById('st-services');
+      stServices.textContent = activeServices === 3 ? 'All Active' : activeServices + ' Active';
+      stServices.className = 'stat-tag ' + (activeServices === 3 ? 'ok' : activeServices > 0 ? 'warn' : 'err');
+
+      // Uptime
+      if (system.system && system.system.uptime) {
+        const up = system.system.uptime;
+        document.getElementById('sv-uptime').textContent = up;
+      } else {
+        document.getElementById('sv-uptime').textContent = '--';
+      }
+
+      // System info card
+      loadSystemInfo(health, pppoe, nat, dhcp, dns);
+
+      // Charts
+      if (system.system && system.system.cpu) {
+        updateCpuChart(system.system.cpu);
+      }
+      if (system.system && system.system.memory) {
+        updateMemoryDonut(system.system.memory);
+      }
+      if (system.system && system.system.disk) {
+        updateDiskDonut(system.system.disk);
+      }
+
+      // VPP status in sidebar
+      const vppText = document.getElementById('vpp-status-text');
+      if (health.vpp_running) {
+        vppText.textContent = 'Running';
+        vppText.style.color = 'var(--green)';
       }
     }
 
-    async function loadIfaces(){
-      const d=await api('/api/interfaces');
-      if(d.error){document.getElementById('if-tb').innerHTML='<tr><td colspan="6" style="color:var(--red)">'+d.error+'</td></tr>';return;}
-
-      const typeMap={local0:'环回',wan0:'WAN',lan0:'LAN',lan1:'LAN','pppoe-wan0':'PPPoE'};
-      const descMap={local0:'本地环回',wan0:'CX4 LX 口1 VF',lan0:'CX4 LX 口2 VF',lan1:'CX4 LX 口2 VF','pppoe-wan0':'PPPoE 拨号接口'};
-
-      document.getElementById('if-tb').innerHTML=d.interfaces.map(i=>{
-        const name=i.name;
-        const type=typeMap[name]||'未知';
-        const desc=descMap[name]||'';
-        const status=i.state;
-        const statusClass=i.state==='up'?'b-green':'b-yellow';
-        const toggleBtn=i.state==='up'
-          ?'<button class="btn btn-ghost" onclick="ifaceDown(\''+name+'\')">关闭</button>'
-          :'<button class="btn btn-ghost" onclick="ifaceUp(\''+name+'\')">开启</button>';
-        return '<tr><td><strong class="mono">'+name+'</strong></td><td><span class="badge b-accent">'+type+'</span></td><td><span class="badge '+statusClass+'"><span class="dot"></span> '+status+'</span></td><td class="mono">'+i.mtu+'</td><td>'+desc+'</td><td>'+toggleBtn+'</td></tr>';
-      }).join('');
+    function loadSystemInfo(health, pppoe, nat, dhcp, dns) {
+      const hasPppoe = pppoe.pppoe_clients && pppoe.pppoe_clients.length > 0;
+      const el = document.getElementById('sys-info');
+      el.innerHTML = ''
+        + '<div class="info-row"><span class="info-k">VectorOS Version</span><span class="info-v">' + (health.version || '--') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">VPP Data Plane</span><span class="info-v">' + (health.vpp_running ? 'Running' : 'Stopped') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">PPPoE</span><span class="info-v">' + (hasPppoe ? 'Connected' : 'Not configured') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">NAT</span><span class="info-v">' + (nat.interfaces && nat.interfaces.length > 0 ? 'Enabled' : 'Disabled') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">DHCP</span><span class="info-v">' + (dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '' ? 'Enabled' : 'Disabled') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">DNS</span><span class="info-v">' + (dns.status === 'active' ? 'Enabled' : 'Disabled') + '</span></div>';
     }
 
-    async function ifaceUp(name){
-      const d=await api('/api/interfaces/'+name+'/up',{method:'POST'});
-      if(d.error){toast('开启失败: '+d.error,false);}
-      else{toast('接口 '+name+' 已开启');loadIfaces();}
+    // ============================================================
+    // CPU Bar Chart (CSS-only)
+    // ============================================================
+    function updateCpuChart(cpu) {
+      const percent = cpu.percent || 0;
+      document.getElementById('cpu-val').textContent = percent + '%';
+
+      // Add to history
+      cpuHistory.push(percent);
+      if (cpuHistory.length > MAX_HISTORY) cpuHistory.shift();
+
+      const chartEl = document.getElementById('cpu-chart');
+      const labelsEl = document.getElementById('cpu-labels');
+
+      let barsHtml = '';
+      let labelsHtml = '';
+      const now = new Date();
+
+      cpuHistory.forEach((val, i) => {
+        const height = Math.max(4, val);
+        const age = cpuHistory.length - 1 - i;
+        const opacity = 0.4 + (1 - age / MAX_HISTORY) * 0.6;
+        barsHtml += '<div class="bar accent" style="height:' + height + '%;opacity:' + opacity + '" data-val="' + val + '%"></div>';
+
+        const t = new Date(now.getTime() - (MAX_HISTORY - 1 - i) * 5000);
+        labelsHtml += '<span>' + t.getSeconds() + 's</span>';
+      });
+
+      chartEl.innerHTML = barsHtml;
+      labelsEl.innerHTML = labelsHtml;
     }
 
-    async function ifaceDown(name){
-      const d=await api('/api/interfaces/'+name+'/down',{method:'POST'});
-      if(d.error){toast('关闭失败: '+d.error,false);}
-      else{toast('接口 '+name+' 已关闭');loadIfaces();}
+    // ============================================================
+    // Memory Donut (CSS-only)
+    // ============================================================
+    function updateMemoryDonut(mem) {
+      const percent = mem.percent || 0;
+      const used = mem.used || 0;
+      const total = mem.total || 1;
+      const free = total - used;
+
+      document.getElementById('mem-val').textContent = percent + '%';
+
+      const donut = document.getElementById('mem-donut');
+      const legend = document.getElementById('mem-legend');
+
+      // CSS conic gradient for donut
+      donut.style.background = 'conic-gradient(var(--accent) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
+      donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">Used</div></div>';
+
+      // Add center circle (hole)
+      const hole = document.createElement('div');
+      hole.style.cssText = 'position:absolute;top:18px;left:18px;right:18px;bottom:18px;background:var(--bg-2);border-radius:50%;';
+      donut.appendChild(hole);
+
+      legend.innerHTML = ''
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Used<span class="legend-val">' + formatBytes(used) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>Free<span class="legend-val">' + formatBytes(free) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>Total<span class="legend-val">' + formatBytes(total) + '</span></div>';
     }
 
-    async function loadRoutes(){
-      document.getElementById('rt-tb').innerHTML='<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">默认</span></td></tr>'
-        +'<tr><td class="mono">192.168.1.0/24</td><td class="mono">直连</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">直连</span></td></tr>'
-        +'<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">保留</span></td></tr>';
+    // ============================================================
+    // Disk Donut (CSS-only)
+    // ============================================================
+    function updateDiskDonut(disk) {
+      const percent = disk.percent || 0;
+      const used = disk.used || 0;
+      const total = disk.total || 1;
+      const free = total - used;
+
+      document.getElementById('disk-val').textContent = percent + '%';
+
+      const donut = document.getElementById('disk-donut');
+      const legend = document.getElementById('disk-legend');
+
+      donut.style.background = 'conic-gradient(var(--purple) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
+      donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">Used</div></div>';
+
+      const hole = document.createElement('div');
+      hole.style.cssText = 'position:absolute;top:18px;left:18px;right:18px;bottom:18px;background:var(--bg-2);border-radius:50%;';
+      donut.appendChild(hole);
+
+      legend.innerHTML = ''
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Used<span class="legend-val">' + formatBytes(used) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>Free<span class="legend-val">' + formatBytes(free) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>Total<span class="legend-val">' + formatBytes(total) + '</span></div>';
     }
 
-    async function savePppoe(e){
+    function formatBytes(bytes) {
+      if (!bytes) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
+
+    // ============================================================
+    // PPPoE
+    // ============================================================
+    async function loadPppoe() {
+      showLoading('pppoe-el', 'Loading PPPoE status...');
+      const d = await api('/api/pppoe/status');
+      const el = document.getElementById('pppoe-el');
+
+      if (d.error) {
+        showError('pppoe-el', d.error, 'loadPppoe()');
+        return;
+      }
+
+      if (d.pppoe_clients && d.pppoe_clients.length > 0) {
+        const c = d.pppoe_clients[0];
+        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
+        const stateClass = { 0: 'b-yellow', 1: 'b-yellow', 2: 'b-green' };
+        const stateText = stateMap[c.client_state] || 'Unknown';
+
+        el.innerHTML = ''
+          + '<div class="info-row"><span class="info-k">State</span><span class="badge ' + stateClass[c.client_state] + '"><span class="dot"></span> ' + stateText + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Username</span><span class="info-v">' + escapeHtml(c.auth_user) + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Interface</span><span class="info-v">pppoe-wan0 (idx ' + c.pppox_sw_if_index + ')</span></div>'
+          + '<div class="info-row"><span class="info-k">MTU / MRU</span><span class="info-v">' + c.mtu + ' / ' + c.mru + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Local IPv4</span><span class="info-v">' + c.ipv4_local + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Peer IPv4</span><span class="info-v">' + c.ipv4_peer + '</span></div>'
+          + '<div class="info-row"><span class="info-k">DNS</span><span class="info-v">' + (c.use_peer_dns ? 'ISP DNS' : 'Custom') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Default Route</span><span class="info-v">' + (c.add_default_route4 ? 'IPv4' : '') + (c.add_default_route6 ? ' IPv6' : '') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Reconnects</span><span class="info-v">' + c.total_reconnects + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Session Uptime</span><span class="info-v">' + c.session_uptime_seconds + 's</span></div>'
+          + '<div style="margin-top:20px;display:flex;gap:10px">'
+          + '<button class="btn btn-primary" onclick="pppoeRestart()">🔄 Reconnect</button>'
+          + '<button class="btn btn-danger" onclick="pppoeStop()">⏹ Disconnect</button>'
+          + '</div>';
+      } else {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">🔌</div>'
+          + '<p>No PPPoE connection configured</p>'
+          + '<p style="font-size:12px;margin-top:8px;color:var(--text-3)">Fill in the form on the left to create a connection</p></div>';
+      }
+    }
+
+    async function savePppoe(e) {
       e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
-      const origText = btn.textContent;
-      btn.textContent = '⏳ 创建中...';
+      const btn = document.getElementById('pppoe-submit-btn');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> Connecting...';
       btn.disabled = true;
 
       const config = {
@@ -1248,22 +2037,21 @@
         const data = await res.json();
 
         if (data.error) {
-          toast('错误: ' + data.error, false);
+          toast('Connection failed: ' + data.error, 'error');
         } else {
-          toast('PPPoE 客户端创建成功!');
+          toast('PPPoE client created successfully', 'success', 'Connection establishing...');
           loadPppoe();
         }
       } catch (e) {
-        toast('请求失败: ' + e.message, false);
+        toast('Request failed: ' + e.message, 'error');
       } finally {
-        btn.textContent = origText;
+        btn.innerHTML = origText;
         btn.disabled = false;
       }
     }
 
-    async function pppoeRestart(){
-      toast('正在重新拨号...');
-      // Recreate PPPoE client
+    async function pppoeRestart() {
+      toast('Reconnecting...', 'info');
       const config = {
         username: document.getElementById('pu').value || 'testuser',
         password: document.getElementById('pp').value || 'testpass',
@@ -1284,23 +2072,283 @@
         const data = await res.json();
 
         if (data.error) {
-          toast('重新拨号失败: ' + data.error, false);
+          toast('Reconnect failed: ' + data.error, 'error');
         } else {
-          toast('PPPoE 已重新拨号');
+          toast('PPPoE reconnecting', 'success');
           setTimeout(loadPppoe, 2000);
         }
       } catch (e) {
-        toast('请求失败: ' + e.message, false);
+        toast('Request failed: ' + e.message, 'error');
       }
     }
 
-    async function pppoeStop(){
-      toast('正在断开连接...');
-      // TODO: Implement PPPoE stop
-      toast('功能开发中', false);
+    async function pppoeStop() {
+      toast('Disconnect feature coming soon', 'info');
     }
 
-    document.addEventListener('DOMContentLoaded',loadDashboard);
+    // ============================================================
+    // Interfaces
+    // ============================================================
+    async function loadIfaces() {
+      showLoading('if-tb', 'Loading interfaces...');
+      // Show loading in table format
+      document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Loading interfaces...</div></td></tr>';
+
+      const d = await api('/api/interfaces');
+      if (d.error) {
+        document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">' + escapeHtml(d.error) + '</p><button class="retry-btn" onclick="loadIfaces()">🔄 Retry</button></div></td></tr>';
+        return;
+      }
+
+      const typeMap = { local0: 'Loopback', wan0: 'WAN', lan0: 'LAN', lan1: 'LAN', 'pppoe-wan0': 'PPPoE' };
+      const descMap = { local0: 'Local loopback', wan0: 'CX4 LX Port 1 VF', lan0: 'CX4 LX Port 2 VF', lan1: 'CX4 LX Port 2 VF', 'pppoe-wan0': 'PPPoE dial-up interface' };
+      const badgeMap = { local0: 'b-neutral', wan0: 'b-accent', lan0: 'b-green', lan1: 'b-green', 'pppoe-wan0': 'b-cyan' };
+
+      document.getElementById('if-tb').innerHTML = d.interfaces.map(i => {
+        const name = i.name;
+        const type = typeMap[name] || 'Unknown';
+        const desc = descMap[name] || '';
+        const statusClass = i.state === 'up' ? 'b-green' : 'b-yellow';
+        const toggleBtn = i.state === 'up'
+          ? '<button class="btn btn-danger btn-sm" onclick="ifaceDown(\'' + name + '\')">⬇ Down</button>'
+          : '<button class="btn btn-success btn-sm" onclick="ifaceUp(\'' + name + '\')">⬆ Up</button>';
+        return '<tr>'
+          + '<td><strong class="mono">' + name + '</strong></td>'
+          + '<td><span class="badge ' + (badgeMap[name] || 'b-neutral') + '">' + type + '</span></td>'
+          + '<td><span class="badge ' + statusClass + '"><span class="dot"></span> ' + i.state + '</span></td>'
+          + '<td class="mono">' + i.mtu + '</td>'
+          + '<td>' + desc + '</td>'
+          + '<td>' + toggleBtn + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    async function ifaceUp(name) {
+      toast('Bringing ' + name + ' up...', 'info');
+      const d = await api('/api/interfaces/' + name + '/up', { method: 'POST' });
+      if (d.error) {
+        toast('Failed to bring up ' + name + ': ' + d.error, 'error');
+      } else {
+        toast('Interface ' + name + ' is now UP', 'success');
+        loadIfaces();
+      }
+    }
+
+    async function ifaceDown(name) {
+      toast('Bringing ' + name + ' down...', 'info');
+      const d = await api('/api/interfaces/' + name + '/down', { method: 'POST' });
+      if (d.error) {
+        toast('Failed to bring down ' + name + ': ' + d.error, 'error');
+      } else {
+        toast('Interface ' + name + ' is now DOWN', 'success');
+        loadIfaces();
+      }
+    }
+
+    // ============================================================
+    // Routes
+    // ============================================================
+    async function loadRoutes() {
+      document.getElementById('rt-tb').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Loading routes...</div></td></tr>';
+
+      // Use hardcoded routes since we don't have a routes API
+      document.getElementById('rt-tb').innerHTML = ''
+        + '<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">Default</span></td></tr>'
+        + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">Direct</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">Connected</span></td></tr>'
+        + '<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">Reserved</span></td></tr>';
+    }
+
+    // ============================================================
+    // DHCP
+    // ============================================================
+    async function loadDhcp() {
+      showLoading('dhcp-el', 'Loading DHCP status...');
+      const d = await api('/api/dhcp/status');
+      const el = document.getElementById('dhcp-el');
+
+      if (d.error) {
+        showError('dhcp-el', d.error, 'loadDhcp()');
+        return;
+      }
+
+      if (d.servers && d.servers.length > 0 && d.servers[0] !== '') {
+        el.innerHTML = ''
+          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
+          + '<div class="info-row"><span class="info-k">Interface</span><span class="info-v">lan0</span></div>'
+          + '<div class="info-row"><span class="info-k">Address Range</span><span class="info-v">192.168.1.100 - 192.168.1.200</span></div>'
+          + '<div class="info-row"><span class="info-k">Gateway</span><span class="info-v">192.168.1.1</span></div>'
+          + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ DHCP service is active and serving clients</p></div>';
+      } else {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div>'
+          + '<p>DHCP service is not enabled</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDhcp()">🚀 Enable DHCP</button></div>';
+      }
+    }
+
+    async function enableDhcp() {
+      toast('Enabling DHCP...', 'info');
+      const d = await api('/api/dhcp/enable', { method: 'POST' });
+      if (d.error) {
+        toast('Failed to enable DHCP: ' + d.error, 'error');
+      } else {
+        toast('DHCP enabled successfully', 'success', 'LAN clients can now obtain IP addresses');
+        loadDhcp();
+      }
+    }
+
+    // ============================================================
+    // DNS
+    // ============================================================
+    async function loadDns() {
+      showLoading('dns-el', 'Loading DNS status...');
+      const d = await api('/api/dns/status');
+      const el = document.getElementById('dns-el');
+
+      if (d.error) {
+        showError('dns-el', d.error, 'loadDns()');
+        return;
+      }
+
+      if (d.status === 'active') {
+        el.innerHTML = ''
+          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
+          + '<div class="info-row"><span class="info-k">Upstream DNS</span><span class="info-v">' + (d.upstream || []).join(', ') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Cache Size</span><span class="info-v">' + d.cache_size + ' entries</span></div>'
+          + '<div class="info-row"><span class="info-k">Listen Interface</span><span class="info-v">' + d.interface + '</span></div>'
+          + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ DNS forwarding is active for LAN clients</p></div>';
+      } else {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>'
+          + '<p>DNS forwarding is not enabled</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDns()">🚀 Enable DNS</button></div>';
+      }
+    }
+
+    async function enableDns() {
+      toast('Enabling DNS forwarding...', 'info');
+      const d = await api('/api/dns/enable', { method: 'POST' });
+      if (d.error) {
+        toast('Failed to enable DNS: ' + d.error, 'error');
+      } else {
+        toast('DNS forwarding enabled', 'success', 'LAN clients can now resolve domain names');
+        loadDns();
+      }
+    }
+
+    // ============================================================
+    // NAT
+    // ============================================================
+    async function loadNat() {
+      showLoading('nat-el', 'Loading NAT status...');
+      const d = await api('/api/nat/status');
+      const el = document.getElementById('nat-el');
+
+      if (d.error) {
+        showError('nat-el', d.error, 'loadNat()');
+        return;
+      }
+
+      if (d.interfaces && d.interfaces.length > 0) {
+        const inside = d.interfaces.find(i => i.direction === 'in');
+        const outside = d.interfaces.find(i => i.direction === 'out');
+
+        el.innerHTML = ''
+          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
+          + '<div class="info-row"><span class="info-k">Inside Interface</span><span class="info-v">' + (inside ? inside.name : 'Not configured') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Outside Interface</span><span class="info-v">' + (outside ? outside.name : 'Not configured') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">Sessions</span><span class="info-v">' + d.sessions.length + '</span></div>'
+          + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ NAT is active -- LAN clients can access the Internet via PPPoE</p></div>';
+      } else {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">🔄</div>'
+          + '<p>NAT is not enabled</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableNat()">🚀 Enable NAT</button></div>';
+      }
+    }
+
+    async function enableNat() {
+      toast('Enabling NAT...', 'info');
+      const d = await api('/api/nat/enable', { method: 'POST' });
+      if (d.error) {
+        toast('Failed to enable NAT: ' + d.error, 'error');
+      } else {
+        toast('NAT enabled successfully', 'success', 'LAN clients can now access the Internet');
+        loadNat();
+      }
+    }
+
+    // ============================================================
+    // System
+    // ============================================================
+    async function loadSystem() {
+      showLoading('sys-el', 'Loading system info...');
+      const d = await api('/api/system');
+      const el = document.getElementById('sys-el');
+
+      if (d.error) {
+        showError('sys-el', d.error, 'loadSystem()');
+        return;
+      }
+
+      const sys = d.system || {};
+      const cpu = sys.cpu || {};
+      const mem = sys.memory || {};
+      const disk = sys.disk || {};
+      const vpp = d.vpp || {};
+
+      el.innerHTML = ''
+        + '<div class="info-row"><span class="info-k">CPU Usage</span><span class="info-v">' + (cpu.percent || 0) + '%</span></div>'
+        + '<div class="info-row"><span class="info-k">CPU Cores</span><span class="info-v">' + (cpu.count || '--') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">Memory</span><span class="info-v">' + (mem.percent || 0) + '% (' + formatBytes(mem.used) + ' / ' + formatBytes(mem.total) + ')</span></div>'
+        + '<div class="info-row"><span class="info-k">Disk</span><span class="info-v">' + (disk.percent || 0) + '% (' + formatBytes(disk.used) + ' / ' + formatBytes(disk.total) + ')</span></div>'
+        + '<div class="info-row"><span class="info-k">VPP Version</span><span class="info-v" style="font-size:11px">' + (vpp.version || 'N/A') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">VPP Interfaces</span><span class="info-v">' + (vpp.interface_count || 0) + '</span></div>'
+        + '<div style="margin-top:20px">'
+        + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">CPU</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (cpu.percent || 0) + '%</span></div>'
+        + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--accent), var(--purple));height:100%;width:' + (cpu.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
+        + '</div>'
+        + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">Memory</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (mem.percent || 0) + '%</span></div>'
+        + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--green), var(--cyan));height:100%;width:' + (mem.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
+        + '</div>'
+        + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;border:1px solid var(--border)">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">Disk</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (disk.percent || 0) + '%</span></div>'
+        + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--purple), var(--orange));height:100%;width:' + (disk.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
+        + '</div>'
+        + '</div>';
+
+      // Update service cards
+      document.getElementById('svc-ver').textContent = d.version || '--';
+      document.getElementById('svc-vpp-ver').textContent = vpp.version || '--';
+      document.getElementById('svc-vpp-ifaces').textContent = vpp.interface_count || 0;
+
+      // PPPoE service card
+      const pppoeData = await api('/api/pppoe/status');
+      const hasPppoe = pppoeData.pppoe_clients && pppoeData.pppoe_clients.length > 0;
+      if (hasPppoe) {
+        const c = pppoeData.pppoe_clients[0];
+        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
+        document.getElementById('svc-pppoe-badge').className = 'badge b-green';
+        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>Connected';
+        document.getElementById('svc-pppoe-state').textContent = stateMap[c.client_state] || 'Unknown';
+        document.getElementById('svc-pppoe-iface').textContent = 'pppoe-wan0';
+      } else {
+        document.getElementById('svc-pppoe-badge').className = 'badge b-neutral';
+        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>Idle';
+        document.getElementById('svc-pppoe-state').textContent = 'Not configured';
+        document.getElementById('svc-pppoe-iface').textContent = '--';
+      }
+    }
+
+    // ============================================================
+    // Initialize
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      startAutoRefresh();
+    });
   </script>
 </body>
 </html>
