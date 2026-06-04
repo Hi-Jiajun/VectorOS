@@ -906,8 +906,13 @@
         <!-- DHCP -->
         <div id="p-dhcp" class="page">
           <div class="card">
-            <div class="card-head"><h3>📡 DHCP</h3></div>
-            <div class="card-body"><div class="empty"><div class="empty-icon">📡</div><p>DHCP 服务未启用</p></div></div>
+            <div class="card-head">
+              <h3>📡 DHCP 服务</h3>
+              <button class="btn btn-ghost" onclick="loadDhcp()">刷新</button>
+            </div>
+            <div class="card-body" id="dhcp-el">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
           </div>
         </div>
 
@@ -994,6 +999,29 @@
       else if(p==='interfaces')loadIfaces();
       else if(p==='routes')loadRoutes();
       else if(p==='nat')loadNat();
+      else if(p==='dhcp')loadDhcp();
+    }
+
+    async function loadDhcp(){
+      const d=await api('/api/dhcp/status'),el=document.getElementById('dhcp-el');
+      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
+
+      if(d.servers && d.servers.length > 0 && d.servers[0] !== ''){
+        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
+          +'<div class="info-row"><span class="info-k">接口</span><span class="info-v">lan0</span></div>'
+          +'<div class="info-row"><span class="info-k">地址范围</span><span class="info-v">192.168.1.100 - 192.168.1.200</span></div>'
+          +'<div class="info-row"><span class="info-k">网关</span><span class="info-v">192.168.1.1</span></div>'
+          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ DHCP 服务已启用</p></div>';
+      } else {
+        el.innerHTML='<div class="empty"><div class="empty-icon">📡</div><p>DHCP 服务未启用</p>'
+          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableDhcp()">启用 DHCP</button></div>';
+      }
+    }
+
+    async function enableDhcp(){
+      const d=await api('/api/dhcp/enable', {method:'POST'});
+      if(d.error){toast('DHCP 启用失败: '+d.error,false);}
+      else{toast('DHCP 已启用');loadDhcp();}
     }
 
     async function loadNat(){

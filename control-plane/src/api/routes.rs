@@ -13,6 +13,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/pppoe/create", post(handlers::create_pppoe_client))
         .route("/api/nat/status", get(handlers::get_nat_status))
         .route("/api/nat/enable", post(handlers::enable_nat))
+        .route("/api/dhcp/status", get(handlers::get_dhcp_status))
+        .route("/api/dhcp/enable", post(handlers::enable_dhcp))
         .route("/api/routes", get(handlers::get_routes))
-        .route("/api/dhcp/leases", get(handlers::get_dhcp_leases))
 }
