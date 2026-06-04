@@ -105,6 +105,42 @@ pub async fn create_pppoe_client(
     }
 }
 
+pub async fn get_nat_status() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
+    cmd.arg("show");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn enable_nat() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
+    cmd.arg("enable");
+    cmd.arg("--inside-if").arg("2");
+    cmd.arg("--outside-if").arg("4");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
 pub async fn get_routes() -> Json<Value> {
     // TODO: Query VPP for routing table
     Json(json!({ "routes": [] }))
