@@ -1025,8 +1025,10 @@
       const cpu=sys.cpu||{};
       const mem=sys.memory||{};
       const disk=sys.disk||{};
+      const vpp=d.vpp||{};
 
       const formatBytes=(bytes)=>{
+        if(!bytes)return '0 B';
         if(bytes<1024)return bytes+' B';
         if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';
         if(bytes<1024*1024*1024)return (bytes/(1024*1024)).toFixed(1)+' MB';
@@ -1037,6 +1039,8 @@
         +'<div class="info-row"><span class="info-k">CPU 核心</span><span class="info-v">'+cpu.count+'</span></div>'
         +'<div class="info-row"><span class="info-k">内存使用</span><span class="info-v">'+mem.percent+'% ('+formatBytes(mem.used)+' / '+formatBytes(mem.total)+')</span></div>'
         +'<div class="info-row"><span class="info-k">磁盘使用</span><span class="info-v">'+disk.percent+'% ('+formatBytes(disk.used)+' / '+formatBytes(disk.total)+')</span></div>'
+        +'<div class="info-row"><span class="info-k">VPP 版本</span><span class="info-v" style="font-size:11px">'+(vpp.version||'N/A')+'</span></div>'
+        +'<div class="info-row"><span class="info-k">VPP 接口数</span><span class="info-v">'+(vpp.interface_count||0)+'</span></div>'
         +'<div style="margin-top:16px">'
         +'<div style="background:var(--bg-1);border-radius:8px;padding:12px;margin-bottom:8px">'
         +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--text-3)">CPU</span><span style="font-size:12px;color:var(--text-1)">'+cpu.percent+'%</span></div>'
