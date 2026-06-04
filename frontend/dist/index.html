@@ -991,27 +991,54 @@
     }
 
     async function loadDashboard(){
-      const[h,p]=await Promise.all([api('/api/health'),api('/api/pppoe/clients')]);
-      document.getElementById('sv-pppoe').textContent=p.status==='ok'?'就绪':'异常';
+      const[h,s]=await Promise.all([api('/api/health'),api('/api/pppoe/status')]);
+      document.getElementById('sv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已配置':'未配置';
       document.getElementById('iv-ver').textContent=h.version||'—';
-      document.getElementById('iv-pppoe').textContent=p.status==='ok'?'已加载':'未加载';
-      document.getElementById('iv-api').textContent=p.status==='ok'?'已连接':'未连接';
-      document.getElementById('iv-msg').textContent=p.base_msg_id||'—';
+      document.getElementById('iv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已创建':'未创建';
+      document.getElementById('iv-api').textContent=s.interfaces?'已连接':'未连接';
+      document.getElementById('iv-msg').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'ID: '+s.pppoe_clients[0].pppox_sw_if_index:'—';
     }
 
     async function loadPppoe(){
-      const d=await api('/api/pppoe/clients'),el=document.getElementById('pppoe-el');
+      const d=await api('/api/pppoe/status'),el=document.getElementById('pppoe-el');
       if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
-      el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span>'+d.status+'</span></div><div class="info-row"><span class="info-k">消息 ID</span><span class="info-v">'+d.base_msg_id+'</span></div><div class="info-row"><span class="info-k">消息</span><span class="info-v">'+d.message+'</span></div><div style="margin-top:16px;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:8px"><p style="font-size:12px;color:var(--accent-3)">💡 API 就绪，填写表单创建拨号</p></div>';
+
+      if(d.pppoe_clients && d.pppoe_clients.length > 0){
+        const c=d.pppoe_clients[0];
+        const stateMap={0:'发现中',1:'请求中',2:'会话中'};
+        const stateClass={0:'b-yellow',1:'b-yellow',2:'b-green'};
+        const stateText=stateMap[c.client_state]||'未知';
+
+        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge '+stateClass[c.client_state]+'"><span class="dot"></span> '+stateText+'</span></div>'
+          +'<div class="info-row"><span class="info-k">用户名</span><span class="info-v">'+c.auth_user+'</span></div>'
+          +'<div class="info-row"><span class="info-k">接口</span><span class="info-v">pppoe-wan0 (idx '+c.pppox_sw_if_index+')</span></div>'
+          +'<div class="info-row"><span class="info-k">MTU/MRU</span><span class="info-v">'+c.mtu+' / '+c.mru+'</span></div>'
+          +'<div class="info-row"><span class="info-k">IPv4 本地</span><span class="info-v">'+c.ipv4_local+'</span></div>'
+          +'<div class="info-row"><span class="info-k">IPv4 对端</span><span class="info-v">'+c.ipv4_peer+'</span></div>'
+          +'<div class="info-row"><span class="info-k">DNS</span><span class="info-v">'+(c.use_peer_dns?'使用运营商DNS':'自定义')+'</span></div>'
+          +'<div class="info-row"><span class="info-k">默认路由</span><span class="info-v">'+(c.add_default_route4?'IPv4 ✓':'')+' '+(c.add_default_route6?'IPv6 ✓':'')+'</span></div>'
+          +'<div class="info-row"><span class="info-k">重连次数</span><span class="info-v">'+c.total_reconnects+'</span></div>'
+          +'<div class="info-row"><span class="info-k">会话时长</span><span class="info-v">'+c.session_uptime_seconds+'秒</span></div>';
+      } else {
+        el.innerHTML='<div class="empty"><div class="empty-icon">🔌</div><p>未配置 PPPoE</p><p style="font-size:12px;margin-top:8px;color:var(--text-3)">填写左侧表单创建拨号连接</p></div>';
+      }
     }
 
     async function loadIfaces(){
-      document.getElementById('if-tb').innerHTML=[
-        {n:'ens18',t:'管理',s:'up',m:1500,d:'192.168.1.7'},
-        {n:'enp1s0',t:'WAN',s:'down',m:1500,d:'CX4 LX 口1'},
-        {n:'enp2s0',t:'LAN',s:'down',m:1500,d:'CX4 LX 口2'},
-        {n:'enp3s0',t:'备用',s:'down',m:1500,d:'CX4 LX 口2'},
-      ].map(i=>'<tr><td><strong class="mono">'+i.n+'</strong></td><td><span class="badge b-accent">'+i.t+'</span></td><td><span class="badge '+(i.s==='up'?'b-green':'b-yellow')+'"><span class="dot"></span> '+i.s+'</span></td><td class="mono">'+i.m+'</td><td>'+i.d+'</td><td><button class="btn btn-ghost">配置</button></td></tr>').join('');
+      const d=await api('/api/interfaces');
+      if(d.error){document.getElementById('if-tb').innerHTML='<tr><td colspan="6" style="color:var(--red)">'+d.error+'</td></tr>';return;}
+
+      const typeMap={local0:'环回',wan0:'WAN',lan0:'LAN',lan1:'LAN',pppoe:'PPPoE'};
+      const descMap={local0:'本地环回',wan0:'CX4 LX 口1 VF',lan0:'CX4 LX 口2 VF',lan1:'CX4 LX 口2 VF','pppoe-wan0':'PPPoE 拨号接口'};
+
+      document.getElementById('if-tb').innerHTML=d.interfaces.map(i=>{
+        const name=i.name;
+        const type=typeMap[name]||'未知';
+        const desc=descMap[name]||'';
+        const status=i.admin_up?'up':'down';
+        const statusClass=i.admin_up?'b-green':'b-yellow';
+        return '<tr><td><strong class="mono">'+name+'</strong></td><td><span class="badge b-accent">'+type+'</span></td><td><span class="badge '+statusClass+'"><span class="dot"></span> '+status+'</span></td><td class="mono">'+i.mtu+'</td><td>'+desc+'</td><td><button class="btn btn-ghost">配置</button></td></tr>';
+      }).join('');
     }
 
     async function loadRoutes(){
