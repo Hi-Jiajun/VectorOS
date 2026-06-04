@@ -1018,7 +1018,45 @@
       document.getElementById('rt-tb').innerHTML='<tr><td class="mono">192.168.1.0/24</td><td class="mono">直连</td><td class="mono">lan0phy</td><td>0</td><td><span class="badge b-green">直连</span></td></tr>';
     }
 
-    function savePppoe(e){e.preventDefault();toast('配置已保存（功能开发中）');}
+    async function savePppoe(e){
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const origText = btn.textContent;
+      btn.textContent = '⏳ 创建中...';
+      btn.disabled = true;
+
+      const config = {
+        username: document.getElementById('pu').value,
+        password: document.getElementById('pp').value,
+        interface: document.getElementById('pi').value,
+        mtu: parseInt(document.getElementById('pmtu').value),
+        mru: parseInt(document.getElementById('pmru').value),
+        use_peer_dns: document.getElementById('pdns').checked,
+        add_default_route4: document.getElementById('pr4').checked,
+        add_default_route6: document.getElementById('pr6').checked,
+      };
+
+      try {
+        const res = await fetch('/api/pppoe/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          toast('错误: ' + data.error, false);
+        } else {
+          toast('PPPoE 客户端创建成功!');
+          loadPppoe();
+        }
+      } catch (e) {
+        toast('请求失败: ' + e.message, false);
+      } finally {
+        btn.textContent = origText;
+        btn.disabled = false;
+      }
+    }
 
     document.addEventListener('DOMContentLoaded',loadDashboard);
   </script>
