@@ -13,6 +13,12 @@ pub struct InterfaceInfo {
     pub sw_if_index: u32,
     pub state: String,
     pub mtu: u32,
+    #[serde(default)]
+    pub mac_address: String,
+    #[serde(default)]
+    pub ip_addresses: Vec<String>,
+    #[serde(default)]
+    pub interface_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -361,6 +367,34 @@ pub fn configure_bound_interface(vpp_name: &str, ip: Option<&str>, mtu: Option<u
     run_bind_script(&str_refs)
 }
 
+/// Classify interface type based on name
+fn classify_interface_type(name: &str) -> String {
+    if name.starts_with("local") {
+        "local".to_string()
+    } else if name.starts_with("host") || name.starts_with("veth") {
+        "host".to_string()
+    } else if name.starts_with("GigabitEthernet") || name.starts_with("TenGigabitEthernet")
+        || name.starts_with("FortyGigabitEthernet") || name.starts_with("HundredGigabitEthernet")
+        || name.starts_with("eth") || name.starts_with("enp")
+    {
+        "physical".to_string()
+    } else if name.starts_with("loop") || name.starts_with("lo") {
+        "loopback".to_string()
+    } else if name.contains("pppoe") || name.contains("ppp") {
+        "pppoe".to_string()
+    } else if name.starts_with("bond") {
+        "bond".to_string()
+    } else if name.starts_with("tap") {
+        "tap".to_string()
+    } else if name.starts_with("vmxnet") || name.starts_with("virt") {
+        "virtual".to_string()
+    } else if name.starts_with("lan") {
+        "bridge".to_string()
+    } else {
+        "other".to_string()
+    }
+}
+
 /// Get list of interfaces
 pub fn get_interfaces() -> Result<Vec<InterfaceInfo>> {
     let output = run_vppctl(&["show", "interface"])?;
@@ -377,11 +411,29 @@ pub fn get_interfaces() -> Result<Vec<InterfaceInfo>> {
             let state = parts[2].to_string();
             let mtu = parts[3].split('/').next().unwrap_or("0").parse().unwrap_or(0);
 
+            // Parse optional IP address (VPP output may include it after MTU)
+            let mut ip_addresses = Vec::new();
+            let mut mac_address = String::new();
+            for part in &parts[4..] {
+                if part.contains('/') && (part.contains('.') || part.contains(':')) {
+                    // Looks like an IP/CIDR
+                    ip_addresses.push(part.to_string());
+                } else if part.contains(':') && part.len() == 17 {
+                    // Looks like a MAC address (xx:xx:xx:xx:xx:xx)
+                    mac_address = part.to_string();
+                }
+            }
+
+            let interface_type = classify_interface_type(&name);
+
             interfaces.push(InterfaceInfo {
                 name,
                 sw_if_index,
                 state,
                 mtu,
+                mac_address,
+                ip_addresses,
+                interface_type,
             });
         }
     }

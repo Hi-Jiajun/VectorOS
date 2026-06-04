@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import QuickEdit from './QuickEdit.svelte';
 
   // State
   let configTree: any = null;
@@ -9,7 +10,7 @@
   let diff: any[] = [];
   let loading = true;
   let error = '';
-  let activeTab: 'tree' | 'diff' | 'history' | 'templates' | 'cli' | 'import-export' = 'tree';
+  let activeTab: 'quick-edit' | 'tree' | 'diff' | 'history' | 'templates' | 'cli' | 'import-export' = 'quick-edit';
 
   // Set form
   let setPath = '';
@@ -491,6 +492,9 @@
 
   <!-- Tab Navigation -->
   <div class="tab-bar">
+    <button class="tab" class:active={activeTab === 'quick-edit'} on:click={() => activeTab = 'quick-edit'}>
+      Quick Edit
+    </button>
     <button class="tab" class:active={activeTab === 'tree'} on:click={() => activeTab = 'tree'}>
       Config Tree
     </button>
@@ -514,6 +518,12 @@
   {#if loading}
     <div class="loading">Loading configuration...</div>
   {:else}
+
+    <!-- ═══════════════ Quick Edit Tab ═══════════════ -->
+
+    {#if activeTab === 'quick-edit'}
+      <QuickEdit />
+    {/if}
 
     <!-- ═══════════════ Config Tree Tab ═══════════════ -->
 

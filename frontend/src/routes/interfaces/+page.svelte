@@ -12,6 +12,9 @@
     sw_if_index: number;
     state: string;
     mtu: number;
+    mac_address?: string;
+    ip_addresses?: string[];
+    interface_type?: string;
   }
 
   interface InterfaceStats {
@@ -124,6 +127,18 @@
   // Traffic rate calculation
   let prevSample: TrafficSample | null = null;
   let currentRates: RateData = { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 };
+
+  // Error and drop rates
+  interface ErrorRates {
+    rxErrorsPerSec: number;
+    txErrorsPerSec: number;
+    rxDropsPerSec: number;
+    txDropsPerSec: number;
+    rxLossPercent: number;
+    txLossPercent: number;
+  }
+  let errorRates: ErrorRates = { rxErrorsPerSec: 0, txErrorsPerSec: 0, rxDropsPerSec: 0, txDropsPerSec: 0, rxLossPercent: 0, txLossPercent: 0 };
+  let prevErrorSample: { rx_errors: number; tx_errors: number; rx_drops: number; tx_drops: number; rx_packets: number; tx_packets: number; ts: number } | null = null;
 
   // Traffic graph data (ring buffer of ~60 points = 3 min at 3s intervals)
   const GRAPH_POINTS = 60;
@@ -322,6 +337,34 @@
             txRateHistory = [...txRateHistory.slice(-(GRAPH_POINTS - 1)), currentRates.txBytesPerSec];
           }
         }
+
+        // Calculate error and drop rates
+        if (prevErrorSample) {
+          const dt = (Date.now() - prevErrorSample.ts) / 1000;
+          if (dt > 0.5) {
+            const rxDeltas = newStats.rx_packets - prevErrorSample.rx_packets;
+            const txDeltas = newStats.tx_packets - prevErrorSample.tx_packets;
+            errorRates = {
+              rxErrorsPerSec: Math.max(0, (newStats.rx_errors - prevErrorSample.rx_errors) / dt),
+              txErrorsPerSec: Math.max(0, (newStats.tx_errors - prevErrorSample.tx_errors) / dt),
+              rxDropsPerSec: Math.max(0, (newStats.rx_drops - prevErrorSample.rx_drops) / dt),
+              txDropsPerSec: Math.max(0, (newStats.tx_drops - prevErrorSample.tx_drops) / dt),
+              rxLossPercent: rxDeltas > 0 ? ((newStats.rx_drops - prevErrorSample.rx_drops) / rxDeltas) * 100 : 0,
+              txLossPercent: txDeltas > 0 ? ((newStats.tx_drops - prevErrorSample.tx_drops) / txDeltas) * 100 : 0,
+            };
+          }
+        }
+
+        prevErrorSample = {
+          rx_errors: newStats.rx_errors,
+          tx_errors: newStats.tx_errors,
+          rx_drops: newStats.rx_drops,
+          tx_drops: newStats.tx_drops,
+          rx_packets: newStats.rx_packets,
+          tx_packets: newStats.tx_packets,
+          ts: Date.now(),
+        };
+
         prevSample = {
           rx_bytes: newStats.rx_bytes,
           tx_bytes: newStats.tx_bytes,
@@ -353,7 +396,9 @@
     ipRemoveValue = '';
     stats = null;
     prevSample = null;
+    prevErrorSample = null;
     currentRates = { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 };
+    errorRates = { rxErrorsPerSec: 0, txErrorsPerSec: 0, rxDropsPerSec: 0, txDropsPerSec: 0, rxLossPercent: 0, txLossPercent: 0 };
     rxRateHistory = [];
     txRateHistory = [];
     fetchStats(name);
@@ -565,6 +610,7 @@
   );
 
   $: hasNonEmptyGroups = Object.values(groupedInterfaces).some((g) => g.length > 0);
+  $: selectedIfaceData = interfaces.find((i) => i.name === selectedIface) || null;
 </script>
 
 <svelte:head>
@@ -749,8 +795,21 @@
                     <div class="iface-left">
                       <span class="status-dot" class:up={iface.state === 'up'} class:down={iface.state !== 'up'}></span>
                       <div class="iface-info">
-                        <span class="iface-name">{iface.name}</span>
-                        <span class="iface-meta">idx {iface.sw_if_index} &middot; MTU {iface.mtu}</span>
+                        <div class="iface-name-row">
+                          <span class="iface-name">{iface.name}</span>
+                          {#if iface.interface_type}
+                            <span class="iface-type-badge">{iface.interface_type}</span>
+                          {/if}
+                        </div>
+                        <span class="iface-meta">
+                          idx {iface.sw_if_index} &middot; MTU {iface.mtu}
+                          {#if iface.mac_address}
+                            &middot; {iface.mac_address}
+                          {/if}
+                        </span>
+                        {#if iface.ip_addresses && iface.ip_addresses.length > 0}
+                          <span class="iface-ip">{iface.ip_addresses.join(', ')}</span>
+                        {/if}
                       </div>
                     </div>
                     <div class="iface-right">
@@ -777,6 +836,67 @@
     <!-- ── Right panel (stats + config) ── -->
     <div class="col-right">
       {#if selectedIface}
+        <!-- Interface Info Overview -->
+        {#if selectedIfaceData}
+          <div class="card info-card">
+            <div class="card-header">
+              <h2>Interface Info</h2>
+              <span class="category-tag" style="color: {categoryColor(classifyInterface(selectedIface))}; border-color: {categoryColor(classifyInterface(selectedIface))}44">
+                {categoryLabel(classifyInterface(selectedIface))}
+              </span>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Name</span>
+                <span class="info-value">{selectedIfaceData.name}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">State</span>
+                <span class="info-value">
+                  <span class="state-badge" class:state-up={selectedIfaceData.state === 'up'} class:state-down={selectedIfaceData.state !== 'up'}>
+                    {selectedIfaceData.state}
+                  </span>
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Index</span>
+                <span class="info-value">{selectedIfaceData.sw_if_index}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">MTU</span>
+                <span class="info-value">{selectedIfaceData.mtu}</span>
+              </div>
+              {#if selectedIfaceData.interface_type}
+                <div class="info-item">
+                  <span class="info-label">Type</span>
+                  <span class="info-value type-badge">{selectedIfaceData.interface_type}</span>
+                </div>
+              {/if}
+              {#if selectedIfaceData.mac_address}
+                <div class="info-item">
+                  <span class="info-label">MAC Address</span>
+                  <span class="info-value mac">{selectedIfaceData.mac_address}</span>
+                </div>
+              {/if}
+              {#if selectedIfaceData.ip_addresses && selectedIfaceData.ip_addresses.length > 0}
+                <div class="info-item info-wide">
+                  <span class="info-label">IP Addresses</span>
+                  <span class="info-value">
+                    {#each selectedIfaceData.ip_addresses as ip, i}
+                      <span class="ip-tag">{ip}</span>{#if i < selectedIfaceData.ip_addresses!.length - 1}{' '}{/if}
+                    {/each}
+                  </span>
+                </div>
+              {:else}
+                <div class="info-item info-wide">
+                  <span class="info-label">IP Addresses</span>
+                  <span class="info-value no-ip">No IP assigned</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
         <!-- Statistics -->
         <div class="card stats-card">
           <div class="card-header">
@@ -835,6 +955,40 @@
                   <span class="err-item">RX Drops: <strong>{stats.rx_drops}</strong></span>
                   <span class="err-item">TX Drops: <strong>{stats.tx_drops}</strong></span>
                 </div>
+              </div>
+
+              <!-- Error and loss rates -->
+              <div class="rate-detail-grid">
+                <div class="rate-detail-item">
+                  <span class="rate-detail-label">RX Error Rate</span>
+                  <span class="rate-detail-value err">{errorRates.rxErrorsPerSec > 0 ? formatPps(errorRates.rxErrorsPerSec) : '0 pps'}</span>
+                </div>
+                <div class="rate-detail-item">
+                  <span class="rate-detail-label">TX Error Rate</span>
+                  <span class="rate-detail-value err">{errorRates.txErrorsPerSec > 0 ? formatPps(errorRates.txErrorsPerSec) : '0 pps'}</span>
+                </div>
+                <div class="rate-detail-item">
+                  <span class="rate-detail-label">RX Drop Rate</span>
+                  <span class="rate-detail-value warn">{errorRates.rxDropsPerSec > 0 ? formatPps(errorRates.rxDropsPerSec) : '0 pps'}</span>
+                </div>
+                <div class="rate-detail-item">
+                  <span class="rate-detail-label">TX Drop Rate</span>
+                  <span class="rate-detail-value warn">{errorRates.txDropsPerSec > 0 ? formatPps(errorRates.txDropsPerSec) : '0 pps'}</span>
+                </div>
+                {#if errorRates.rxLossPercent > 0 || errorRates.txLossPercent > 0}
+                  <div class="rate-detail-item">
+                    <span class="rate-detail-label">RX Packet Loss</span>
+                    <span class="rate-detail-value" class:warn={errorRates.rxLossPercent > 1} class:crit={errorRates.rxLossPercent > 10}>
+                      {errorRates.rxLossPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div class="rate-detail-item">
+                    <span class="rate-detail-label">TX Packet Loss</span>
+                    <span class="rate-detail-value" class:warn={errorRates.txLossPercent > 1} class:crit={errorRates.txLossPercent > 10}>
+                      {errorRates.txLossPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                {/if}
               </div>
             {/if}
           {:else}
@@ -1650,5 +1804,148 @@
   .bind-btn {
     flex-shrink: 0;
     margin-bottom: 0;
+  }
+
+  /* ── Interface Info Card ───────────────────────────────── */
+  .info-card {
+    border-top: 2px solid #4dabf733;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+  }
+
+  .info-item {
+    background: #0f0f23;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.4rem;
+  }
+
+  .info-item.info-wide {
+    grid-column: 1 / -1;
+  }
+
+  .info-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+  }
+
+  .info-value {
+    display: block;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    font-weight: 500;
+  }
+
+  .info-value.mac {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: #4dabf7;
+  }
+
+  .info-value.no-ip {
+    color: #666;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .type-badge {
+    display: inline-block;
+    background: #16213e;
+    color: #888;
+    padding: 0.1rem 0.5rem;
+    border-radius: 0.2rem;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+  }
+
+  .ip-tag {
+    display: inline-block;
+    background: #16213e;
+    color: #51cf66;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.2rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    margin-right: 0.3rem;
+  }
+
+  /* ── Interface list additions ──────────────────────────── */
+  .iface-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .iface-type-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #16213e;
+    color: #888;
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.15rem;
+    letter-spacing: 0.03em;
+  }
+
+  .iface-ip {
+    font-size: 0.7rem;
+    color: #51cf66;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ── Error and loss rate detail ────────────────────────── */
+  .rate-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .rate-detail-item {
+    background: #0f0f23;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.35rem;
+    text-align: center;
+  }
+
+  .rate-detail-label {
+    display: block;
+    font-size: 0.65rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.15rem;
+  }
+
+  .rate-detail-value {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e0e0e0;
+  }
+
+  .rate-detail-value.err {
+    color: #ff6666;
+  }
+
+  .rate-detail-value.warn {
+    color: #ffaa00;
+  }
+
+  .rate-detail-value.crit {
+    color: #ff4444;
+    animation: blink 1s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 </style>
