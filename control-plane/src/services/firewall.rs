@@ -892,7 +892,7 @@ pub fn show() -> Result<serde_json::Value> {
     let data = load_rules();
     let active_rules = data.rules.iter().filter(|r| r.enabled).count();
 
-    let vpp_acl_status = run_vppctl(&["show", "acl"]).unwrap_or_else(|_| "N/A".to_string());
+    let vpp_acl_status = run_vppctl(&["show", "acl-plugin", "acl"]).unwrap_or_else(|_| "N/A".to_string());
 
     // Evaluate schedule status for each rule
     let mut rules_with_status: Vec<serde_json::Value> = Vec::new();

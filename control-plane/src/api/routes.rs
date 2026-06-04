@@ -12,6 +12,11 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         // Public routes (no auth required)
         .route("/api/health", get(handlers::health))
         .route("/api/auth/login", post(handlers::login))
+        // Security routes (protected)
+        .route("/api/auth/logout", post(handlers::logout))
+        .route("/api/auth/change-password", post(handlers::change_password))
+        .route("/api/security/audit-logs", get(handlers::get_audit_logs))
+        .route("/api/security/status", get(handlers::get_security_status))
         // Protected routes
         .route("/api/config", get(handlers::get_config))
         .route("/api/config/save", post(handlers::save_config))

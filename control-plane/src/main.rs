@@ -1,7 +1,9 @@
 mod api;
 mod auth;
+mod cache;
 mod config;
 mod db;
+mod security;
 mod vpp;
 mod services;
 
@@ -44,6 +46,11 @@ async fn main() -> Result<()> {
     std::fs::create_dir_all(std::path::Path::new(&cli.db).parent().unwrap())?;
     db::init(&cli.db)?;
     info!("Database initialized: {}", cli.db);
+
+    // Initialize security: audit logging table and default credentials
+    security::init_audit_table().expect("Failed to initialize audit logging table");
+    security::init_default_credentials();
+    info!("Security initialized: audit logging, password hashing");
 
     // Start the system monitor collector background task
     tokio::spawn(services::monitor::start_collector());

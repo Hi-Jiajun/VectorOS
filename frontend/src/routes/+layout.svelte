@@ -27,6 +27,11 @@
   }
 </script>
 
+<svelte:head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f0f23" />
+</svelte:head>
+
 <div class="app">
   <nav>
     <a href="/">Dashboard</a>
@@ -74,6 +79,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    will-change: transform;
   }
 
   nav a {
@@ -81,7 +87,8 @@
     text-decoration: none;
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    transition: background 0.2s;
+    transition: background 0.15s ease-out;
+    contain: layout style;
   }
 
   nav a:hover {
@@ -109,6 +116,12 @@
     border-radius: 50%;
     display: inline-block;
     flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   .status-text {
@@ -120,5 +133,6 @@
     padding: 2rem;
     background: #0f0f23;
     color: #e0e0e0;
+    contain: layout;
   }
 </style>

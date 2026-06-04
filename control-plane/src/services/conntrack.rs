@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
-const CONNTRACK_MANAGER_SCRIPT: &str = "/home/hiliang/Github/vectoros/vpp-tools/conntrack_manager.py";
+const CONNTRACK_MANAGER_SCRIPT: &str = "/root/VectorOS/vpp-tools/conntrack_manager.py";
 
 /// A single tracked connection (NAT session).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -207,8 +207,8 @@ pub fn get_nat_detail() -> Result<serde_json::Value> {
         .unwrap_or_default();
     result["sessions_raw"] = serde_json::json!(sessions_raw);
 
-    // Get NAT44 EI summary
-    let summary = run_vppctl(&["show", "nat44", "ei", "summary"])
+    // Get NAT44 EI addresses (summary is not available in all VPP versions)
+    let summary = run_vppctl(&["show", "nat44", "ei", "addresses"])
         .unwrap_or_default();
     result["summary"] = serde_json::json!(summary);
 

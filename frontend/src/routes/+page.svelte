@@ -260,6 +260,7 @@
     padding: 1.5rem;
     border-radius: 0.75rem;
     margin-bottom: 2rem;
+    contain: layout style;
   }
 
   .status-card h2 {
@@ -313,7 +314,7 @@
     height: 100%;
     background: linear-gradient(90deg, #00ff88, #00cc6a);
     border-radius: 4px;
-    transition: width 0.5s ease;
+    transition: width 0.5s ease-out;
   }
 
   .progress-value {
@@ -390,6 +391,7 @@
     padding: 1.5rem;
     border-radius: 0.75rem;
     text-align: center;
+    contain: layout style;
   }
 
   .count {

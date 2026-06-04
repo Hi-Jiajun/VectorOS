@@ -1,12 +1,14 @@
 use axum::extract::{State, Path, Query};
 use axum::Json;
-use serde::{Deserialize, Serialize};
+use axum::http::{HeaderMap, header};
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::process::Command;
 use std::sync::Arc;
 use utoipa::ToSchema;
 use crate::api::AppState;
-use crate::auth::{LoginRequest, LoginResponse};
+use crate::auth::LoginRequest;
+use crate::security;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct PppoeConfig {
@@ -50,7 +52,11 @@ fn run_vpp_cmd(action: &str, args: &[(&str, &str)]) -> Result<Value, String> {
     serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse output: {}", e))
 }
 
-/// Authenticate and obtain a JWT token.
+/// Authenticate and obtain a JWT token with CSRF protection.
+///
+/// On successful login, returns a JWT token and a CSRF token.
+/// The client must include the CSRF token in the `X-CSRF-Token` header
+/// for all subsequent state-changing requests (POST, PUT, DELETE, PATCH).
 #[utoipa::path(
     post,
     path = "/api/auth/login",
@@ -61,22 +67,97 @@ fn run_vpp_cmd(action: &str, args: &[(&str, &str)]) -> Result<Value, String> {
         (status = 401, description = "Invalid credentials", body = Value)
     )
 )]
-pub async fn login(Json(req): Json<LoginRequest>) -> Json<Value> {
+pub async fn login(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(req): Json<LoginRequest>,
+) -> Json<Value> {
+    let client_ip = security::rate_limit::extract_client_ip(&headers).to_string();
+
+    // Validate username format
+    if let Err(e) = security::validation::validate_username(&req.username) {
+        security::audit::log_audit_event(
+            &req.username,
+            security::audit::AuditAction::LoginFailure,
+            Some("POST"),
+            Some("/api/auth/login"),
+            Some(&client_ip),
+            Some(401),
+            Some(&e),
+        );
+        return Json(json!({
+            "success": false,
+            "error": { "code": "INVALID_CREDENTIALS", "message": "Invalid username or password" }
+        }));
+    }
+
     if crate::auth::verify_credentials(&req.username, &req.password) {
         match crate::auth::generate_token(&req.username) {
-            Ok(token) => Json(json!({
-                "success": true,
-                "data": {
-                    "token": token,
-                    "expires_in": 86400
-                }
-            })),
-            Err(e) => Json(json!({
-                "success": false,
-                "error": { "code": "TOKEN_ERROR", "message": e.to_string() }
-            })),
+            Ok(token) => {
+                // Generate CSRF token
+                let csrf_token = state.csrf_state.generate_token(&req.username).await;
+
+                // Create session
+                let user_agent = headers
+                    .get("user-agent")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("unknown");
+                let session = state.session_manager.create_session(
+                    &req.username,
+                    &client_ip,
+                    user_agent,
+                    &csrf_token,
+                ).await;
+
+                // Audit log success
+                security::audit::log_audit_event(
+                    &req.username,
+                    security::audit::AuditAction::LoginSuccess,
+                    Some("POST"),
+                    Some("/api/auth/login"),
+                    Some(&client_ip),
+                    Some(200),
+                    Some(&format!("Session: {}", session.session_id)),
+                );
+
+                Json(json!({
+                    "success": true,
+                    "data": {
+                        "token": token,
+                        "csrf_token": csrf_token,
+                        "session_id": session.session_id,
+                        "expires_in": 86400
+                    }
+                }))
+            }
+            Err(e) => {
+                security::audit::log_audit_event(
+                    &req.username,
+                    security::audit::AuditAction::LoginFailure,
+                    Some("POST"),
+                    Some("/api/auth/login"),
+                    Some(&client_ip),
+                    Some(500),
+                    Some(&format!("Token generation error: {}", e)),
+                );
+                Json(json!({
+                    "success": false,
+                    "error": { "code": "TOKEN_ERROR", "message": e.to_string() }
+                }))
+            }
         }
     } else {
+        // Audit log failure
+        security::audit::log_audit_event(
+            &req.username,
+            security::audit::AuditAction::LoginFailure,
+            Some("POST"),
+            Some("/api/auth/login"),
+            Some(&client_ip),
+            Some(401),
+            Some("Invalid credentials"),
+        );
+
         Json(json!({
             "success": false,
             "error": { "code": "INVALID_CREDENTIALS", "message": "Invalid username or password" }
@@ -120,9 +201,10 @@ pub async fn get_config(State(state): State<Arc<AppState>>) -> Json<Value> {
     )
 )]
 pub async fn get_interfaces() -> Json<Value> {
-    match crate::vpp::native::get_interfaces() {
-        Ok(interfaces) => Json(json!({ "interfaces": interfaces })),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    match tokio::task::spawn_blocking(|| crate::vpp::native::get_interfaces()).await {
+        Ok(Ok(interfaces)) => Json(json!({ "interfaces": interfaces })),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -139,9 +221,11 @@ pub async fn get_interfaces() -> Json<Value> {
     )
 )]
 pub async fn iface_up(Path(name): Path<String>) -> Json<Value> {
-    match crate::vpp::native::set_interface_state(&name, "up") {
-        Ok(()) => Json(json!({ "status": "ok", "message": format!("Interface {} set to up", name) })),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    let iface_name = name.clone();
+    match tokio::task::spawn_blocking(move || crate::vpp::native::set_interface_state(&iface_name, "up")).await {
+        Ok(Ok(())) => Json(json!({ "status": "ok", "message": format!("Interface {} set to up", name) })),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -158,9 +242,11 @@ pub async fn iface_up(Path(name): Path<String>) -> Json<Value> {
     )
 )]
 pub async fn iface_down(Path(name): Path<String>) -> Json<Value> {
-    match crate::vpp::native::set_interface_state(&name, "down") {
-        Ok(()) => Json(json!({ "status": "ok", "message": format!("Interface {} set to down", name) })),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    let iface_name = name.clone();
+    match tokio::task::spawn_blocking(move || crate::vpp::native::set_interface_state(&iface_name, "down")).await {
+        Ok(Ok(())) => Json(json!({ "status": "ok", "message": format!("Interface {} set to down", name) })),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -189,6 +275,37 @@ pub async fn configure_interface(
     Path(name): Path<String>,
     Json(req): Json<InterfaceConfigRequest>,
 ) -> Json<Value> {
+    // Input validation
+    let mut validation_errors: Vec<String> = Vec::new();
+    if let Err(e) = security::validation::validate_interface_name(&name, "interface") {
+        validation_errors.push(e);
+    }
+    if let Some(mtu) = req.mtu {
+        if let Err(e) = security::validation::validate_mtu(mtu, "mtu") {
+            validation_errors.push(e);
+        }
+    }
+    if let Some(ref ip) = req.ip_add {
+        if let Err(e) = security::validation::validate_ip_or_cidr(ip, "ip_add") {
+            validation_errors.push(e);
+        }
+    }
+    if let Some(ref ip) = req.ip_remove {
+        if let Err(e) = security::validation::validate_ip_or_cidr(ip, "ip_remove") {
+            validation_errors.push(e);
+        }
+    }
+    if !validation_errors.is_empty() {
+        return Json(json!({
+            "success": false,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Input validation failed",
+                "details": validation_errors
+            }
+        }));
+    }
+
     let mut errors: Vec<String> = Vec::new();
     let mut applied: Vec<String> = Vec::new();
 
@@ -245,9 +362,10 @@ pub async fn configure_interface(
     )
 )]
 pub async fn get_interface_stats(Path(name): Path<String>) -> Json<Value> {
-    match crate::vpp::native::get_interface_stats(&name) {
-        Ok(stats) => Json(json!({ "stats": stats })),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    match tokio::task::spawn_blocking(move || crate::vpp::native::get_interface_stats(&name)).await {
+        Ok(Ok(stats)) => Json(json!({ "stats": stats })),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -386,9 +504,10 @@ pub async fn configure_bound_interface(
     )
 )]
 pub async fn get_pppoe_clients() -> Json<Value> {
-    match run_vpp_cmd("dump", &[]) {
-        Ok(data) => Json(json!({ "clients": data })),
-        Err(e) => Json(json!({ "error": e })),
+    match tokio::task::spawn_blocking(|| run_vpp_cmd("dump", &[])).await {
+        Ok(Ok(data)) => Json(json!({ "clients": data })),
+        Ok(Err(e)) => Json(json!({ "error": e })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -402,9 +521,10 @@ pub async fn get_pppoe_clients() -> Json<Value> {
     )
 )]
 pub async fn get_pppoe_status() -> Json<Value> {
-    match crate::vpp::native::get_pppoe_status() {
-        Ok(status) => Json(json!(status)),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    match tokio::task::spawn_blocking(|| crate::vpp::native::get_pppoe_status()).await {
+        Ok(Ok(status)) => Json(json!(status)),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -421,6 +541,36 @@ pub async fn get_pppoe_status() -> Json<Value> {
 pub async fn create_pppoe_client(
     Json(config): Json<PppoeConfig>,
 ) -> Json<Value> {
+    // Input validation
+    let mut errors: Vec<String> = Vec::new();
+
+    if let Err(e) = security::validation::validate_non_empty_string(&config.username, "username", 128) {
+        errors.push(e);
+    }
+    if let Err(e) = security::validation::validate_non_empty_string(&config.password, "password", 128) {
+        errors.push(e);
+    }
+    if let Err(e) = security::validation::validate_interface_name(&config.interface, "interface") {
+        errors.push(e);
+    }
+    if let Err(e) = security::validation::validate_mtu(config.mtu, "mtu") {
+        errors.push(e);
+    }
+    if let Err(e) = security::validation::validate_mru(config.mru, "mru") {
+        errors.push(e);
+    }
+
+    if !errors.is_empty() {
+        return Json(json!({
+            "success": false,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Input validation failed",
+                "details": errors
+            }
+        }));
+    }
+
     // Map interface name to sw_if_index
     let sw_if_index = match config.interface.as_str() {
         "enp1s0" => "1",
@@ -456,9 +606,10 @@ pub async fn create_pppoe_client(
     )
 )]
 pub async fn get_nat_status() -> Json<Value> {
-    match crate::vpp::native::get_nat_status() {
-        Ok(status) => Json(json!(status)),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+    match tokio::task::spawn_blocking(|| crate::vpp::native::get_nat_status()).await {
+        Ok(Ok(status)) => Json(json!(status)),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -472,21 +623,23 @@ pub async fn get_nat_status() -> Json<Value> {
     )
 )]
 pub async fn enable_nat() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
-    cmd.arg("enable");
-    cmd.arg("--inside-if").arg("2");
-    cmd.arg("--outside-if").arg("4");
-
-    match cmd.output() {
-        Ok(output) => {
+    match tokio::task::spawn_blocking(|| {
+        let mut cmd = std::process::Command::new("python3");
+        cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
+        cmd.arg("enable");
+        cmd.arg("--inside-if").arg("2");
+        cmd.arg("--outside-if").arg("4");
+        cmd.output()
+    }).await {
+        Ok(Ok(output)) => {
             let stdout = String::from_utf8_lossy(&output.stdout);
             match serde_json::from_str::<Value>(&stdout) {
                 Ok(data) => Json(data),
                 Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
             }
         }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+        Ok(Err(e)) => Json(json!({ "error": format!("Command error: {}", e) })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -514,8 +667,12 @@ pub async fn get_routes() -> Json<Value> {
     )
 )]
 pub async fn get_system_status() -> Json<Value> {
-    let system_info = crate::vpp::native::get_system_info();
-    let vpp_perf = crate::vpp::native::get_vpp_performance();
+    // Run both expensive calls in parallel on the blocking thread pool
+    let system_info_handle = tokio::task::spawn_blocking(|| crate::vpp::native::get_system_info());
+    let vpp_perf_handle = tokio::task::spawn_blocking(|| crate::vpp::native::get_vpp_performance());
+
+    let system_info = system_info_handle.await.unwrap_or_else(|e| Err(anyhow::anyhow!(e)));
+    let vpp_perf = vpp_perf_handle.await.unwrap_or_else(|e| Err(anyhow::anyhow!(e)));
 
     match system_info {
         Ok(info) => {
@@ -593,8 +750,8 @@ pub async fn get_system_status() -> Json<Value> {
     )
 )]
 pub async fn get_vpp_performance() -> Json<Value> {
-    match crate::vpp::native::get_vpp_performance() {
-        Ok(perf) => Json(json!({
+    match tokio::task::spawn_blocking(|| crate::vpp::native::get_vpp_performance()).await {
+        Ok(Ok(perf)) => Json(json!({
             "performance": {
                 "packet_rate": perf.packet_rate,
                 "interfaces": perf.interfaces,
@@ -610,7 +767,8 @@ pub async fn get_vpp_performance() -> Json<Value> {
                 "errors": perf.errors,
             }
         })),
-        Err(e) => Json(json!({ "error": e.to_string() })),
+        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -624,19 +782,21 @@ pub async fn get_vpp_performance() -> Json<Value> {
     )
 )]
 pub async fn get_config_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/config_manager.py");
-    cmd.arg("get");
-
-    match cmd.output() {
-        Ok(output) => {
+    match tokio::task::spawn_blocking(|| {
+        let mut cmd = std::process::Command::new("python3");
+        cmd.arg("/root/VectorOS/vpp-tools/config_manager.py");
+        cmd.arg("get");
+        cmd.output()
+    }).await {
+        Ok(Ok(output)) => {
             let stdout = String::from_utf8_lossy(&output.stdout);
             match serde_json::from_str::<Value>(&stdout) {
                 Ok(data) => Json(data),
                 Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
             }
         }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+        Ok(Err(e)) => Json(json!({ "error": format!("Command error: {}", e) })),
+        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
     }
 }
 
@@ -782,6 +942,41 @@ pub async fn get_frr_routes() -> Json<Value> {
     )
 )]
 pub async fn add_frr_route(Json(req): Json<AddRouteRequest>) -> Json<Value> {
+    // Validate prefix (CIDR format)
+    if let Err(e) = security::validation::validate_cidr(&req.prefix, "prefix") {
+        return Json(json!({
+            "success": false,
+            "error": { "code": "VALIDATION_ERROR", "message": e }
+        }));
+    }
+    // Validate nexthop if provided
+    if let Some(ref nexthop) = req.nexthop {
+        if let Err(e) = security::validation::validate_ip_address(nexthop, "nexthop") {
+            return Json(json!({
+                "success": false,
+                "error": { "code": "VALIDATION_ERROR", "message": e }
+            }));
+        }
+    }
+    // Validate interface name if provided
+    if let Some(ref iface) = req.interface {
+        if let Err(e) = security::validation::validate_interface_name(iface, "interface") {
+            return Json(json!({
+                "success": false,
+                "error": { "code": "VALIDATION_ERROR", "message": e }
+            }));
+        }
+    }
+    // Validate distance if provided
+    if let Some(distance) = req.distance {
+        if distance > 255 {
+            return Json(json!({
+                "success": false,
+                "error": { "code": "VALIDATION_ERROR", "message": "distance must be 0-255" }
+            }));
+        }
+    }
+
     match crate::services::frr::add_route(
         &req.prefix,
         req.nexthop.as_deref(),
@@ -1138,6 +1333,49 @@ pub async fn get_firewall_status() -> Json<Value> {
     )
 )]
 pub async fn add_firewall_rule(Json(req): Json<FirewallRuleRequest>) -> Json<Value> {
+    // Input validation for firewall rule
+    let mut errors: Vec<String> = Vec::new();
+
+    if req.action != "accept" && req.action != "reject" && req.action != "drop" && req.action != "log" {
+        errors.push(format!("action: must be accept, reject, drop, or log, got '{}'", req.action));
+    }
+    if let Some(ref src_ip) = req.src_ip {
+        if let Err(e) = security::validation::validate_ip_or_cidr(src_ip, "src_ip") {
+            errors.push(e);
+        }
+    }
+    if let Some(ref dst_ip) = req.dst_ip {
+        if let Err(e) = security::validation::validate_ip_or_cidr(dst_ip, "dst_ip") {
+            errors.push(e);
+        }
+    }
+    if let Some(ref src_port) = req.src_port {
+        if let Err(e) = security::validation::validate_port_string(src_port, "src_port") {
+            errors.push(e);
+        }
+    }
+    if let Some(ref dst_port) = req.dst_port {
+        if let Err(e) = security::validation::validate_port_string(dst_port, "dst_port") {
+            errors.push(e);
+        }
+    }
+    if let Some(ref desc) = req.description {
+        if let Err(e) = security::validation::validate_description(desc, "description") {
+            errors.push(e);
+        }
+    }
+
+    if !errors.is_empty() {
+        return Json(json!({
+            "success": false,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Input validation failed",
+                "details": errors
+            }
+        }));
+    }
+
     let rule_req = crate::services::firewall::AddRuleRequest {
         action: req.action,
         direction: req.direction,
@@ -3493,5 +3731,223 @@ pub async fn acknowledge_alert(
         })),
         Err(e) => Json(json!({ "status": "error", "error": e.to_string() })),
     }
+}
+
+// ── Security management handlers ───────────────────────────────────────
+
+/// Logout and invalidate the current session.
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    tag = "Authentication",
+    responses(
+        (status = 200, description = "Logged out", body = Value)
+    )
+)]
+pub async fn logout(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Json<Value> {
+    let client_ip = security::rate_limit::extract_client_ip(&headers).to_string();
+
+    // Extract user from auth header (token already validated by auth middleware)
+    let user = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .and_then(|token| crate::auth::validate_token(token).ok())
+        .map(|claims| claims.sub)
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Remove CSRF token
+    state.csrf_state.remove_token(&user).await;
+
+    // Invalidate all sessions for this user
+    state.session_manager.invalidate_all_user_sessions(&user).await;
+
+    // Audit log
+    security::audit::log_audit_event(
+        &user,
+        security::audit::AuditAction::Logout,
+        Some("POST"),
+        Some("/api/auth/logout"),
+        Some(&client_ip),
+        Some(200),
+        None,
+    );
+
+    Json(json!({
+        "success": true,
+        "message": "Logged out successfully"
+    }))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ChangePasswordRequest {
+    pub old_password: String,
+    pub new_password: String,
+}
+
+/// Change the current user's password.
+#[utoipa::path(
+    post,
+    path = "/api/auth/change-password",
+    tag = "Authentication",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 200, description = "Password changed", body = Value),
+        (status = 400, description = "Validation error", body = Value),
+        (status = 401, description = "Invalid current password", body = Value)
+    )
+)]
+pub async fn change_password(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(req): Json<ChangePasswordRequest>,
+) -> Json<Value> {
+    let client_ip = security::rate_limit::extract_client_ip(&headers).to_string();
+
+    let user = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .and_then(|token| crate::auth::validate_token(token).ok())
+        .map(|claims| claims.sub)
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Validate new password
+    if let Err(e) = security::validation::validate_password(&req.new_password) {
+        return Json(json!({
+            "success": false,
+            "error": { "code": "VALIDATION_ERROR", "message": e }
+        }));
+    }
+
+    match crate::auth::change_password(&user, &req.old_password, &req.new_password) {
+        Ok(()) => {
+            // Invalidate all existing sessions (user must re-login)
+            state.session_manager.invalidate_all_user_sessions(&user).await;
+            state.csrf_state.remove_token(&user).await;
+
+            Json(json!({
+                "success": true,
+                "message": "Password changed successfully. Please log in again."
+            }))
+        }
+        Err(e) => {
+            security::audit::log_audit_event(
+                &user,
+                security::audit::AuditAction::LoginFailure,
+                Some("POST"),
+                Some("/api/auth/change-password"),
+                Some(&client_ip),
+                Some(401),
+                Some(&e),
+            );
+            Json(json!({
+                "success": false,
+                "error": { "code": "PASSWORD_CHANGE_FAILED", "message": e }
+            }))
+        }
+    }
+}
+
+/// Query audit logs for security events.
+#[utoipa::path(
+    get,
+    path = "/api/security/audit-logs",
+    tag = "Security",
+    params(
+        ("limit" = Option<i64>, Query, description = "Max entries (default 100)")
+    ),
+    responses(
+        (status = 200, description = "Audit log entries", body = Value)
+    )
+)]
+pub async fn get_audit_logs(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Json<Value> {
+    let limit = params
+        .get("limit")
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(100)
+        .min(1000); // Cap at 1000
+
+    match security::audit::get_audit_logs(limit) {
+        Ok(entries) => Json(json!({
+            "success": true,
+            "data": {
+                "entries": entries,
+                "count": entries.len()
+            }
+        })),
+        Err(e) => Json(json!({
+            "success": false,
+            "error": { "code": "AUDIT_ERROR", "message": e }
+        })),
+    }
+}
+
+/// Get current security configuration and status.
+#[utoipa::path(
+    get,
+    path = "/api/security/status",
+    tag = "Security",
+    responses(
+        (status = 200, description = "Security status", body = Value)
+    )
+)]
+pub async fn get_security_status() -> Json<Value> {
+    Json(json!({
+        "success": true,
+        "data": {
+            "rate_limiting": {
+                "enabled": true,
+                "login_limit": "10 requests/minute",
+                "api_read_limit": "120 requests/minute",
+                "api_write_limit": "30 requests/minute"
+            },
+            "csrf_protection": {
+                "enabled": true,
+                "header": "X-CSRF-Token",
+                "description": "CSRF token required for all state-changing requests"
+            },
+            "security_headers": {
+                "enabled": true,
+                "headers": [
+                    "X-Content-Type-Options: nosniff",
+                    "X-Frame-Options: DENY",
+                    "X-XSS-Protection: 1; mode=block",
+                    "Referrer-Policy: strict-origin-when-cross-origin",
+                    "Permissions-Policy: camera=(), microphone=(), geolocation=()",
+                    "Cache-Control: no-store (API responses)",
+                    "Content-Security-Policy: default-src 'none' (API responses)",
+                    "Strict-Transport-Security: max-age=31536000"
+                ]
+            },
+            "password_hashing": {
+                "algorithm": "bcrypt",
+                "cost_factor": 12
+            },
+            "audit_logging": {
+                "enabled": true,
+                "events_logged": [
+                    "login_success",
+                    "login_failure",
+                    "logout",
+                    "password_change",
+                    "config_changes",
+                    "service_operations",
+                    "unauthorized_access"
+                ]
+            },
+            "session_management": {
+                "enabled": true,
+                "max_sessions_per_user": 5,
+                "session_duration_hours": 24,
+                "ip_binding": false
+            }
+        }
+    }))
 }
 

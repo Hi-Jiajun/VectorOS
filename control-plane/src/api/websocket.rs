@@ -151,9 +151,13 @@ pub async fn stats_broadcaster(ws_tx: broadcast::Sender<WsMessage>) {
     loop {
         interval.tick().await;
 
-        // Collect system info
-        match crate::vpp::native::get_system_info() {
-            Ok(info) => {
+        // Collect system info and VPP performance in parallel using blocking tasks
+        let system_info_handle = tokio::task::spawn_blocking(|| crate::vpp::native::get_system_info());
+        let vpp_perf_handle = tokio::task::spawn_blocking(|| crate::vpp::native::get_vpp_performance());
+        let pppoe_handle = tokio::task::spawn_blocking(|| crate::vpp::native::get_pppoe_status());
+
+        match system_info_handle.await {
+            Ok(Ok(info)) => {
                 let system_update = WsMessage::SystemUpdate {
                     cpu_percent: info.cpu_percent,
                     cpu_count: info.cpu_count,
@@ -167,10 +171,10 @@ pub async fn stats_broadcaster(ws_tx: broadcast::Sender<WsMessage>) {
                 broadcast(&ws_tx, system_update);
 
                 // Collect VPP performance metrics
-                if let Ok(perf) = crate::vpp::native::get_vpp_performance() {
+                if let Ok(Ok(perf)) = vpp_perf_handle.await {
                     // Get PPPoE status
-                    let pppoe_status = match crate::vpp::native::get_pppoe_status() {
-                        Ok(status) => {
+                    let pppoe_status = match pppoe_handle.await {
+                        Ok(Ok(status)) => {
                             if status.clients.is_empty() {
                                 "disconnected".to_string()
                             } else {
@@ -178,7 +182,7 @@ pub async fn stats_broadcaster(ws_tx: broadcast::Sender<WsMessage>) {
                                 format!("{} clients ({} active)", status.clients.len(), active)
                             }
                         }
-                        Err(_) => "unknown".to_string(),
+                        _ => "unknown".to_string(),
                     };
 
                     // Convert interface throughput to our WebSocket format
@@ -200,6 +204,9 @@ pub async fn stats_broadcaster(ws_tx: broadcast::Sender<WsMessage>) {
                     };
                     broadcast(&ws_tx, vpp_update);
                 }
+            }
+            Ok(Err(e)) => {
+                warn!("System info task returned error: {}", e);
             }
             Err(e) => {
                 warn!("Failed to collect system stats for WebSocket broadcast: {}", e);

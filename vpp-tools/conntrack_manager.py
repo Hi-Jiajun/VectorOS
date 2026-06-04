@@ -306,9 +306,9 @@ def cmd_status():
                 if len(parts) >= 2:
                     nat_ifaces.append({"name": parts[0], "direction": parts[1]})
 
-    # Get NAT summary counters if available
+    # Get NAT addresses info (summary may not be available in all VPP versions)
     nat_summary = ""
-    output2, rc2 = run_vppctl(["show", "nat44", "ei", "summary"])
+    output2, rc2 = run_vppctl(["show", "nat44", "ei", "addresses"])
     if rc2 == 0 and output2 and "Unknown" not in output2:
         nat_summary = output2
 

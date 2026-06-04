@@ -25,8 +25,15 @@ impl Database {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
 
-        // Enable WAL mode for better concurrent access
-        conn.execute_batch("PRAGMA journal_mode=WAL;")?;
+        // Enable WAL mode for better concurrent access and performance
+        conn.execute_batch("
+            PRAGMA journal_mode=WAL;
+            PRAGMA synchronous=NORMAL;
+            PRAGMA cache_size=-8000;
+            PRAGMA mmap_size=268435456;
+            PRAGMA temp_store=MEMORY;
+            PRAGMA busy_timeout=5000;
+        ")?;
 
         // Create tables
         conn.execute_batch("
@@ -106,6 +113,20 @@ impl Database {
                 message TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- Performance indexes
+            CREATE INDEX IF NOT EXISTS idx_config_category ON config(category);
+            CREATE INDEX IF NOT EXISTS idx_config_history_key ON config_history(key, version DESC);
+            CREATE INDEX IF NOT EXISTS idx_config_history_version ON config_history(version DESC);
+            CREATE INDEX IF NOT EXISTS idx_pppoe_sessions_status ON pppoe_sessions(status);
+            CREATE INDEX IF NOT EXISTS idx_firewall_rules_enabled ON firewall_rules(enabled, order_num);
+            CREATE INDEX IF NOT EXISTS idx_firewall_rules_action ON firewall_rules(action);
+            CREATE INDEX IF NOT EXISTS idx_dhcp_leases_interface ON dhcp_leases(interface);
+            CREATE INDEX IF NOT EXISTS idx_dhcp_leases_expires ON dhcp_leases(expires_at);
+            CREATE INDEX IF NOT EXISTS idx_vpn_connections_type ON vpn_connections(vpn_type, status);
+            CREATE INDEX IF NOT EXISTS idx_system_logs_level ON system_logs(level);
+            CREATE INDEX IF NOT EXISTS idx_system_logs_source ON system_logs(source);
+            CREATE INDEX IF NOT EXISTS idx_system_logs_created ON system_logs(created_at DESC);
         ")?;
 
         info!("Database initialized at {}", path);
@@ -157,7 +178,7 @@ impl Database {
     pub fn get_all_config(&self) -> Result<Vec<ConfigEntry>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT id, key, value, category, updated_at FROM config ORDER BY category, key")?;
-        let rows = stmt.query_map([], |row| {
+        let entries: Vec<ConfigEntry> = stmt.query_map([], |row| {
             Ok(ConfigEntry {
                 id: row.get(0)?,
                 key: row.get(1)?,
@@ -165,12 +186,7 @@ impl Database {
                 category: row.get(3)?,
                 updated_at: row.get(4)?,
             })
-        })?;
-
-        let mut entries = Vec::new();
-        for row in rows {
-            entries.push(row?);
-        }
+        })?.collect::<Result<Vec<_>>>()?;
         Ok(entries)
     }
 
@@ -181,7 +197,7 @@ impl Database {
             "SELECT id, key, value, category, created_at FROM config_history
              WHERE key = ?1 ORDER BY version DESC LIMIT 50"
         )?;
-        let rows = stmt.query_map(params![key], |row| {
+        let entries: Vec<ConfigEntry> = stmt.query_map(params![key], |row| {
             Ok(ConfigEntry {
                 id: row.get(0)?,
                 key: row.get(1)?,
@@ -189,12 +205,7 @@ impl Database {
                 category: row.get(3)?,
                 updated_at: row.get(4)?,
             })
-        })?;
-
-        let mut entries = Vec::new();
-        for row in rows {
-            entries.push(row?);
-        }
+        })?.collect::<Result<Vec<_>>>()?;
         Ok(entries)
     }
 
@@ -217,14 +228,9 @@ impl Database {
     pub fn get_interfaces(&self) -> Result<Vec<(String, String, String)>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT name, config, state FROM interfaces ORDER BY name")?;
-        let rows = stmt.query_map([], |row| {
+        let interfaces: Vec<(String, String, String)> = stmt.query_map([], |row| {
             Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-        })?;
-
-        let mut interfaces = Vec::new();
-        for row in rows {
-            interfaces.push(row?);
-        }
+        })?.collect::<Result<Vec<_>>>()?;
         Ok(interfaces)
     }
 
@@ -245,14 +251,9 @@ impl Database {
             "SELECT level, source, message, created_at FROM system_logs
              ORDER BY id DESC LIMIT ?1"
         )?;
-        let rows = stmt.query_map(params![limit], |row| {
+        let logs: Vec<(String, String, String, String)> = stmt.query_map(params![limit], |row| {
             Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
-        })?;
-
-        let mut logs = Vec::new();
-        for row in rows {
-            logs.push(row?);
-        }
+        })?.collect::<Result<Vec<_>>>()?;
         Ok(logs)
     }
 }

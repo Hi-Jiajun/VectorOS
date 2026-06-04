@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 use tracing::info;
 
-const FLOW_MONITOR_SCRIPT: &str = "/home/hiliang/Github/vectoros/vpp-tools/flow_monitor.py";
+const FLOW_MONITOR_SCRIPT: &str = "/root/VectorOS/vpp-tools/flow_monitor.py";
 
 /// A single network flow (5-tuple + counters).
 #[derive(Debug, Clone, Serialize, Deserialize)]

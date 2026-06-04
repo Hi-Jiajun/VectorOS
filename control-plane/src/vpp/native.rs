@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::time::Duration;
 /// Path to the VPP performance stats Python script
 const VPP_STATS_SCRIPT: &str = "/root/VectorOS/vpp-tools/vpp_stats.py";
 
@@ -395,8 +396,17 @@ fn classify_interface_type(name: &str) -> String {
     }
 }
 
-/// Get list of interfaces
+/// Get list of interfaces (cached for 5 seconds)
 pub fn get_interfaces() -> Result<Vec<InterfaceInfo>> {
+    let cache_key = "interfaces";
+    let cache = crate::cache::global();
+
+    if let Some(cached) = cache.get(cache_key) {
+        if let Ok(interfaces) = serde_json::from_slice(&cached) {
+            return Ok(interfaces);
+        }
+    }
+
     let output = run_vppctl(&["show", "interface"])?;
     let mut interfaces = Vec::new();
 
@@ -438,24 +448,40 @@ pub fn get_interfaces() -> Result<Vec<InterfaceInfo>> {
         }
     }
 
+    // Cache for 5 seconds
+    if let Ok(serialized) = serde_json::to_vec(&interfaces) {
+        cache.insert(cache_key, serialized, Duration::from_secs(5));
+    }
+
     Ok(interfaces)
+}
+
+/// Invalidate cached interfaces (call after state changes)
+pub fn invalidate_interface_cache() {
+    let cache = crate::cache::global();
+    // Insert with zero TTL to effectively remove the entry
+    cache.insert("interfaces", Vec::new(), Duration::from_secs(0));
+    cache.insert("system_info", Vec::new(), Duration::from_secs(0));
 }
 
 /// Set interface state (up/down)
 pub fn set_interface_state(name: &str, state: &str) -> Result<()> {
     run_vppctl(&["set", "interface", "state", name, state])?;
+    invalidate_interface_cache();
     Ok(())
 }
 
 /// Set interface IP address
 pub fn set_interface_ip(name: &str, ip: &str) -> Result<()> {
     run_vppctl(&["set", "interface", "ip", "address", name, ip])?;
+    invalidate_interface_cache();
     Ok(())
 }
 
 /// Remove IP address from interface
 pub fn remove_interface_ip(name: &str, ip: &str) -> Result<()> {
     run_vppctl(&["set", "interface", "ip", "address", name, ip, "del"])?;
+    invalidate_interface_cache();
     Ok(())
 }
 
@@ -463,6 +489,7 @@ pub fn remove_interface_ip(name: &str, ip: &str) -> Result<()> {
 pub fn set_interface_mtu(name: &str, mtu: u32) -> Result<()> {
     let mtu_str = mtu.to_string();
     run_vppctl(&["set", "interface", "mtu", "packet", &mtu_str, name])?;
+    invalidate_interface_cache();
     Ok(())
 }
 
@@ -531,8 +558,17 @@ pub fn get_interface_stats(name: &str) -> Result<InterfaceStats> {
     Ok(stats)
 }
 
-/// Get PPPoE status
+/// Get PPPoE status (cached for 5 seconds)
 pub fn get_pppoe_status() -> Result<PppoeStatus> {
+    let cache_key = "pppoe_status";
+    let cache = crate::cache::global();
+
+    if let Some(cached) = cache.get(cache_key) {
+        if let Ok(status) = serde_json::from_slice(&cached) {
+            return Ok(status);
+        }
+    }
+
     let interfaces = get_interfaces()?;
 
     // Get PPPoE clients
@@ -577,15 +613,31 @@ pub fn get_pppoe_status() -> Result<PppoeStatus> {
         }
     }
 
-    Ok(PppoeStatus {
+    let result = PppoeStatus {
         status: "ok".to_string(),
         clients,
         interfaces,
-    })
+    };
+
+    // Cache for 5 seconds
+    if let Ok(serialized) = serde_json::to_vec(&result) {
+        cache.insert(cache_key, serialized, Duration::from_secs(5));
+    }
+
+    Ok(result)
 }
 
-/// Get NAT status
+/// Get NAT status (cached for 5 seconds)
 pub fn get_nat_status() -> Result<NatStatus> {
+    let cache_key = "nat_status";
+    let cache = crate::cache::global();
+
+    if let Some(cached) = cache.get(cache_key) {
+        if let Ok(status) = serde_json::from_slice(&cached) {
+            return Ok(status);
+        }
+    }
+
     let output = run_vppctl(&["show", "nat44", "ei", "interfaces"])?;
     let mut interfaces = Vec::new();
     let mut enabled = false;
@@ -607,15 +659,32 @@ pub fn get_nat_status() -> Result<NatStatus> {
         }
     }
 
-    Ok(NatStatus {
+    let result = NatStatus {
         enabled,
         interfaces,
         session_count: 0,
-    })
+    };
+
+    // Cache for 5 seconds
+    if let Ok(serialized) = serde_json::to_vec(&result) {
+        cache.insert(cache_key, serialized, Duration::from_secs(5));
+    }
+
+    Ok(result)
 }
 
-/// Get system information
+/// Get system information (cached for 3 seconds to reduce repeated subprocess calls)
 pub fn get_system_info() -> Result<SystemInfo> {
+    let cache_key = "system_info";
+    let cache = crate::cache::global();
+
+    // Check cache first
+    if let Some(cached) = cache.get(cache_key) {
+        if let Ok(info) = serde_json::from_slice(&cached) {
+            return Ok(info);
+        }
+    }
+
     // Get VPP version
     let vpp_version = run_vppctl(&["show", "version"]).unwrap_or_default();
 
@@ -629,7 +698,7 @@ pub fn get_system_info() -> Result<SystemInfo> {
     let (disk_total, disk_used, disk_percent) = get_disk_usage()?;
     let cpu_count = num_cpus::get() as u32;
 
-    Ok(SystemInfo {
+    let info = SystemInfo {
         cpu_percent,
         cpu_count,
         memory_total,
@@ -640,7 +709,14 @@ pub fn get_system_info() -> Result<SystemInfo> {
         disk_percent,
         vpp_version,
         interface_count,
-    })
+    };
+
+    // Cache for 3 seconds
+    if let Ok(serialized) = serde_json::to_vec(&info) {
+        cache.insert(cache_key, serialized, Duration::from_secs(3));
+    }
+
+    Ok(info)
 }
 
 fn get_cpu_usage() -> Result<f64> {
@@ -698,7 +774,19 @@ fn get_disk_usage() -> Result<(u64, u64, f64)> {
 ///
 /// The Python script runs vppctl commands, calculates rates between calls
 /// (using a temp file for previous values), and outputs structured JSON.
+///
+/// Results are cached for 3 seconds to avoid repeated expensive subprocess calls.
 pub fn get_vpp_performance() -> Result<VppPerformance> {
+    let cache_key = "vpp_performance";
+    let cache = crate::cache::global();
+
+    // Check cache first
+    if let Some(cached) = cache.get(cache_key) {
+        if let Ok(perf) = serde_json::from_slice(&cached) {
+            return Ok(perf);
+        }
+    }
+
     let output = Command::new("python3")
         .arg(VPP_STATS_SCRIPT)
         .output()
@@ -748,6 +836,11 @@ pub fn get_vpp_performance() -> Result<VppPerformance> {
             counters: parse_error_counters(&raw["errors"]["counters"]),
         },
     };
+
+    // Cache for 3 seconds
+    if let Ok(serialized) = serde_json::to_vec(&perf) {
+        cache.insert(cache_key, serialized, Duration::from_secs(3));
+    }
 
     Ok(perf)
 }
