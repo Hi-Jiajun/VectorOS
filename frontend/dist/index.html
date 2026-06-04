@@ -813,8 +813,9 @@
                 <div class="info-row"><span class="info-k">VectorOS</span><span class="info-v" id="iv-ver">—</span></div>
                 <div class="info-row"><span class="info-k">VPP</span><span class="info-v">v26.06-rc0~703</span></div>
                 <div class="info-row"><span class="info-k">PPPoE 插件</span><span class="info-v" id="iv-pppoe">—</span></div>
-                <div class="info-row"><span class="info-k">Binary API</span><span class="info-v" id="iv-api">—</span></div>
-                <div class="info-row"><span class="info-k">消息 ID</span><span class="info-v" id="iv-msg">—</span></div>
+                <div class="info-row"><span class="info-k">NAT</span><span class="info-v" id="iv-nat">—</span></div>
+                <div class="info-row"><span class="info-k">DHCP</span><span class="info-v" id="iv-dhcp">—</span></div>
+                <div class="info-row"><span class="info-k">DNS</span><span class="info-v" id="iv-dns">—</span></div>
               </div>
             </div>
             <div class="card">
@@ -1075,12 +1076,31 @@
     }
 
     async function loadDashboard(){
-      const[h,s]=await Promise.all([api('/api/health'),api('/api/pppoe/status')]);
+      const[h,s,nat,dhcp,dns]=await Promise.all([
+        api('/api/health'),
+        api('/api/pppoe/status'),
+        api('/api/nat/status'),
+        api('/api/dhcp/status'),
+        api('/api/dns/status')
+      ]);
+
       document.getElementById('sv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已配置':'未配置';
       document.getElementById('iv-ver').textContent=h.version||'—';
       document.getElementById('iv-pppoe').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'已创建':'未创建';
       document.getElementById('iv-api').textContent=s.interfaces?'已连接':'未连接';
       document.getElementById('iv-msg').textContent=s.pppoe_clients&&s.pppoe_clients.length>0?'ID: '+s.pppoe_clients[0].pppox_sw_if_index:'—';
+
+      // Update NAT status
+      const natEl=document.getElementById('iv-nat');
+      if(natEl) natEl.textContent=nat.interfaces&&nat.interfaces.length>0?'已启用':'未启用';
+
+      // Update DHCP status
+      const dhcpEl=document.getElementById('iv-dhcp');
+      if(dhcpEl) dhcpEl.textContent=dhcp.status==='active'?'已启用':'未启用';
+
+      // Update DNS status
+      const dnsEl=document.getElementById('iv-dns');
+      if(dnsEl) dnsEl.textContent=dns.status==='active'?'已启用':'未启用';
     }
 
     async function loadPppoe(){
