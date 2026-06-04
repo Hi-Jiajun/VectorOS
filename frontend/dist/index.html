@@ -4,57 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VectorOS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-primary: #0b0d17;
-      --bg-secondary: #111827;
-      --bg-card: #1a1f2e;
-      --bg-card-hover: #222838;
-      --bg-input: #0d1117;
-      --border: #2d3548;
-      --border-focus: #3b82f6;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-glow: rgba(59, 130, 246, 0.15);
-      --success: #10b981;
-      --success-bg: rgba(16, 185, 129, 0.1);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.1);
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.1);
-      --info: #06b6d4;
-      --info-bg: rgba(6, 182, 212, 0.1);
-      --text: #e2e8f0;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --sidebar-width: 260px;
-      --header-height: 64px;
-      --radius: 12px;
-      --radius-sm: 8px;
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
-      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.3);
+      --bg-0: #09090b;
+      --bg-1: #111113;
+      --bg-2: #18181b;
+      --bg-3: #1f1f23;
+      --bg-4: #27272a;
+      --border-1: #27272a;
+      --border-2: #3f3f46;
+      --accent: #22d3ee;
+      --accent-2: #06b6d4;
+      --accent-3: #0891b2;
+      --accent-glow: rgba(34, 211, 238, 0.12);
+      --green: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.1);
+      --yellow: #eab308;
+      --yellow-bg: rgba(234, 179, 8, 0.1);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.1);
+      --purple: #a78bfa;
+      --purple-bg: rgba(167, 139, 250, 0.1);
+      --text-1: #fafafa;
+      --text-2: #a1a1aa;
+      --text-3: #71717a;
+      --text-4: #52525b;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+      --shadow: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
+      --sidebar-w: 280px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg-0);
+      color: var(--text-1);
       min-height: 100vh;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
     /* Layout */
-    .app { display: flex; height: 100vh; }
+    .layout { display: flex; height: 100vh; }
 
     /* Sidebar */
     .sidebar {
-      width: var(--sidebar-width);
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
+      width: var(--sidebar-w);
+      background: var(--bg-1);
+      border-right: 1px solid var(--border-1);
       display: flex;
       flex-direction: column;
       position: fixed;
@@ -62,81 +72,85 @@
       z-index: 100;
     }
 
-    .sidebar-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--border);
+    .sidebar-brand {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border-1);
     }
 
-    .logo {
+    .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 12px;
     }
 
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--accent), #8b5cf6);
-      border-radius: 10px;
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: white;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--bg-0);
+      box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
     }
 
-    .logo-text h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #fff, #94a3b8);
+    .brand-info h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--text-2) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
     }
 
-    .logo-text .version {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
+    .brand-info .sub {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: 'Space Mono', monospace;
+      margin-top: 2px;
     }
 
-    .nav-section {
-      padding: 1rem 0.75rem;
+    .nav {
       flex: 1;
+      padding: 12px;
       overflow-y: auto;
     }
 
+    .nav-group {
+      margin-bottom: 8px;
+    }
+
     .nav-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-4);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 0.5rem 0.75rem;
-      margin-top: 0.5rem;
+      letter-spacing: 1.5px;
+      padding: 8px 12px 6px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.7rem 0.75rem;
+      gap: 12px;
+      padding: 10px 12px;
       border-radius: var(--radius-sm);
-      color: var(--text-secondary);
+      color: var(--text-2);
       text-decoration: none;
-      transition: all 0.15s ease;
       cursor: pointer;
-      margin-bottom: 2px;
-      font-size: 0.9rem;
+      transition: all 0.15s ease;
+      font-size: 14px;
       font-weight: 500;
       position: relative;
+      user-select: none;
     }
 
     .nav-item:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-1);
     }
 
     .nav-item.active {
@@ -151,31 +165,63 @@
       top: 50%;
       transform: translateY(-50%);
       width: 3px;
-      height: 20px;
+      height: 24px;
       background: var(--accent);
-      border-radius: 0 3px 3px 0;
+      border-radius: 0 4px 4px 0;
     }
 
     .nav-icon {
       width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: 'Space Mono', monospace;
     }
 
     .sidebar-footer {
-      padding: 1rem 1.5rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    /* Main Content */
+    .footer-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.9); }
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    .footer-text strong {
+      color: var(--green);
+    }
+
+    /* Main */
     .main {
       flex: 1;
-      margin-left: var(--sidebar-width);
+      margin-left: var(--sidebar-w);
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -183,313 +229,312 @@
 
     /* Header */
     .header {
-      height: var(--header-height);
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
+      height: 64px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border-1);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 2rem;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      padding: 0 24px;
+      flex-shrink: 0;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 16px;
     }
 
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--text-muted);
+    .page-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
     }
 
-    .breadcrumb .current {
-      color: var(--text);
-      font-weight: 600;
+    .page-badge {
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'Space Mono', monospace;
     }
 
     .header-right {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 12px;
     }
 
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.8rem;
-      background: var(--success-bg);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      border-radius: 20px;
-      font-size: 0.8rem;
-      color: var(--success);
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .btn-header {
-      padding: 0.5rem 1rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text-secondary);
-      font-size: 0.85rem;
+    .header-btn {
+      height: 36px;
+      padding: 0 14px;
+      background: var(--bg-3);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius-xs);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 6px;
     }
 
-    .btn-header:hover {
-      background: var(--bg-card-hover);
-      color: var(--text);
-      border-color: var(--text-muted);
+    .header-btn:hover {
+      background: var(--bg-4);
+      color: var(--text-1);
+      border-color: var(--border-2);
     }
 
-    /* Content Area */
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 14px;
+      background: var(--green-bg);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .status-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* Content */
     .content {
       flex: 1;
-      padding: 1.5rem 2rem;
+      padding: 24px;
       overflow-y: auto;
+      background: var(--bg-0);
     }
 
-    .page { display: none; animation: fadeIn 0.2s ease; }
+    .page { display: none; animation: fadeIn 0.25s ease; }
     .page.active { display: block; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Page Header */
-    .page-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .page-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-      letter-spacing: -0.5px;
-    }
-
-    .page-header p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
+    /* Stats */
+    .stats-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+    .stat {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
       border-radius: var(--radius);
-      padding: 1.25rem;
-      transition: all 0.2s;
+      padding: 20px;
       position: relative;
       overflow: hidden;
+      transition: all 0.2s;
     }
 
-    .stat-card::before {
+    .stat:hover {
+      border-color: var(--border-2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat::after {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
+      height: 2px;
       background: linear-gradient(90deg, var(--accent), transparent);
       opacity: 0;
       transition: opacity 0.2s;
     }
 
-    .stat-card:hover {
-      border-color: var(--text-muted);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-    }
+    .stat:hover::after { opacity: 1; }
 
-    .stat-card:hover::before { opacity: 1; }
-
-    .stat-header {
+    .stat-top {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 0.75rem;
+      margin-bottom: 16px;
     }
 
     .stat-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 22px;
     }
 
-    .stat-icon.blue { background: rgba(59, 130, 246, 0.15); }
-    .stat-icon.green { background: rgba(16, 185, 129, 0.15); }
-    .stat-icon.purple { background: rgba(139, 92, 246, 0.15); }
-    .stat-icon.orange { background: rgba(245, 158, 11, 0.15); }
+    .stat-icon.cyan { background: rgba(34, 211, 238, 0.1); }
+    .stat-icon.green { background: rgba(34, 197, 94, 0.1); }
+    .stat-icon.purple { background: rgba(167, 139, 250, 0.1); }
+    .stat-icon.yellow { background: rgba(234, 179, 8, 0.1); }
 
-    .stat-badge {
-      font-size: 0.7rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-
-    .stat-badge.success { background: var(--success-bg); color: var(--success); }
-    .stat-badge.warning { background: var(--warning-bg); color: var(--warning); }
-
-    .stat-value {
-      font-size: 1.75rem;
+    .stat-tag {
+      font-size: 11px;
       font-weight: 700;
-      margin-bottom: 0.1rem;
-      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 6px;
     }
 
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .stat-tag.ok { background: var(--green-bg); color: var(--green); }
+    .stat-tag.warn { background: var(--yellow-bg); color: var(--yellow); }
+
+    .stat-num {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
     }
 
-    /* Cards */
+    .stat-desc {
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    /* Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Card */
     .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
       border-radius: var(--radius);
       overflow: hidden;
-      margin-bottom: 1.5rem;
     }
 
-    .card-header {
+    .card-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-1);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
       background: rgba(0,0,0,0.2);
     }
 
-    .card-title {
-      font-size: 0.95rem;
-      font-weight: 600;
+    .card-head h3 {
+      font-size: 15px;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 8px;
     }
 
-    .card-body { padding: 1.25rem; }
+    .card-body { padding: 20px; }
 
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
-
-    /* Tables */
-    .table-wrapper { overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
 
     th {
-      padding: 0.75rem 1rem;
+      padding: 10px 16px;
       text-align: left;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background: rgba(0,0,0,0.2);
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 1px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border-1);
     }
 
     td {
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-      border-bottom: 1px solid rgba(45, 53, 72, 0.5);
-      color: var(--text-secondary);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-2);
+      border-bottom: 1px solid rgba(39, 39, 42, 0.5);
     }
 
     tr:hover td {
       background: rgba(255,255,255,0.02);
-      color: var(--text);
+      color: var(--text-1);
     }
 
     tr:last-child td { border-bottom: none; }
 
-    /* Badges */
+    /* Badge */
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.65rem;
+      gap: 6px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
     }
 
-    .badge-success { background: var(--success-bg); color: var(--success); }
-    .badge-warning { background: var(--warning-bg); color: var(--warning); }
-    .badge-danger { background: var(--danger-bg); color: var(--danger); }
-    .badge-info { background: var(--info-bg); color: var(--info); }
-    .badge-neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
-
-    .dot {
+    .badge .dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
       background: currentColor;
     }
 
-    /* Forms */
-    .form-group { margin-bottom: 1.25rem; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-purple { background: var(--purple-bg); color: var(--purple); }
+    .badge-neutral { background: rgba(161,161,170,0.1); color: var(--text-2); }
+
+    /* Mono */
+    .mono {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* Form */
+    .form-group { margin-bottom: 20px; }
 
     .form-label {
       display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 8px;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-4);
+      margin-top: 6px;
     }
 
     .form-input, .form-select {
       width: 100%;
-      padding: 0.65rem 0.85rem;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
+      height: 44px;
+      padding: 0 14px;
+      background: var(--bg-1);
+      border: 1px solid var(--border-1);
       border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 0.9rem;
+      color: var(--text-1);
+      font-size: 14px;
       font-family: inherit;
       transition: all 0.15s;
     }
@@ -500,26 +545,20 @@
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
-    .form-input::placeholder { color: var(--text-muted); }
-
-    .form-hint {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 0.35rem;
-    }
+    .form-input::placeholder { color: var(--text-4); }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      gap: 16px;
     }
 
     .form-check {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 10px;
+      padding: 8px 0;
       cursor: pointer;
-      padding: 0.5rem 0;
     }
 
     .form-check input[type="checkbox"] {
@@ -530,637 +569,560 @@
     }
 
     .form-check span {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
+      font-size: 14px;
+      color: var(--text-2);
     }
 
     /* Buttons */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.65rem 1.25rem;
+      height: 44px;
+      padding: 0 20px;
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
-      font-size: 0.875rem;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn-primary {
       background: var(--accent);
-      color: white;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      color: var(--bg-0);
+      box-shadow: 0 2px 12px rgba(34, 211, 238, 0.3);
     }
 
     .btn-primary:hover {
-      background: var(--accent-hover);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      background: var(--accent-2);
+      box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
       transform: translateY(-1px);
     }
 
     .btn-secondary {
-      background: var(--bg-card);
-      border-color: var(--border);
-      color: var(--text-secondary);
+      background: var(--bg-3);
+      border-color: var(--border-1);
+      color: var(--text-2);
     }
 
     .btn-secondary:hover {
-      background: var(--bg-card-hover);
-      color: var(--text);
-      border-color: var(--text-muted);
+      background: var(--bg-4);
+      color: var(--text-1);
+      border-color: var(--border-2);
     }
 
     .btn-ghost {
       background: transparent;
-      color: var(--text-secondary);
+      color: var(--text-2);
+      height: 32px;
+      padding: 0 12px;
+      font-size: 13px;
     }
 
     .btn-ghost:hover {
       background: rgba(255,255,255,0.05);
-      color: var(--text);
+      color: var(--text-1);
     }
 
-    .btn-sm {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.8rem;
-    }
-
-    .btn-icon {
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      border-radius: var(--radius-sm);
-    }
-
-    /* Info Row */
+    /* Info */
     .info-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid rgba(45, 53, 72, 0.3);
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(39, 39, 42, 0.3);
     }
 
     .info-row:last-child { border-bottom: none; }
 
-    .info-label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
+    .info-key {
+      font-size: 13px;
+      color: var(--text-3);
     }
 
-    .info-value {
-      font-size: 0.85rem;
-      font-weight: 500;
-      font-family: 'JetBrains Mono', monospace;
+    .info-val {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Space Mono', monospace;
+      color: var(--text-1);
     }
 
-    /* Toast */
-    .toast-container {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    /* Empty */
+    .empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-3);
     }
 
-    .toast {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.25rem;
-      min-width: 320px;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: var(--shadow-lg);
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
     }
 
-    .toast-success { border-left: 3px solid var(--success); }
-    .toast-error { border-left: 3px solid var(--danger); }
-
-    .toast-icon {
-      font-size: 1.2rem;
-    }
-
-    .toast-msg {
-      font-size: 0.875rem;
-      color: var(--text);
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    .empty p {
+      font-size: 14px;
+      max-width: 300px;
+      margin: 0 auto;
+      line-height: 1.6;
     }
 
     /* Loading */
-    .loading-state {
+    .loading {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 3rem;
-      color: var(--text-muted);
+      padding: 48px;
+      color: var(--text-3);
+      font-size: 14px;
     }
 
     .spinner {
       width: 32px;
       height: 32px;
-      border: 3px solid var(--border);
+      border: 3px solid var(--bg-4);
       border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 1rem;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 12px;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 3rem;
-      color: var(--text-muted);
+    /* Toast */
+    .toasts {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
+    .toast {
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 300px;
+      box-shadow: var(--shadow-lg);
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-ok { border-left: 3px solid var(--green); }
+    .toast-err { border-left: 3px solid var(--red); }
+
+    .toast-icon { font-size: 18px; }
+    .toast-text { font-size: 14px; font-weight: 500; }
+
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Action card */
+    .action-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .action-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-3);
+    }
+
+    .action-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: var(--accent-glow);
+    }
+
+    .action-info h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .action-info p {
+      font-size: 13px;
+      color: var(--text-3);
     }
 
     /* Responsive */
     @media (max-width: 1400px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
     }
 
     @media (max-width: 1024px) {
-      .sidebar { width: 60px; }
-      .sidebar .logo-text, .sidebar .nav-label, .sidebar .nav-item span:not(.nav-icon) { display: none; }
-      .sidebar .nav-item { justify-content: center; padding: 0.7rem; }
+      .sidebar { width: 72px; }
+      .sidebar .brand-info, .sidebar .nav-label, .sidebar .nav-item span:not(.nav-icon), .sidebar .nav-badge, .sidebar .footer-text { display: none; }
+      .sidebar .nav-item { justify-content: center; padding: 12px; }
       .sidebar .nav-item.active::before { display: none; }
-      .main { margin-left: 60px; }
-      .card-grid { grid-template-columns: 1fr; }
+      .sidebar .brand-icon { margin: 0 auto; }
+      .sidebar .sidebar-brand { padding: 16px; display: flex; justify-content: center; }
+      .sidebar .sidebar-footer { justify-content: center; }
+      .main { margin-left: 72px; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <!-- Sidebar -->
+  <div class="layout">
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <div class="logo-icon">V</div>
-          <div class="logo-text">
+      <div class="sidebar-brand">
+        <div class="brand">
+          <div class="brand-icon">V</div>
+          <div class="brand-info">
             <h1>VectorOS</h1>
-            <div class="version">v0.1.0</div>
+            <div class="sub">v0.1.0-alpha</div>
           </div>
         </div>
       </div>
 
-      <nav class="nav-section">
-        <div class="nav-label">概览</div>
-        <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
-          <span class="nav-icon">📊</span>
-          <span>仪表盘</span>
-        </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <div class="nav-label">概览</div>
+          <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+            <span class="nav-icon">📊</span><span>仪表盘</span>
+          </a>
+        </div>
 
-        <div class="nav-label">网络</div>
-        <a class="nav-item" data-page="pppoe" onclick="showPage('pppoe')">
-          <span class="nav-icon">🔌</span>
-          <span>PPPoE 拨号</span>
-        </a>
-        <a class="nav-item" data-page="interfaces" onclick="showPage('interfaces')">
-          <span class="nav-icon">🌐</span>
-          <span>网络接口</span>
-        </a>
-        <a class="nav-item" data-page="routes" onclick="showPage('routes')">
-          <span class="nav-icon">🛣️</span>
-          <span>路由表</span>
-        </a>
+        <div class="nav-group">
+          <div class="nav-label">网络</div>
+          <a class="nav-item" data-page="pppoe" onclick="showPage('pppoe')">
+            <span class="nav-icon">🔌</span><span>PPPoE 拨号</span>
+            <span class="nav-badge">就绪</span>
+          </a>
+          <a class="nav-item" data-page="interfaces" onclick="showPage('interfaces')">
+            <span class="nav-icon">🌐</span><span>网络接口</span>
+            <span class="nav-badge">4</span>
+          </a>
+          <a class="nav-item" data-page="routes" onclick="showPage('routes')">
+            <span class="nav-icon">🛣️</span><span>路由表</span>
+          </a>
+        </div>
 
-        <div class="nav-label">服务</div>
-        <a class="nav-item" data-page="dhcp" onclick="showPage('dhcp')">
-          <span class="nav-icon">📡</span>
-          <span>DHCP</span>
-        </a>
-        <a class="nav-item" data-page="dns" onclick="showPage('dns')">
-          <span class="nav-icon">🔍</span>
-          <span>DNS</span>
-        </a>
-        <a class="nav-item" data-page="nat" onclick="showPage('nat')">
-          <span class="nav-icon">🔄</span>
-          <span>NAT</span>
-        </a>
+        <div class="nav-group">
+          <div class="nav-label">服务</div>
+          <a class="nav-item" data-page="dhcp" onclick="showPage('dhcp')">
+            <span class="nav-icon">📡</span><span>DHCP</span>
+          </a>
+          <a class="nav-item" data-page="dns" onclick="showPage('dns')">
+            <span class="nav-icon">🔍</span><span>DNS</span>
+          </a>
+          <a class="nav-item" data-page="nat" onclick="showPage('nat')">
+            <span class="nav-icon">🔄</span><span>NAT</span>
+          </a>
+        </div>
 
-        <div class="nav-label">系统</div>
-        <a class="nav-item" data-page="system" onclick="showPage('system')">
-          <span class="nav-icon">⚙️</span>
-          <span>系统信息</span>
-        </a>
+        <div class="nav-group">
+          <div class="nav-label">系统</div>
+          <a class="nav-item" data-page="system" onclick="showPage('system')">
+            <span class="nav-icon">⚙️</span><span>系统信息</span>
+          </a>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
-        <div>Powered by VPP</div>
-        <div style="margin-top: 0.25rem;">© 2026 VectorOS</div>
+        <span class="footer-dot"></span>
+        <span class="footer-text">VPP <strong>运行中</strong></span>
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main">
-      <!-- Header -->
       <header class="header">
         <div class="header-left">
-          <div class="breadcrumb">
-            <span>VectorOS</span>
-            <span>/</span>
-            <span class="current" id="breadcrumb-current">仪表盘</span>
-          </div>
+          <h2 class="page-title" id="header-title">仪表盘</h2>
+          <span class="page-badge" id="header-badge">v0.1.0</span>
         </div>
         <div class="header-right">
-          <div class="status-indicator">
-            <span class="status-dot"></span>
+          <div class="status-chip">
+            <span class="dot"></span>
             <span>系统正常</span>
           </div>
-          <button class="btn-header" onclick="refreshAll()">
-            🔄 刷新
-          </button>
+          <button class="header-btn" onclick="refreshAll()">🔄 刷新</button>
         </div>
       </header>
 
-      <!-- Content -->
       <div class="content">
-        <!-- Dashboard Page -->
+        <!-- Dashboard -->
         <div id="page-dashboard" class="page active">
-          <div class="page-header">
-            <h2>仪表盘</h2>
-            <p>系统概览和实时状态</p>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-header">
-                <div class="stat-icon blue">🔌</div>
-                <span class="stat-badge success">就绪</span>
+          <div class="stats-row">
+            <div class="stat">
+              <div class="stat-top">
+                <div class="stat-icon cyan">🔌</div>
+                <span class="stat-tag ok">就绪</span>
               </div>
-              <div class="stat-value" id="stat-pppoe">-</div>
-              <div class="stat-label">PPPoE 状态</div>
+              <div class="stat-num" id="s-pppoe">—</div>
+              <div class="stat-desc">PPPoE 状态</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-header">
+            <div class="stat">
+              <div class="stat-top">
                 <div class="stat-icon green">🌐</div>
               </div>
-              <div class="stat-value">4</div>
-              <div class="stat-label">网络接口</div>
+              <div class="stat-num">4</div>
+              <div class="stat-desc">网络接口</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-header">
+            <div class="stat">
+              <div class="stat-top">
                 <div class="stat-icon purple">🛣️</div>
               </div>
-              <div class="stat-value">-</div>
-              <div class="stat-label">路由条目</div>
+              <div class="stat-num">—</div>
+              <div class="stat-desc">路由条目</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-header">
-                <div class="stat-icon orange">⏱️</div>
-                <span class="stat-badge success">运行中</span>
+            <div class="stat">
+              <div class="stat-top">
+                <div class="stat-icon yellow">⏱️</div>
+                <span class="stat-tag ok">运行</span>
               </div>
-              <div class="stat-value">✓</div>
-              <div class="stat-label">系统状态</div>
+              <div class="stat-num">✓</div>
+              <div class="stat-desc">系统状态</div>
             </div>
           </div>
 
-          <div class="card-grid">
+          <div class="grid-2">
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">📋 系统信息</span>
+              <div class="card-head">
+                <h3>📋 系统信息</h3>
               </div>
               <div class="card-body">
                 <div class="info-row">
-                  <span class="info-label">VectorOS 版本</span>
-                  <span class="info-value" id="info-version">-</span>
+                  <span class="info-key">VectorOS 版本</span>
+                  <span class="info-val" id="i-ver">—</span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">VPP 版本</span>
-                  <span class="info-value">v26.06-rc0</span>
+                  <span class="info-key">VPP 版本</span>
+                  <span class="info-val">v26.06-rc0~703</span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">PPPoE 插件</span>
-                  <span class="info-value" id="info-pppoe">-</span>
+                  <span class="info-key">PPPoE 插件</span>
+                  <span class="info-val" id="i-pppoe">—</span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">API Socket</span>
-                  <span class="info-value">/run/vpp/api.sock</span>
+                  <span class="info-key">Binary API</span>
+                  <span class="info-val" id="i-api">—</span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">Binary API</span>
-                  <span class="info-value" id="info-api">-</span>
+                  <span class="info-key">消息 ID 基址</span>
+                  <span class="info-val" id="i-msgid">—</span>
                 </div>
               </div>
             </div>
 
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">⚡ 快速操作</span>
+              <div class="card-head">
+                <h3>⚡ 快速操作</h3>
               </div>
-              <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <button class="btn btn-primary" onclick="showPage('pppoe')" style="width: 100%;">
-                  🔌 配置 PPPoE 拨号
-                </button>
-                <button class="btn btn-secondary" onclick="showPage('interfaces')" style="width: 100%;">
-                  🌐 管理网络接口
-                </button>
-                <button class="btn btn-secondary" onclick="showPage('routes')" style="width: 100%;">
-                  🛣️ 查看路由表
-                </button>
+              <div class="card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="action-card" onclick="showPage('pppoe')">
+                  <div class="action-icon">🔌</div>
+                  <div class="action-info">
+                    <h4>配置 PPPoE 拨号</h4>
+                    <p>设置宽带账号密码，建立 PPPoE 连接</p>
+                  </div>
+                </div>
+                <div class="action-card" onclick="showPage('interfaces')">
+                  <div class="action-icon">🌐</div>
+                  <div class="action-info">
+                    <h4>管理网络接口</h4>
+                    <p>查看接口状态，绑定 VF 到 VPP</p>
+                  </div>
+                </div>
+                <div class="action-card" onclick="showPage('routes')">
+                  <div class="action-icon">🛣️</div>
+                  <div class="action-info">
+                    <h4>查看路由表</h4>
+                    <p>查看和管理 IP 路由条目</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- PPPoE Page -->
+        <!-- PPPoE -->
         <div id="page-pppoe" class="page">
-          <div class="page-header">
-            <h2>PPPoE 拨号</h2>
-            <p>配置 PPPoE 宽带连接</p>
-          </div>
-
-          <div class="card-grid">
+          <div class="grid-2">
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">⚙️ 连接配置</span>
+              <div class="card-head">
+                <h3>⚙️ 拨号配置</h3>
               </div>
               <div class="card-body">
-                <form id="pppoe-form" onsubmit="savePppoe(event)">
+                <form onsubmit="savePppoe(event)">
                   <div class="form-group">
-                    <label class="form-label">用户名</label>
-                    <input type="text" class="form-input" id="pppoe-username" placeholder="宽带账号" required>
-                    <div class="form-hint">ISP 提供的 PPPoE 用户名</div>
+                    <label class="form-label">宽带账号</label>
+                    <input type="text" class="form-input" id="p-user" placeholder="ISP 提供的 PPPoE 用户名" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">密码</label>
-                    <input type="password" class="form-input" id="pppoe-password" placeholder="宽带密码" required>
-                    <div class="form-hint">ISP 提供的 PPPoE 密码</div>
+                    <label class="form-label">宽带密码</label>
+                    <input type="password" class="form-input" id="p-pass" placeholder="ISP 提供的 PPPoE 密码" required>
                   </div>
                   <div class="form-group">
                     <label class="form-label">WAN 接口</label>
-                    <select class="form-select" id="pppoe-interface">
-                      <option value="enp1s0">enp1s0 — VF (CX4 LX 口1)</option>
-                      <option value="enp2s0">enp2s0 — VF (CX4 LX 口2)</option>
-                      <option value="enp3s0">enp3s0 — VF (CX4 LX 口2)</option>
+                    <select class="form-select" id="p-iface">
+                      <option value="enp1s0">enp1s0 — CX4 LX 口1 VF</option>
+                      <option value="enp2s0">enp2s0 — CX4 LX 口2 VF</option>
+                      <option value="enp3s0">enp3s0 — CX4 LX 口2 VF</option>
                     </select>
+                    <div class="form-hint">选择用于 PPPoE 拨号的 SR-IOV VF 接口</div>
                   </div>
                   <div class="form-row">
                     <div class="form-group">
                       <label class="form-label">MTU</label>
-                      <input type="number" class="form-input" id="pppoe-mtu" value="1492" min="576" max="1500">
+                      <input type="number" class="form-input" id="p-mtu" value="1492" min="576" max="1500">
                     </div>
                     <div class="form-group">
                       <label class="form-label">MRU</label>
-                      <input type="number" class="form-input" id="pppoe-mru" value="1492" min="576" max="1500">
+                      <input type="number" class="form-input" id="p-mru" value="1492" min="576" max="1500">
                     </div>
                   </div>
                   <div class="form-group">
-                    <label class="form-check">
-                      <input type="checkbox" id="pppoe-peer-dns" checked>
-                      <span>使用运营商 DNS</span>
-                    </label>
-                    <label class="form-check">
-                      <input type="checkbox" id="pppoe-default-route4" checked>
-                      <span>添加 IPv4 默认路由</span>
-                    </label>
-                    <label class="form-check">
-                      <input type="checkbox" id="pppoe-default-route6" checked>
-                      <span>添加 IPv6 默认路由</span>
-                    </label>
+                    <label class="form-check"><input type="checkbox" id="p-dns" checked><span>使用运营商 DNS</span></label>
+                    <label class="form-check"><input type="checkbox" id="p-r4" checked><span>添加 IPv4 默认路由</span></label>
+                    <label class="form-check"><input type="checkbox" id="p-r6" checked><span>添加 IPv6 默认路由</span></label>
                   </div>
-                  <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    💾 保存配置
-                  </button>
+                  <button type="submit" class="btn btn-primary" style="width: 100%;">💾 保存并拨号</button>
                 </form>
               </div>
             </div>
 
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">📊 连接状态</span>
-                <button class="btn btn-sm btn-ghost" onclick="refreshPppoe()">刷新</button>
+              <div class="card-head">
+                <h3>📊 连接状态</h3>
+                <button class="btn btn-ghost" onclick="refreshPppoe()">刷新</button>
               </div>
-              <div class="card-body" id="pppoe-status-content">
-                <div class="loading-state">
-                  <div class="spinner"></div>
-                  <span>加载中...</span>
-                </div>
+              <div class="card-body" id="pppoe-status">
+                <div class="loading"><div class="spinner"></div>加载中...</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Interfaces Page -->
+        <!-- Interfaces -->
         <div id="page-interfaces" class="page">
-          <div class="page-header">
-            <h2>网络接口</h2>
-            <p>管理物理和虚拟网络接口</p>
-          </div>
-
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">🌐 接口列表</span>
-              <button class="btn btn-sm btn-ghost" onclick="refreshInterfaces()">刷新</button>
+            <div class="card-head">
+              <h3>🌐 网络接口</h3>
+              <button class="btn btn-ghost" onclick="refreshInterfaces()">刷新</button>
             </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>接口名称</th>
-                    <th>类型</th>
-                    <th>状态</th>
-                    <th>MTU</th>
-                    <th>说明</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody id="interfaces-table">
-                  <tr>
-                    <td colspan="6">
-                      <div class="loading-state">
-                        <div class="spinner"></div>
-                        <span>加载中...</span>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>接口</th>
+                  <th>类型</th>
+                  <th>状态</th>
+                  <th>MTU</th>
+                  <th>说明</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="ifaces-tb">
+                <tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Routes Page -->
+        <!-- Routes -->
         <div id="page-routes" class="page">
-          <div class="page-header">
-            <h2>路由表</h2>
-            <p>查看 IP 路由条目</p>
-          </div>
-
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">🛣️ 路由条目</span>
-              <button class="btn btn-sm btn-ghost" onclick="refreshRoutes()">刷新</button>
+            <div class="card-head">
+              <h3>🛣️ 路由表</h3>
+              <button class="btn btn-ghost" onclick="refreshRoutes()">刷新</button>
             </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>目标网络</th>
-                    <th>下一跳</th>
-                    <th>出接口</th>
-                    <th>距离</th>
-                    <th>类型</th>
-                  </tr>
-                </thead>
-                <tbody id="routes-table">
-                  <tr>
-                    <td colspan="5">
-                      <div class="loading-state">
-                        <div class="spinner"></div>
-                        <span>加载中...</span>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>目标网络</th>
+                  <th>下一跳</th>
+                  <th>出接口</th>
+                  <th>距离</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody id="routes-tb">
+                <tr><td colspan="5"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- DHCP Page -->
+        <!-- DHCP -->
         <div id="page-dhcp" class="page">
-          <div class="page-header">
-            <h2>DHCP 服务</h2>
-            <p>管理 DHCP 地址分配</p>
-          </div>
-
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">📡 DHCP 租约</span>
-            </div>
+            <div class="card-head"><h3>📡 DHCP 租约</h3></div>
             <div class="card-body">
-              <div class="empty-state">
+              <div class="empty">
                 <div class="empty-icon">📡</div>
                 <p>DHCP 服务未启用</p>
-                <p style="font-size: 0.85rem; margin-top: 0.5rem;">在配置文件中启用 DHCP 服务</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- DNS Page -->
+        <!-- DNS -->
         <div id="page-dns" class="page">
-          <div class="page-header">
-            <h2>DNS 配置</h2>
-            <p>DNS 转发和缓存设置</p>
-          </div>
-
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">🔍 上游 DNS 服务器</span>
-            </div>
+            <div class="card-head"><h3>🔍 上游 DNS</h3></div>
             <div class="card-body">
-              <div class="info-row">
-                <span class="info-label">8.8.8.8</span>
-                <span class="badge badge-info">Google</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">1.1.1.1</span>
-                <span class="badge badge-info">Cloudflare</span>
-              </div>
+              <div class="info-row"><span class="info-key">8.8.8.8</span><span class="badge badge-purple">Google</span></div>
+              <div class="info-row"><span class="info-key">1.1.1.1</span><span class="badge badge-purple">Cloudflare</span></div>
             </div>
           </div>
         </div>
 
-        <!-- NAT Page -->
+        <!-- NAT -->
         <div id="page-nat" class="page">
-          <div class="page-header">
-            <h2>NAT 配置</h2>
-            <p>网络地址转换设置</p>
-          </div>
-
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">🔄 NAT 状态</span>
-            </div>
+            <div class="card-head"><h3>🔄 NAT 状态</h3></div>
             <div class="card-body">
-              <div class="empty-state">
+              <div class="empty">
                 <div class="empty-icon">🔄</div>
-                <p>NAT 未配置</p>
-                <p style="font-size: 0.85rem; margin-top: 0.5rem;">PPPoE 连接后自动配置</p>
+                <p>NAT 未配置，PPPoE 连接后自动启用</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- System Page -->
+        <!-- System -->
         <div id="page-system" class="page">
-          <div class="page-header">
-            <h2>系统信息</h2>
-            <p>VectorOS 系统状态和配置</p>
-          </div>
-
-          <div class="card-grid">
+          <div class="grid-2">
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">⚙️ 服务状态</span>
-              </div>
+              <div class="card-head"><h3>⚙️ 服务状态</h3></div>
               <div class="card-body">
-                <div class="info-row">
-                  <span class="info-label">VectorOS</span>
-                  <span class="badge badge-success"><span class="dot"></span> 运行中</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">VPP</span>
-                  <span class="badge badge-success"><span class="dot"></span> 运行中</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">PPPoE 插件</span>
-                  <span class="badge badge-success"><span class="dot"></span> 已加载</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">RDMA 驱动</span>
-                  <span class="badge badge-success"><span class="dot"></span> 已启用</span>
-                </div>
+                <div class="info-row"><span class="info-key">VectorOS</span><span class="badge badge-green"><span class="dot"></span> 运行中</span></div>
+                <div class="info-row"><span class="info-key">VPP</span><span class="badge badge-green"><span class="dot"></span> 运行中</span></div>
+                <div class="info-row"><span class="info-key">PPPoE 插件</span><span class="badge badge-green"><span class="dot"></span> 已加载</span></div>
+                <div class="info-row"><span class="info-key">RDMA 驱动</span><span class="badge badge-green"><span class="dot"></span> 已启用</span></div>
               </div>
             </div>
-
             <div class="card">
-              <div class="card-header">
-                <span class="card-title">🔗 API 端点</span>
-              </div>
+              <div class="card-head"><h3>🔗 API 端点</h3></div>
               <div class="card-body">
-                <div class="info-row">
-                  <span class="info-label">/api/health</span>
-                  <span class="badge badge-neutral">GET</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">/api/config</span>
-                  <span class="badge badge-neutral">GET</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">/api/pppoe/clients</span>
-                  <span class="badge badge-neutral">GET</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">/api/interfaces</span>
-                  <span class="badge badge-neutral">GET</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">/api/routes</span>
-                  <span class="badge badge-neutral">GET</span>
-                </div>
+                <div class="info-row"><span class="info-key">/api/health</span><span class="badge badge-neutral">GET</span></div>
+                <div class="info-row"><span class="info-key">/api/config</span><span class="badge badge-neutral">GET</span></div>
+                <div class="info-row"><span class="info-key">/api/pppoe/clients</span><span class="badge badge-neutral">GET</span></div>
+                <div class="info-row"><span class="info-key">/api/interfaces</span><span class="badge badge-neutral">GET</span></div>
+                <div class="info-row"><span class="info-key">/api/routes</span><span class="badge badge-neutral">GET</span></div>
               </div>
             </div>
           </div>
@@ -1169,162 +1131,82 @@
     </main>
   </div>
 
-  <div class="toast-container" id="toasts"></div>
+  <div class="toasts" id="toasts"></div>
 
   <script>
-    const pageNames = {
-      dashboard: '仪表盘',
-      pppoe: 'PPPoE 拨号',
-      interfaces: '网络接口',
-      routes: '路由表',
-      dhcp: 'DHCP',
-      dns: 'DNS',
-      nat: 'NAT',
-      system: '系统信息'
+    const TITLES = {
+      dashboard: '仪表盘', pppoe: 'PPPoE 拨号', interfaces: '网络接口',
+      routes: '路由表', dhcp: 'DHCP', dns: 'DNS', nat: 'NAT', system: '系统信息'
     };
 
-    function showPage(page) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById(`page-${page}`).classList.add('active');
-      document.querySelector(`[data-page="${page}"]`).classList.add('active');
-      document.getElementById('breadcrumb-current').textContent = pageNames[page] || page;
-      refreshPage(page);
+    function showPage(p) {
+      document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('page-' + p).classList.add('active');
+      document.querySelector('[data-page="' + p + '"]').classList.add('active');
+      document.getElementById('header-title').textContent = TITLES[p] || p;
+      refreshPage(p);
     }
 
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toasts');
-      const toast = document.createElement('div');
-      toast.className = `toast toast-${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span>
-        <span class="toast-msg">${message}</span>
-      `;
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
+    function toast(msg, ok = true) {
+      const c = document.getElementById('toasts');
+      const d = document.createElement('div');
+      d.className = 'toast ' + (ok ? 'toast-ok' : 'toast-err');
+      d.innerHTML = '<span class="toast-icon">' + (ok ? '✓' : '✕') + '</span><span class="toast-text">' + msg + '</span>';
+      c.appendChild(d);
+      setTimeout(() => { d.style.opacity = '0'; d.style.transform = 'translateX(100%)'; d.style.transition = 'all 0.3s'; setTimeout(() => d.remove(), 300); }, 3000);
     }
 
-    async function fetchApi(url) {
-      try {
-        const res = await fetch(url);
-        return await res.json();
-      } catch (e) {
-        return { error: e.message };
-      }
-    }
+    async function api(u) { try { return await (await fetch(u)).json(); } catch(e) { return { error: e.message }; } }
 
     async function refreshAll() {
       await Promise.all([refreshDashboard(), refreshPppoe(), refreshInterfaces(), refreshRoutes()]);
-      showToast('状态已刷新');
+      toast('状态已刷新');
     }
 
-    async function refreshPage(page) {
-      switch (page) {
-        case 'dashboard': return refreshDashboard();
-        case 'pppoe': return refreshPppoe();
-        case 'interfaces': return refreshInterfaces();
-        case 'routes': return refreshRoutes();
-      }
+    function refreshPage(p) {
+      if (p === 'dashboard') refreshDashboard();
+      else if (p === 'pppoe') refreshPppoe();
+      else if (p === 'interfaces') refreshInterfaces();
+      else if (p === 'routes') refreshRoutes();
     }
 
     async function refreshDashboard() {
-      const [health, pppoe] = await Promise.all([
-        fetchApi('/api/health'),
-        fetchApi('/api/pppoe/clients')
-      ]);
-
-      document.getElementById('stat-pppoe').textContent = pppoe.status === 'ok' ? '就绪' : '异常';
-      document.getElementById('info-version').textContent = health.version || '-';
-      document.getElementById('info-pppoe').textContent = pppoe.status === 'ok' ? '已加载 (ID: 1938)' : '未加载';
-      document.getElementById('info-api').textContent = pppoe.status === 'ok' ? `已连接` : '未连接';
+      const [h, p] = await Promise.all([api('/api/health'), api('/api/pppoe/clients')]);
+      document.getElementById('s-pppoe').textContent = p.status === 'ok' ? '就绪' : '异常';
+      document.getElementById('i-ver').textContent = h.version || '—';
+      document.getElementById('i-pppoe').textContent = p.status === 'ok' ? '已加载' : '未加载';
+      document.getElementById('i-api').textContent = p.status === 'ok' ? '已连接' : '未连接';
+      document.getElementById('i-msgid').textContent = p.base_msg_id || '—';
     }
 
     async function refreshPppoe() {
-      const data = await fetchApi('/api/pppoe/clients');
-      const content = document.getElementById('pppoe-status-content');
-
-      if (data.error) {
-        content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p style="color: var(--danger);">${data.error}</p></div>`;
-        return;
-      }
-
-      content.innerHTML = `
-        <div class="info-row">
-          <span class="info-label">API 状态</span>
-          <span class="badge badge-success"><span class="dot"></span> ${data.status}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">基础消息 ID</span>
-          <span class="info-value">${data.base_msg_id}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">消息</span>
-          <span class="info-value">${data.message}</span>
-        </div>
-        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
-          <p style="font-size: 0.85rem; color: var(--info);">💡 PPPoE API 已就绪，填写左侧表单创建拨号连接</p>
-        </div>
-      `;
+      const d = await api('/api/pppoe/clients');
+      const el = document.getElementById('pppoe-status');
+      if (d.error) { el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">' + d.error + '</p></div>'; return; }
+      el.innerHTML = '<div class="info-row"><span class="info-key">API 状态</span><span class="badge badge-green"><span class="dot"></span>' + d.status + '</span></div><div class="info-row"><span class="info-key">消息 ID</span><span class="info-val">' + d.base_msg_id + '</span></div><div class="info-row"><span class="info-key">消息</span><span class="info-val">' + d.message + '</span></div><div style="margin-top:20px;padding:14px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.15);border-radius:10px"><p style="font-size:13px;color:var(--accent)">💡 PPPoE API 已就绪，填写左侧表单创建拨号连接</p></div>';
     }
 
     async function refreshInterfaces() {
-      const tb = document.getElementById('interfaces-table');
-      const interfaces = [
-        { name: 'ens18', type: '管理', status: 'up', mtu: 1500, desc: '管理网卡 (192.168.1.7)' },
-        { name: 'enp1s0', type: 'WAN VF', status: 'down', mtu: 1500, desc: 'CX4 LX 口1 VF' },
-        { name: 'enp2s0', type: 'LAN VF', status: 'down', mtu: 1500, desc: 'CX4 LX 口2 VF' },
-        { name: 'enp3s0', type: '备用 VF', status: 'down', mtu: 1500, desc: 'CX4 LX 口2 VF' },
-      ];
-
-      tb.innerHTML = interfaces.map(iface => `
-        <tr>
-          <td><strong style="color: var(--text); font-family: 'JetBrains Mono', monospace;">${iface.name}</strong></td>
-          <td><span class="badge badge-info">${iface.type}</span></td>
-          <td><span class="badge ${iface.status === 'up' ? 'badge-success' : 'badge-warning'}"><span class="dot"></span> ${iface.status}</span></td>
-          <td style="font-family: 'JetBrains Mono', monospace;">${iface.mtu}</td>
-          <td>${iface.desc}</td>
-          <td><button class="btn btn-sm btn-ghost">配置</button></td>
-        </tr>
-      `).join('');
+      const tb = document.getElementById('ifaces-tb');
+      tb.innerHTML = [
+        { n: 'ens18', t: '管理', s: 'up', m: 1500, d: '管理网卡 (192.168.1.7)' },
+        { n: 'enp1s0', t: 'WAN VF', s: 'down', m: 1500, d: 'CX4 LX 口1 VF' },
+        { n: 'enp2s0', t: 'LAN VF', s: 'down', m: 1500, d: 'CX4 LX 口2 VF' },
+        { n: 'enp3s0', t: '备用', s: 'down', m: 1500, d: 'CX4 LX 口2 VF' },
+      ].map(i => '<tr><td><strong class="mono">' + i.n + '</strong></td><td><span class="badge badge-purple">' + i.t + '</span></td><td><span class="badge ' + (i.s === 'up' ? 'badge-green' : 'badge-yellow') + '"><span class="dot"></span> ' + i.s + '</span></td><td class="mono">' + i.m + '</td><td>' + i.d + '</td><td><button class="btn btn-ghost">配置</button></td></tr>').join('');
     }
 
     async function refreshRoutes() {
-      const tb = document.getElementById('routes-table');
-      tb.innerHTML = `
-        <tr>
-          <td style="font-family: 'JetBrains Mono', monospace;">192.168.1.0/24</td>
-          <td style="font-family: 'JetBrains Mono', monospace;">直连</td>
-          <td style="font-family: 'JetBrains Mono', monospace;">lan0phy</td>
-          <td>0</td>
-          <td><span class="badge badge-success">直连</span></td>
-        </tr>
-      `;
+      document.getElementById('routes-tb').innerHTML = '<tr><td class="mono">192.168.1.0/24</td><td class="mono">直连</td><td class="mono">lan0phy</td><td>0</td><td><span class="badge badge-green">直连</span></td></tr>';
     }
 
-    async function savePppoe(e) {
+    function savePppoe(e) {
       e.preventDefault();
-      const config = {
-        username: document.getElementById('pppoe-username').value,
-        password: document.getElementById('pppoe-password').value,
-        interface: document.getElementById('pppoe-interface').value,
-        mtu: parseInt(document.getElementById('pppoe-mtu').value),
-        mru: parseInt(document.getElementById('pppoe-mru').value),
-        usePeerDns: document.getElementById('pppoe-peer-dns').checked,
-        addDefaultRoute4: document.getElementById('pppoe-default-route4').checked,
-        addDefaultRoute6: document.getElementById('pppoe-default-route6').checked,
-      };
-      console.log('PPPoE config:', config);
-      showToast('PPPoE 配置已保存（功能开发中）');
+      toast('PPPoE 配置已保存（功能开发中）');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      refreshDashboard();
-    });
+    document.addEventListener('DOMContentLoaded', refreshDashboard);
   </script>
 </body>
 </html>
