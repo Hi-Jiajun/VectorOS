@@ -12,8 +12,11 @@
     <a href="/dhcp">DHCP</a>
     <a href="/dns">DNS</a>
     <a href="/firewall">Firewall</a>
+    <a href="/vpn">VPN</a>
+    <a href="/conntrack">ConnTrack</a>
     <a href="/flow">Flow Monitor</a>
     <a href="/qos">QoS</a>
+    <a href="/traffic">Traffic Control</a>
     <a href="/logs">Logs</a>
     <a href="/settings">Settings</a>
   </nav>

@@ -2315,66 +2315,272 @@
         unhealthy: '异常',
         auto: '自动',
         refresh: '刷新',
+        auto_refresh_toggle: '自动刷新，每2秒更新',
 
-        // Dashboard
-        vpp_performance: 'VPP 性能',
-        pppoe_status: 'PPPoE 状态',
-        system_resources: '系统资源',
-        network_interfaces: '网络接口',
-        nat_status: 'NAT 状态',
-        dhcp_status: 'DHCP 状态',
-        quick_actions: '快速操作',
+        // Health bar
+        system_healthy: '系统正常',
+        system_warning: '系统警告',
+        system_critical: '系统严重异常',
+        all_services_operating: '所有 {n} 个服务运行正常',
+        critical_cpu: 'CPU 严重',
+        high_cpu: 'CPU 过高',
+        critical_memory: '内存严重',
+        high_memory: '内存过高',
+        pppoe_offline: 'PPPoE 离线',
+        pppoe_on: 'PPPoE 开启',
+        pppoe_off: 'PPPoE 关闭',
+        services_count: '服务',
+        cpu_label: 'CPU',
+        mem_label: 'MEM',
 
-        // Stats
-        packet_rate: '包速率',
-        rx_bytes: '接收字节',
-        tx_bytes: '发送字节',
-        rx_packets: '接收包',
-        tx_packets: '发送包',
-        drops: '丢包',
-        errors: '错误',
+        // Dashboard - Mini stats
+        system_uptime: '系统运行时间',
+        pppoe_session: 'PPPoE 会话',
+        dhcp_leases: 'DHCP 租约',
+        active_clients: '活跃客户端',
+        dns_cache: 'DNS 缓存',
+        forwarder_active: '转发器已激活',
+        nat_sessions: 'NAT 会话',
+        nat_inside_outside: '内网/外网',
+        interfaces_label: '网络接口',
+        total: '合计',
+        not_configured: '未配置',
+        disabled: '已禁用',
+        active_server: '活跃服务',
+        cache_entries: '{n} 条缓存',
+        active: '活跃',
+
+        // Dashboard - Charts
+        cpu_usage_60s: 'CPU 使用率（60秒历史）',
+        memory_usage_60s: '内存使用率（60秒历史）',
+        network_throughput: '网络吞吐量',
+        rx_in: '接收（入）',
+        tx_out: '发送（出）',
+        nat_sessions_chart: 'NAT 会话（60秒历史）',
         sessions: '会话',
-        memory_usage: '内存使用',
-        cpu_usage: 'CPU 使用',
-        disk_usage: '磁盘使用',
-        uptime: '运行时间',
+        pppoe_uptime_chart: 'PPPoE 运行时间',
+        disk_usage: '磁盘使用率',
+        used: '已用',
+        free: '可用',
+        total_disk: '总计',
+        alerts: '告警',
+        no_active_alerts: '暂无活跃告警',
+        current: '当前',
+        of_total: '共 {n}',
 
-        // PPPoE
+        // Dashboard - Interface stats
+        rx_bytes_label: '接收字节',
+        tx_bytes_label: '发送字节',
+        rx_packets: '接收包数',
+        tx_packets: '发送包数',
+        errors: '错误',
+        drops: '丢包',
+        packet_rate: '包速率',
+        interface_statistics: '接口统计',
+
+        // Dashboard - System info & Quick actions
+        system_information: '系统信息',
+        quick_actions: '快速操作',
+        configure_pppoe: '配置 PPPoE',
+        setup_broadband: '设置宽带连接',
+        manage_interfaces: '管理网络接口',
+        view_control_ports: '查看和控制网络端口',
+        system_info_card: '系统信息',
+        view_system_resources: '查看系统资源',
+
+        // Dashboard - VPP performance
+        vpp_performance: 'VPP 性能指标',
+        vpp_packet_rate: 'VPP 包速率',
+        vpp_memory: 'VPP 内存使用',
+
+        // Dashboard - PPPoE status card
+        pppoe_status: 'PPPoE 状态',
+
+        // Dashboard - NAT status
+        nat_status: 'NAT 状态',
+        nat_sessions_label: 'NAT 会话',
+        nat_session_count: '{n} 个会话',
+
+        // Dashboard - System resources
+        system_resources: '系统资源',
+
+        // PPPoE - Config form
+        pppoe_configuration: 'PPPoE 配置',
         username: '用户名',
         password: '密码',
-        interface: '接口',
+        wan_interface: 'WAN 接口',
+        select_sriov: '选择 SR-IOV VF 接口',
         mtu: 'MTU',
         mru: 'MRU',
-        connect: '连接',
+        use_isp_dns: '使用运营商 DNS',
+        add_ipv4_default_route: '添加 IPv4 默认路由',
+        add_ipv6_default_route: '添加 IPv6 默认路由',
+        save_and_connect: '保存并连接',
+
+        // PPPoE - Status
+        connection_status: '连接状态',
+        state: '状态',
+        pppoe_username: '用户名',
+        pppoe_interface: '接口',
+        pppoe_mtu_mru: 'MTU / MRU',
+        local_ipv4: '本地 IPv4',
+        peer_ipv4: '对端 IPv4',
+        pppoe_dns: 'DNS',
+        default_route: '默认路由',
+        reconnects: '重连次数',
+        session_uptime: '会话运行时间',
+        reconnect: '重新连接',
         disconnect: '断开',
+        no_pppoe_configured: '未配置 PPPoE 连接',
+        fill_form_hint: '请在左侧表单中填写信息以创建连接',
+        pppoe_isp_dns: '运营商 DNS',
+        pppoe_custom_dns: '自定义',
+
+        // PPPoE - States
+        discovering: '发现中',
+        requesting: '请求中',
+        session: '会话中',
+        unknown: '未知',
+        idle: '空闲',
+
+        // PPPoE - Messages
+        connecting: '连接中...',
+        connection_failed: '连接失败：{msg}',
+        pppoe_created: 'PPPoE 客户端创建成功',
+        connection_establishing: '正在建立连接...',
+        request_failed: '请求失败：{msg}',
+        reconnecting: '正在重新连接...',
+        reconnect_failed: '重连失败：{msg}',
+        pppoe_reconnecting: 'PPPoE 重连中',
+        disconnect_coming_soon: '断开功能即将推出',
+
+        // Interfaces page
+        interface_header: '网络接口',
+        interface: '接口',
+        type: '类型',
         status: '状态',
-        session_id: '会话 ID',
-        ip_address: 'IP 地址',
-        ac_name: 'AC 名称',
+        mtu_label: 'MTU',
+        description: '描述',
+        actions: '操作',
+        loading_interfaces: '正在加载接口...',
+        loopback: '回环',
+        wan: 'WAN',
+        lan: 'LAN',
+        pppoe_type: 'PPPoE',
+        unknown_type: '未知',
+        loopback_desc: '本地回环',
+        wan_desc: 'CX4 LX 端口 1 VF',
+        lan_desc: 'CX4 LX 端口 2 VF',
+        pppoe_desc: 'PPPoE 拨号接口',
+        up_btn: '启用',
+        down_btn: '禁用',
 
-        // Actions
-        enable: '启用',
-        disable: '禁用',
-        save: '保存',
-        delete: '删除',
-        add: '添加',
-        cancel: '取消',
-        confirm: '确认',
+        // Routes page
+        routing_table: '路由表',
+        destination: '目标地址',
+        next_hop: '下一跳',
+        interface_label: '接口',
+        distance: '距离',
+        type_label: '类型',
+        loading_routes: '正在加载路由...',
+        route_default: '默认',
+        route_connected: '已连接',
+        route_reserved: '保留',
 
-        // Status
-        up: '在线',
-        down: '离线',
-        active: '活跃',
-        inactive: '非活跃',
-        discovery: '发现中',
-        connected: '已连接',
-        disabled: '已禁用',
+        // DHCP page
+        dhcp_service: 'DHCP 服务',
+        loading_dhcp: '正在加载 DHCP 状态...',
+        enabled: '已启用',
+        interface_name: '接口',
+        address_range: '地址范围',
+        gateway: '网关',
+        dhcp_active_message: 'DHCP 服务正在运行并为客户端分配地址',
+        dhcp_not_enabled: 'DHCP 服务未启用',
+        enable_dhcp: '启用 DHCP',
+        enabling_dhcp: '正在启用 DHCP...',
+        dhcp_enabled_success: 'DHCP 启用成功',
+        lan_clients_ip: '局域网客户端现在可以获取 IP 地址',
+        failed_enable_dhcp: '启用 DHCP 失败：{msg}',
 
-        // Messages
-        success: '成功',
-        error: '错误',
+        // DNS page
+        dns_forwarding: 'DNS 转发',
+        loading_dns: '正在加载 DNS 状态...',
+        upstream_dns: '上游 DNS',
+        cache_size: '缓存大小',
+        listen_interface: '监听接口',
+        dns_active_message: 'DNS 转发已激活，正在为局域网客户端服务',
+        dns_not_enabled: 'DNS 转发未启用',
+        enable_dns: '启用 DNS',
+        enabling_dns: '正在启用 DNS 转发...',
+        dns_enabled_success: 'DNS 转发已启用',
+        lan_clients_resolve: '局域网客户端现在可以解析域名',
+        failed_enable_dns: '启用 DNS 失败：{msg}',
+
+        // NAT page
+        nat_status: 'NAT 状态',
+        loading_nat: '正在加载 NAT 状态...',
+        nat_enabled: '已启用',
+        inside_interface: '内网接口',
+        outside_interface: '外网接口',
+        sessions_count: '会话数',
+        nat_active_message: 'NAT 已激活 -- 局域网客户端可以通过 PPPoE 访问互联网',
+        nat_not_enabled: 'NAT 未启用',
+        enable_nat: '启用 NAT',
+        enabling_nat: '正在启用 NAT...',
+        nat_enabled_success: 'NAT 启用成功',
+        lan_clients_internet: '局域网客户端现在可以访问互联网',
+        failed_enable_nat: '启用 NAT 失败：{msg}',
+
+        // System page
+        vectoros: 'VectorOS',
+        running: '运行中',
+        version: '版本',
+        api_port: 'API 端口',
+        vpp_data_plane: 'VPP 数据平面',
+        pppoe_client: 'PPPoE 客户端',
+        state_label: '状态',
+        pppoe_interface_label: '接口',
+        api_endpoints: 'API 端点',
+        cpu_usage: 'CPU 使用率',
+        cpu_cores: 'CPU 核心数',
+        memory: '内存',
+        disk: '磁盘',
+        vpp_version: 'VPP 版本',
+        vpp_interfaces: 'VPP 接口数',
+        stopped: '已停止',
+
+        // Common UI
         loading: '加载中...',
+        retry: '重试',
+        error: '错误',
+        success_msg: '成功',
         no_data: '暂无数据',
+        refresh_all: '刷新全部',
+        refreshing_data: '正在刷新所有数据...',
+        all_data_refreshed: '所有数据已刷新',
+        up: '在线',
+        down_state: '离线',
+        online: '在线',
+        offline: '离线',
+        enabled_label: '已启用',
+        disabled_label: '已禁用',
+
+        // Toast messages
+        auto_refresh_enabled: '自动刷新已启用',
+        auto_refresh_sub: '每2秒更新一次',
+        auto_refresh_disabled: '自动刷新已禁用',
+        bringing_up: '正在启用 {name}...',
+        interface_up: '接口 {name} 已启用',
+        failed_up: '启用 {name} 失败：{msg}',
+        bringing_down: '正在禁用 {name}...',
+        interface_down: '接口 {name} 已禁用',
+        failed_down: '禁用 {name} 失败：{msg}',
+
+        // Date/time
+        ago: '前',
+        seconds: '秒',
+        minutes: '分钟',
+        hours: '小时',
       },
       en: {
         // Navigation
@@ -2398,71 +2604,283 @@
         unhealthy: 'Unhealthy',
         auto: 'Auto',
         refresh: 'Refresh',
+        auto_refresh_toggle: 'Auto-refresh every 2 seconds',
 
-        // Dashboard
-        vpp_performance: 'VPP Performance',
-        pppoe_status: 'PPPoE Status',
-        system_resources: 'System Resources',
-        network_interfaces: 'Network Interfaces',
-        nat_status: 'NAT Status',
-        dhcp_status: 'DHCP Status',
-        quick_actions: 'Quick Actions',
+        // Health bar
+        system_healthy: 'System Healthy',
+        system_warning: 'System Warning',
+        system_critical: 'System Critical',
+        all_services_operating: 'All {n} services operating normally',
+        critical_cpu: 'Critical CPU',
+        high_cpu: 'High CPU',
+        critical_memory: 'Critical Memory',
+        high_memory: 'High Memory',
+        pppoe_offline: 'PPPoE Offline',
+        pppoe_on: 'PPPoE On',
+        pppoe_off: 'PPPoE Off',
+        services_count: 'Services',
+        cpu_label: 'CPU',
+        mem_label: 'MEM',
 
-        // Stats
-        packet_rate: 'Packet Rate',
-        rx_bytes: 'RX Bytes',
-        tx_bytes: 'TX Bytes',
+        // Dashboard - Mini stats
+        system_uptime: 'System Uptime',
+        pppoe_session: 'PPPoE Session',
+        dhcp_leases: 'DHCP Leases',
+        active_clients: 'active clients',
+        dns_cache: 'DNS Cache',
+        forwarder_active: 'forwarder active',
+        nat_sessions: 'NAT Sessions',
+        nat_inside_outside: 'inside/outside',
+        interfaces_label: 'Interfaces',
+        total: 'total',
+        not_configured: 'Not configured',
+        disabled: 'Disabled',
+        active_server: 'active server',
+        cache_entries: '{n} cache',
+        active: 'active',
+
+        // Dashboard - Charts
+        cpu_usage_60s: 'CPU Usage (60s history)',
+        memory_usage_60s: 'Memory Usage (60s history)',
+        network_throughput: 'Network Throughput',
+        rx_in: 'RX (in)',
+        tx_out: 'TX (out)',
+        nat_sessions_chart: 'NAT Sessions (60s history)',
+        sessions: 'sessions',
+        pppoe_uptime_chart: 'PPPoE Uptime',
+        disk_usage: 'Disk Usage',
+        used: 'Used',
+        free: 'Free',
+        total_disk: 'Total',
+        alerts: 'Alerts',
+        no_active_alerts: 'No active alerts',
+        current: 'current',
+        of_total: 'of {n}',
+
+        // Dashboard - Interface stats
+        rx_bytes_label: 'RX Bytes',
+        tx_bytes_label: 'TX Bytes',
         rx_packets: 'RX Packets',
         tx_packets: 'TX Packets',
-        drops: 'Drops',
         errors: 'Errors',
-        sessions: 'Sessions',
-        memory_usage: 'Memory Usage',
-        cpu_usage: 'CPU Usage',
-        disk_usage: 'Disk Usage',
-        uptime: 'Uptime',
+        drops: 'Drops',
+        packet_rate: 'Packet Rate',
+        interface_statistics: 'Interface Statistics',
 
-        // PPPoE
+        // Dashboard - System info & Quick actions
+        system_information: 'System Information',
+        quick_actions: 'Quick Actions',
+        configure_pppoe: 'Configure PPPoE',
+        setup_broadband: 'Setup broadband connection',
+        manage_interfaces: 'Manage Interfaces',
+        view_control_ports: 'View and control network ports',
+        system_info_card: 'System Info',
+        view_system_resources: 'View system resources',
+
+        // Dashboard - VPP performance
+        vpp_performance: 'VPP Performance',
+        vpp_packet_rate: 'VPP Packet Rate',
+        vpp_memory: 'VPP Memory Usage',
+
+        // Dashboard - PPPoE status card
+        pppoe_status: 'PPPoE Status',
+
+        // Dashboard - NAT status
+        nat_status: 'NAT Status',
+        nat_sessions_label: 'NAT Sessions',
+        nat_session_count: '{n} sessions',
+
+        // Dashboard - System resources
+        system_resources: 'System Resources',
+
+        // PPPoE - Config form
+        pppoe_configuration: 'PPPoE Configuration',
         username: 'Username',
         password: 'Password',
-        interface: 'Interface',
+        wan_interface: 'WAN Interface',
+        select_sriov: 'Select SR-IOV VF interface',
         mtu: 'MTU',
         mru: 'MRU',
-        connect: 'Connect',
+        use_isp_dns: 'Use ISP DNS',
+        add_ipv4_default_route: 'Add IPv4 default route',
+        add_ipv6_default_route: 'Add IPv6 default route',
+        save_and_connect: 'Save & Connect',
+
+        // PPPoE - Status
+        connection_status: 'Connection Status',
+        state: 'State',
+        pppoe_username: 'Username',
+        pppoe_interface: 'Interface',
+        pppoe_mtu_mru: 'MTU / MRU',
+        local_ipv4: 'Local IPv4',
+        peer_ipv4: 'Peer IPv4',
+        pppoe_dns: 'DNS',
+        default_route: 'Default Route',
+        reconnects: 'Reconnects',
+        session_uptime: 'Session Uptime',
+        reconnect: 'Reconnect',
         disconnect: 'Disconnect',
+        no_pppoe_configured: 'No PPPoE connection configured',
+        fill_form_hint: 'Fill in the form on the left to create a connection',
+        pppoe_isp_dns: 'ISP DNS',
+        pppoe_custom_dns: 'Custom',
+
+        // PPPoE - States
+        discovering: 'Discovering',
+        requesting: 'Requesting',
+        session: 'Session',
+        unknown: 'Unknown',
+        idle: 'Idle',
+
+        // PPPoE - Messages
+        connecting: 'Connecting...',
+        connection_failed: 'Connection failed: {msg}',
+        pppoe_created: 'PPPoE client created successfully',
+        connection_establishing: 'Connection establishing...',
+        request_failed: 'Request failed: {msg}',
+        reconnecting: 'Reconnecting...',
+        reconnect_failed: 'Reconnect failed: {msg}',
+        pppoe_reconnecting: 'PPPoE reconnecting',
+        disconnect_coming_soon: 'Disconnect feature coming soon',
+
+        // Interfaces page
+        interface_header: 'Network Interfaces',
+        interface: 'Interface',
+        type: 'Type',
         status: 'Status',
-        session_id: 'Session ID',
-        ip_address: 'IP Address',
-        ac_name: 'AC Name',
+        mtu_label: 'MTU',
+        description: 'Description',
+        actions: 'Actions',
+        loading_interfaces: 'Loading interfaces...',
+        loopback: 'Loopback',
+        wan: 'WAN',
+        lan: 'LAN',
+        pppoe_type: 'PPPoE',
+        unknown_type: 'Unknown',
+        loopback_desc: 'Local loopback',
+        wan_desc: 'CX4 LX Port 1 VF',
+        lan_desc: 'CX4 LX Port 2 VF',
+        pppoe_desc: 'PPPoE dial-up interface',
+        up_btn: 'Up',
+        down_btn: 'Down',
 
-        // Actions
-        enable: 'Enable',
-        disable: 'Disable',
-        save: 'Save',
-        delete: 'Delete',
-        add: 'Add',
-        cancel: 'Cancel',
-        confirm: 'Confirm',
+        // Routes page
+        routing_table: 'Routing Table',
+        destination: 'Destination',
+        next_hop: 'Next Hop',
+        interface_label: 'Interface',
+        distance: 'Distance',
+        type_label: 'Type',
+        loading_routes: 'Loading routes...',
+        route_default: 'Default',
+        route_connected: 'Connected',
+        route_reserved: 'Reserved',
 
-        // Status
-        up: 'Up',
-        down: 'Down',
-        active: 'Active',
-        inactive: 'Inactive',
-        discovery: 'Discovery',
-        connected: 'Connected',
-        disabled: 'Disabled',
+        // DHCP page
+        dhcp_service: 'DHCP Service',
+        loading_dhcp: 'Loading DHCP status...',
+        enabled: 'Enabled',
+        interface_name: 'Interface',
+        address_range: 'Address Range',
+        gateway: 'Gateway',
+        dhcp_active_message: 'DHCP service is active and serving clients',
+        dhcp_not_enabled: 'DHCP service is not enabled',
+        enable_dhcp: 'Enable DHCP',
+        enabling_dhcp: 'Enabling DHCP...',
+        dhcp_enabled_success: 'DHCP enabled successfully',
+        lan_clients_ip: 'LAN clients can now obtain IP addresses',
+        failed_enable_dhcp: 'Failed to enable DHCP: {msg}',
 
-        // Messages
-        success: 'Success',
-        error: 'Error',
+        // DNS page
+        dns_forwarding: 'DNS Forwarding',
+        loading_dns: 'Loading DNS status...',
+        upstream_dns: 'Upstream DNS',
+        cache_size: 'Cache Size',
+        listen_interface: 'Listen Interface',
+        dns_active_message: 'DNS forwarding is active for LAN clients',
+        dns_not_enabled: 'DNS forwarding is not enabled',
+        enable_dns: 'Enable DNS',
+        enabling_dns: 'Enabling DNS forwarding...',
+        dns_enabled_success: 'DNS forwarding enabled',
+        lan_clients_resolve: 'LAN clients can now resolve domain names',
+        failed_enable_dns: 'Failed to enable DNS: {msg}',
+
+        // NAT page
+        nat_status: 'NAT Status',
+        loading_nat: 'Loading NAT status...',
+        nat_enabled: 'Enabled',
+        inside_interface: 'Inside Interface',
+        outside_interface: 'Outside Interface',
+        sessions_count: 'Sessions',
+        nat_active_message: 'NAT is active -- LAN clients can access the Internet via PPPoE',
+        nat_not_enabled: 'NAT is not enabled',
+        enable_nat: 'Enable NAT',
+        enabling_nat: 'Enabling NAT...',
+        nat_enabled_success: 'NAT enabled successfully',
+        lan_clients_internet: 'LAN clients can now access the Internet',
+        failed_enable_nat: 'Failed to enable NAT: {msg}',
+
+        // System page
+        vectoros: 'VectorOS',
+        running: 'Running',
+        version: 'Version',
+        api_port: 'API Port',
+        vpp_data_plane: 'VPP Data Plane',
+        pppoe_client: 'PPPoE Client',
+        state_label: 'State',
+        pppoe_interface_label: 'Interface',
+        api_endpoints: 'API Endpoints',
+        cpu_usage: 'CPU Usage',
+        cpu_cores: 'CPU Cores',
+        memory: 'Memory',
+        disk: 'Disk',
+        vpp_version: 'VPP Version',
+        vpp_interfaces: 'VPP Interfaces',
+        stopped: 'Stopped',
+
+        // Common UI
         loading: 'Loading...',
+        retry: 'Retry',
+        error: 'Error',
+        success_msg: 'Success',
         no_data: 'No Data',
+        refresh_all: 'Refresh All',
+        refreshing_data: 'Refreshing all data...',
+        all_data_refreshed: 'All data refreshed',
+        up: 'Up',
+        down_state: 'Down',
+        online: 'Online',
+        offline: 'Offline',
+        enabled_label: 'Enabled',
+        disabled_label: 'Disabled',
+
+        // Toast messages
+        auto_refresh_enabled: 'Auto-refresh enabled',
+        auto_refresh_sub: 'Updating every 2 seconds',
+        auto_refresh_disabled: 'Auto-refresh disabled',
+        bringing_up: 'Bringing {name} up...',
+        interface_up: 'Interface {name} is now UP',
+        failed_up: 'Failed to bring up {name}: {msg}',
+        bringing_down: 'Bringing {name} down...',
+        interface_down: 'Interface {name} is now DOWN',
+        failed_down: 'Failed to bring down {name}: {msg}',
+
+        // Date/time
+        ago: ' ago',
+        seconds: 's',
+        minutes: 'm',
+        hours: 'h',
       }
     };
 
-    function t(key) {
-      return i18n[currentLang][key] || key;
+    function t(key, vars) {
+      let str = i18n[currentLang][key] || key;
+      if (vars) {
+        Object.keys(vars).forEach(k => {
+          str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+        });
+      }
+      return str;
     }
 
     function toggleLang() {
@@ -2486,13 +2904,279 @@
 
       // Update header
       const connText = document.getElementById('conn-text');
-      if (connText) connText.textContent = t('connected');
+      if (connText) connText.textContent = apiHealthy ? t('connected') : t('disconnected');
 
       const healthText = document.getElementById('health-text');
-      if (healthText) healthText.textContent = t('healthy');
+      if (healthText) healthText.textContent = apiHealthy ? t('healthy') : t('unhealthy');
 
       // Update page title
-      const PAGES = {
+      const hTitle = document.getElementById('h-title');
+      if (hTitle && PAGES[currentPage]) hTitle.textContent = typeof PAGES[currentPage] === 'function' ? PAGES[currentPage]() : PAGES[currentPage];
+
+      // Update auto-refresh label
+      const autoLabel = document.querySelector('.auto-refresh-label');
+      if (autoLabel) autoLabel.textContent = t('auto');
+
+      // Update refresh button
+      const refreshBtn = document.querySelector('.hdr-btn[onclick="refreshAll()"]');
+      if (refreshBtn) refreshBtn.textContent = '🔄 ' + t('refresh');
+
+      // Update title tag
+      document.title = 'VectorOS - ' + t('network');
+
+      // Update sidebar VPP status
+      const vppText = document.getElementById('vpp-status-text');
+      if (vppText && vppText.textContent) {
+        const currentRunning = vppText.textContent === 'Running' || vppText.textContent === '运行中';
+        vppText.textContent = currentRunning ? t('running') : t('stopped');
+      }
+
+      // Update dashboard page static elements
+      applyDashboardLang();
+
+      // Update PPPoE page static elements
+      applyPppoeLang();
+
+      // Update interfaces page static elements
+      applyInterfacesLang();
+
+      // Update routes page static elements
+      applyRoutesLang();
+
+      // Update DHCP page
+      applyDhcpLang();
+
+      // Update DNS page
+      applyDnsLang();
+
+      // Update NAT page
+      applyNatLang();
+
+      // Update system page
+      applySystemLang();
+
+      // Re-render dynamic content for the current page
+      load(currentPage);
+    }
+
+    function applyDashboardLang() {
+      // Health bar
+      const healthLabel = document.getElementById('health-label');
+      const healthDetail = document.getElementById('health-detail');
+      if (healthLabel) healthLabel.textContent = t('system_healthy');
+      if (healthDetail) healthDetail.textContent = t('all_services_operating', {n: '3'});
+
+      // Mini stat labels
+      const miniLabels = [
+        { id: 'ms-uptime', key: 'system_uptime' },
+        { id: 'ms-pppoe-state', key: 'pppoe_session' },
+        { id: 'ms-dhcp-count', key: 'dhcp_leases' },
+        { id: 'ms-dns-hits', key: 'dns_cache' },
+        { id: 'ms-nat-sessions', key: 'nat_sessions' },
+        { id: 'ms-ifaces', key: 'interfaces_label' }
+      ];
+      // Note: values are dynamic, only update labels
+      // Labels are .ms-label elements - update them via parent context
+
+      // Chart titles (update by text content)
+      document.querySelectorAll('.mc-title').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('CPU Usage') || text.includes('CPU 使用率')) el.innerHTML = '📊 ' + t('cpu_usage_60s');
+        else if (text.includes('Memory Usage') || text.includes('内存使用率')) el.innerHTML = '🧠 ' + t('memory_usage_60s');
+        else if (text.includes('Network Throughput') || text.includes('网络吞吐量')) el.innerHTML = '📈 ' + t('network_throughput');
+        else if (text.includes('NAT Sessions') || text.includes('NAT 会话')) el.innerHTML = '🔄 ' + t('nat_sessions_chart');
+        else if (text.includes('PPPoE Uptime') || text.includes('PPPoE 运行时间')) el.innerHTML = '🔌 ' + t('pppoe_uptime_chart');
+        else if (text.includes('Disk Usage') || text.includes('磁盘使用率')) el.innerHTML = '💾 ' + t('disk_usage');
+        else if (text.includes('Alerts') || text.includes('告警')) el.innerHTML = '⚠️ ' + t('alerts');
+      });
+
+      // Chart range labels
+      document.querySelectorAll('.mc-range span').forEach(el => {
+        if (el.textContent === 'now' || el.textContent === '现在') el.textContent = currentLang === 'zh' ? '现在' : 'now';
+      });
+
+      // Throughput legend
+      document.querySelectorAll('.tp-legend-item').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('RX')) el.innerHTML = el.innerHTML.replace(/RX\s*\(.*?\)/, t('rx_in'));
+        if (text.includes('TX')) el.innerHTML = el.innerHTML.replace(/TX\s*\(.*?\)/, t('tx_out'));
+      });
+
+      // Alerts empty text
+      const alertsEmpty = document.querySelector('.alerts-empty');
+      if (alertsEmpty) alertsEmpty.innerHTML = '<span class="ae-icon">✓</span> ' + t('no_active_alerts');
+
+      // System info card title
+      document.querySelectorAll('.card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('System Information') || text.includes('系统信息')) el.innerHTML = '📋 ' + t('system_information');
+        if (text.includes('Quick Actions') || text.includes('快速操作')) el.innerHTML = '⚡ ' + t('quick_actions');
+      });
+
+      // Quick action items
+      document.querySelectorAll('.action-info h4').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('Configure PPPoE') || text.includes('配置 PPPoE')) el.textContent = t('configure_pppoe');
+        if (text.includes('Manage Interfaces') || text.includes('管理网络接口')) el.textContent = t('manage_interfaces');
+        if (text.includes('System Info') || text.includes('系统信息')) el.textContent = t('system_info_card');
+      });
+      document.querySelectorAll('.action-info p').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('broadband') || text.includes('宽带')) el.textContent = t('setup_broadband');
+        if (text.includes('network ports') || text.includes('网络端口')) el.textContent = t('view_control_ports');
+        if (text.includes('system resources') || text.includes('系统资源')) el.textContent = t('view_system_resources');
+      });
+    }
+
+    function applyPppoeLang() {
+      // PPPoE card titles
+      document.querySelectorAll('#p-pppoe .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('PPPoE Configuration') || text.includes('PPPoE 配置')) el.innerHTML = '⚙️ ' + t('pppoe_configuration');
+        if (text.includes('Connection Status') || text.includes('连接状态')) el.innerHTML = '📊 ' + t('connection_status');
+      });
+
+      // Form labels
+      document.querySelectorAll('#p-pppoe .form-label').forEach(el => {
+        const text = el.textContent.trim();
+        if (text === 'Username' || text === '用户名') el.textContent = t('username');
+        if (text === 'Password' || text === '密码') el.textContent = t('password');
+        if (text === 'WAN Interface' || text === 'WAN 接口') el.textContent = t('wan_interface');
+        if (text === 'MTU') el.textContent = t('mtu');
+        if (text === 'MRU') el.textContent = t('mru');
+      });
+
+      // Form hints
+      document.querySelectorAll('#p-pppoe .form-hint').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('SR-IOV') || text.includes('选择')) el.textContent = t('select_sriov');
+      });
+
+      // Form checkboxes
+      document.querySelectorAll('#p-pppoe .form-check span').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('ISP DNS') || text.includes('运营商 DNS')) el.textContent = t('use_isp_dns');
+        if (text.includes('IPv4 default') || text.includes('IPv4 默认')) el.textContent = t('add_ipv4_default_route');
+        if (text.includes('IPv6 default') || text.includes('IPv6 默认')) el.textContent = t('add_ipv6_default_route');
+      });
+
+      // Submit button
+      const submitBtn = document.getElementById('pppoe-submit-btn');
+      if (submitBtn && !submitBtn.disabled) submitBtn.textContent = '💾 ' + t('save_and_connect');
+
+      // Refresh buttons
+      document.querySelectorAll('#p-pppoe .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+    }
+
+    function applyInterfacesLang() {
+      document.querySelectorAll('#p-interfaces .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('Network Interfaces') || text.includes('网络接口')) el.innerHTML = '🌐 ' + t('interface_header');
+      });
+      document.querySelectorAll('#p-interfaces .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+      // Table headers
+      const ths = document.querySelectorAll('#p-interfaces th');
+      if (ths.length >= 6) {
+        ths[0].textContent = t('interface');
+        ths[1].textContent = t('type');
+        ths[2].textContent = t('status');
+        ths[3].textContent = t('mtu_label');
+        ths[4].textContent = t('description');
+        ths[5].textContent = t('actions');
+      }
+    }
+
+    function applyRoutesLang() {
+      document.querySelectorAll('#p-routes .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('Routing Table') || text.includes('路由表')) el.innerHTML = '🛣️ ' + t('routing_table');
+      });
+      document.querySelectorAll('#p-routes .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+      const ths = document.querySelectorAll('#p-routes th');
+      if (ths.length >= 5) {
+        ths[0].textContent = t('destination');
+        ths[1].textContent = t('next_hop');
+        ths[2].textContent = t('interface_label');
+        ths[3].textContent = t('distance');
+        ths[4].textContent = t('type_label');
+      }
+    }
+
+    function applyDhcpLang() {
+      document.querySelectorAll('#p-dhcp .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('DHCP Service') || text.includes('DHCP 服务')) el.innerHTML = '📡 ' + t('dhcp_service');
+      });
+      document.querySelectorAll('#p-dhcp .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+    }
+
+    function applyDnsLang() {
+      document.querySelectorAll('#p-dns .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('DNS Forwarding') || text.includes('DNS 转发')) el.innerHTML = '🔍 ' + t('dns_forwarding');
+      });
+      document.querySelectorAll('#p-dns .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+    }
+
+    function applyNatLang() {
+      document.querySelectorAll('#p-nat .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('NAT Status') || text.includes('NAT 状态')) el.innerHTML = '🔄 ' + t('nat_status');
+      });
+      document.querySelectorAll('#p-nat .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+    }
+
+    function applySystemLang() {
+      // Service card titles
+      document.querySelectorAll('.svc-title').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('VectorOS')) el.innerHTML = '🖥️ ' + t('vectoros');
+        if (text.includes('VPP Data Plane') || text.includes('VPP 数据平面')) el.innerHTML = '⚡ ' + t('vpp_data_plane');
+        if (text.includes('PPPoE Client') || text.includes('PPPoE 客户端')) el.innerHTML = '🔌 ' + t('pppoe_client');
+      });
+
+      // Service card rows (k labels)
+      document.querySelectorAll('.svc-row .k').forEach(el => {
+        const text = el.textContent;
+        if (text === 'Version' || text === '版本') el.textContent = t('version');
+        if (text === 'API Port' || text === 'API 端口') el.textContent = t('api_port');
+        if (text === 'Interfaces' || text === '接口') el.textContent = t('vpp_interfaces');
+        if (text === 'State' || text === '状态') el.textContent = t('state_label');
+      });
+
+      // System resources card
+      document.querySelectorAll('#p-system .card-head h3').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('System Resources') || text.includes('系统资源')) el.innerHTML = '📊 ' + t('system_resources');
+        if (text.includes('API Endpoints') || text.includes('API 端点')) el.innerHTML = '🔗 ' + t('api_endpoints');
+      });
+
+      document.querySelectorAll('#p-system .btn-ghost').forEach(el => {
+        el.textContent = t('refresh');
+      });
+
+      // Service badge text
+      document.querySelectorAll('.svc-header .badge').forEach(el => {
+        const text = el.textContent.trim();
+        if (text === 'Running' || text === '运行中') el.innerHTML = '<span class="dot"></span>' + t('running');
+        if (text === 'Idle' || text === '空闲') el.innerHTML = '<span class="dot"></span>' + t('idle');
+      });
+    }
+
+    function getPagePAGES() {
+      return {
         dashboard: t('dashboard'),
         pppoe: t('pppoe'),
         interfaces: t('interfaces'),
@@ -2502,19 +3186,18 @@
         nat: t('nat'),
         system: t('system_info')
       };
-      const hTitle = document.getElementById('h-title');
-      if (hTitle && PAGES[currentPage]) hTitle.textContent = PAGES[currentPage];
     }
 
+    // PAGES constant (used by nav, updated with translations)
     const PAGES = {
-      dashboard: '仪表盘',
-      pppoe: 'PPPoE 拨号',
-      interfaces: '网络接口',
-      routes: '路由表',
-      dhcp: 'DHCP 服务',
-      dns: 'DNS 转发',
-      nat: 'NAT',
-      system: '系统信息'
+      dashboard: function() { return t('dashboard'); },
+      pppoe: function() { return t('pppoe'); },
+      interfaces: function() { return t('interfaces'); },
+      routes: function() { return t('routes'); },
+      dhcp: function() { return t('dhcp'); },
+      dns: function() { return t('dns'); },
+      nat: function() { return t('nat'); },
+      system: function() { return t('system_info'); }
     };
 
     // ============================================================
@@ -2525,7 +3208,8 @@
       document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
       document.getElementById('p-' + p).classList.add('active');
       document.querySelector('[data-page="' + p + '"]').classList.add('active');
-      document.getElementById('h-title').textContent = PAGES[p] || p;
+      const pageTitle = typeof PAGES[p] === 'function' ? PAGES[p]() : (PAGES[p] || p);
+      document.getElementById('h-title').textContent = pageTitle;
       currentPage = p;
       load(p);
     }
@@ -2578,11 +3262,11 @@
       const text = document.getElementById('conn-text');
       if (connected) {
         dot.className = 'conn-dot';
-        text.textContent = 'Connected';
+        text.textContent = t('connected');
         apiHealthy = true;
       } else {
         dot.className = 'conn-dot offline';
-        text.textContent = 'Disconnected';
+        text.textContent = t('disconnected');
         apiHealthy = false;
       }
     }
@@ -2594,10 +3278,10 @@
       const enabled = document.getElementById('auto-refresh').checked;
       if (enabled) {
         startAutoRefresh();
-        toast('Auto-refresh enabled', 'info', 'Updating every 2 seconds');
+        toast(t('auto_refresh_enabled'), 'info', t('auto_refresh_sub'));
       } else {
         stopAutoRefresh();
-        toast('Auto-refresh disabled', 'info');
+        toast(t('auto_refresh_disabled'), 'info');
       }
     }
 
@@ -2618,7 +3302,8 @@
     // ============================================================
     // Loading States
     // ============================================================
-    function showLoading(elementId, message = 'Loading...') {
+    function showLoading(elementId, message) {
+      if (!message) message = t('loading');
       const el = document.getElementById(elementId);
       if (el) {
         el.innerHTML = '<div class="loading"><div class="spinner"></div>' + message + '</div>';
@@ -2631,7 +3316,7 @@
         let html = '<div class="empty"><div class="empty-icon">⚠️</div>'
           + '<p style="color:var(--red)">' + escapeHtml(error) + '</p>';
         if (retryFn) {
-          html += '<button class="retry-btn" onclick="' + retryFn + '">🔄 Retry</button>';
+          html += '<button class="retry-btn" onclick="' + retryFn + '">🔄 ' + t('retry') + '</button>';
         }
         html += '</div>';
         el.innerHTML = html;
@@ -2648,14 +3333,14 @@
     // Refresh All
     // ============================================================
     async function refreshAll() {
-      toast('Refreshing all data...', 'info');
+      toast(t('refreshing_data'), 'info');
       await Promise.all([
         loadDashboard(),
         loadPppoe(),
         loadIfaces(),
         loadRoutes()
       ]);
-      toast('All data refreshed', 'success');
+      toast(t('all_data_refreshed'), 'success');
     }
 
     // ============================================================
@@ -2698,7 +3383,8 @@
     // ============================================================
     function addAlert(type, message, category) {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString();
+      const locale = currentLang === 'zh' ? 'zh-CN' : 'en-US';
+      const timeStr = now.toLocaleTimeString(locale);
       // Avoid duplicate alerts within 10 seconds
       const recent = alerts.find(a => a.category === category && (now - a.time) < 10000);
       if (recent) return;
@@ -2728,7 +3414,7 @@
       countEl.className = 'alerts-count ' + (count > 0 ? 'has-alerts' : 'zero');
 
       if (count === 0) {
-        body.innerHTML = '<div class="alerts-empty"><span class="ae-icon">✓</span> No active alerts</div>';
+        body.innerHTML = '<div class="alerts-empty"><span class="ae-icon">✓</span> ' + t('no_active_alerts') + '</div>';
         return;
       }
 
@@ -2757,36 +3443,36 @@
       let overallStatus = 'ok';
       let details = [];
 
-      if (cpuPct >= 90) { overallStatus = 'err'; details.push('Critical CPU'); }
-      else if (cpuPct >= 75) { overallStatus = 'warn'; details.push('High CPU'); }
+      if (cpuPct >= 90) { overallStatus = 'err'; details.push(t('critical_cpu')); }
+      else if (cpuPct >= 75) { overallStatus = 'warn'; details.push(t('high_cpu')); }
 
-      if (memPct >= 90) { overallStatus = 'err'; details.push('Critical Memory'); }
-      else if (memPct >= 80) { overallStatus = 'warn'; details.push('High Memory'); }
+      if (memPct >= 90) { overallStatus = 'err'; details.push(t('critical_memory')); }
+      else if (memPct >= 80) { overallStatus = 'warn'; details.push(t('high_memory')); }
 
-      if (!pppoeOk) { if (overallStatus === 'ok') overallStatus = 'warn'; details.push('PPPoE Offline'); }
+      if (!pppoeOk) { if (overallStatus === 'ok') overallStatus = 'warn'; details.push(t('pppoe_offline')); }
 
       dotEl.className = 'health-dot-lg ' + overallStatus;
 
       if (overallStatus === 'ok') {
-        labelEl.textContent = 'System Healthy';
+        labelEl.textContent = t('system_healthy');
         labelEl.style.color = 'var(--green)';
-        detailEl.textContent = 'All ' + totalServices + ' services operating normally';
+        detailEl.textContent = t('all_services_operating', {n: totalServices});
       } else if (overallStatus === 'warn') {
-        labelEl.textContent = 'System Warning';
+        labelEl.textContent = t('system_warning');
         labelEl.style.color = 'var(--yellow)';
         detailEl.textContent = details.join(', ');
       } else {
-        labelEl.textContent = 'System Critical';
+        labelEl.textContent = t('system_critical');
         labelEl.style.color = 'var(--red)';
         detailEl.textContent = details.join(', ');
       }
 
       // Service chips
       let chipsHtml = '';
-      chipsHtml += '<div class="health-chip ' + (pppoeOk ? 'ok' : 'off') + '"><span class="chip-dot"></span>PPPoE ' + (pppoeOk ? 'On' : 'Off') + '</div>';
-      chipsHtml += '<div class="health-chip ' + (servicesActive >= 3 ? 'ok' : servicesActive > 0 ? 'warn' : 'off') + '"><span class="chip-dot"></span>Services ' + servicesActive + '/' + totalServices + '</div>';
-      chipsHtml += '<div class="health-chip ' + (cpuPct < 75 ? 'ok' : cpuPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>CPU ' + cpuPct + '%</div>';
-      chipsHtml += '<div class="health-chip ' + (memPct < 80 ? 'ok' : memPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>MEM ' + memPct + '%</div>';
+      chipsHtml += '<div class="health-chip ' + (pppoeOk ? 'ok' : 'off') + '"><span class="chip-dot"></span>PPPoE ' + (pppoeOk ? t('pppoe_on') : t('pppoe_off')) + '</div>';
+      chipsHtml += '<div class="health-chip ' + (servicesActive >= 3 ? 'ok' : servicesActive > 0 ? 'warn' : 'off') + '"><span class="chip-dot"></span>' + t('services_count') + ' ' + servicesActive + '/' + totalServices + '</div>';
+      chipsHtml += '<div class="health-chip ' + (cpuPct < 75 ? 'ok' : cpuPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>' + t('cpu_label') + ' ' + cpuPct + '%</div>';
+      chipsHtml += '<div class="health-chip ' + (memPct < 80 ? 'ok' : memPct < 90 ? 'warn' : 'err') + '"><span class="chip-dot"></span>' + t('mem_label') + ' ' + memPct + '%</div>';
       chipsEl.innerHTML = chipsHtml;
     }
 
@@ -2809,10 +3495,10 @@
       const healthText = document.getElementById('health-text');
       if (health.error) {
         healthChip.className = 'hdr-chip error';
-        healthText.textContent = 'Error';
+        healthText.textContent = t('error');
       } else {
         healthChip.className = 'hdr-chip';
-        healthText.textContent = 'Healthy';
+        healthText.textContent = t('healthy');
       }
 
       // Version tag
@@ -2830,7 +3516,7 @@
       // PPPoE data
       const hasPppoe = pppoe.pppoe_clients && pppoe.pppoe_clients.length > 0;
       const pppoeClient = hasPppoe ? pppoe.pppoe_clients[0] : null;
-      document.getElementById('nb-pppoe').textContent = hasPppoe ? 'Online' : 'Off';
+      document.getElementById('nb-pppoe').textContent = hasPppoe ? t('online') : t('offline');
 
       // Interface count
       const ifaceCount = ifaces.interfaces ? ifaces.interfaces.length : 0;
@@ -2843,37 +3529,48 @@
       if (dns.status === 'active') activeServices++;
 
       // === Update mini stat cards ===
+      // Update mini stat labels
+      document.querySelectorAll('.mini-stat .ms-label').forEach(el => {
+        const text = el.textContent;
+        if (text === 'System Uptime' || text === '系统运行时间') el.textContent = t('system_uptime');
+        if (text === 'PPPoE Session' || text === 'PPPoE 会话') el.textContent = t('pppoe_session');
+        if (text === 'DHCP Leases' || text === 'DHCP 租约') el.textContent = t('dhcp_leases');
+        if (text === 'DNS Cache' || text === 'DNS 缓存') el.textContent = t('dns_cache');
+        if (text === 'NAT Sessions' || text === 'NAT 会话') el.textContent = t('nat_sessions');
+        if (text === 'Interfaces' || text === '网络接口') el.textContent = t('interfaces_label');
+      });
+
       // Uptime
       document.getElementById('ms-uptime').textContent = sys.uptime || '--:--:--';
 
       // PPPoE
       if (hasPppoe) {
-        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
-        document.getElementById('ms-pppoe-state').textContent = stateMap[pppoeClient.client_state] || 'Unknown';
+        const stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
+        document.getElementById('ms-pppoe-state').textContent = stateMap[pppoeClient.client_state] || t('unknown');
         document.getElementById('ms-pppoe-sub').textContent = pppoeClient.ipv4_local || 'No IP';
       } else {
-        document.getElementById('ms-pppoe-state').textContent = 'Idle';
-        document.getElementById('ms-pppoe-sub').textContent = 'Not configured';
+        document.getElementById('ms-pppoe-state').textContent = t('idle');
+        document.getElementById('ms-pppoe-sub').textContent = t('not_configured');
       }
 
       // DHCP
       const dhcpEnabled = dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '';
-      document.getElementById('ms-dhcp-count').textContent = dhcpEnabled ? 'On' : 'Off';
-      document.getElementById('ms-dhcp-sub').textContent = dhcpEnabled ? 'active server' : 'disabled';
+      document.getElementById('ms-dhcp-count').textContent = dhcpEnabled ? t('enabled') : t('disabled');
+      document.getElementById('ms-dhcp-sub').textContent = dhcpEnabled ? t('active_server') : t('disabled');
 
       // DNS
       const dnsActive = dns.status === 'active';
-      document.getElementById('ms-dns-hits').textContent = dnsActive ? 'On' : 'Off';
-      document.getElementById('ms-dns-sub').textContent = dnsActive ? (dns.cache_size || 0) + ' cache' : 'disabled';
+      document.getElementById('ms-dns-hits').textContent = dnsActive ? t('enabled') : t('disabled');
+      document.getElementById('ms-dns-sub').textContent = dnsActive ? t('cache_entries', {n: dns.cache_size || 0}) : t('disabled');
 
       // NAT
       const natSessions = (nat.sessions || []).length;
       document.getElementById('ms-nat-sessions').textContent = natSessions;
-      document.getElementById('ms-nat-sub').textContent = (nat.interfaces || []).length > 0 ? 'active' : 'disabled';
+      document.getElementById('ms-nat-sub').textContent = (nat.interfaces || []).length > 0 ? t('active') : t('disabled');
 
       // Interfaces
       document.getElementById('ms-ifaces').textContent = ifaceCount;
-      document.getElementById('ms-ifaces-sub').textContent = 'total';
+      document.getElementById('ms-ifaces-sub').textContent = t('total');
 
       // === Health bar ===
       updateHealthBar(cpuPct, memPct, hasPppoe, activeServices, 3);
@@ -2882,20 +3579,20 @@
       cpuHistory.push(cpuPct);
       if (cpuHistory.length > MAX_HISTORY) cpuHistory.shift();
       renderBarChart('cpu-chart-full', cpuHistory, cpuPct + '%', 'spark-accent', 100);
-      document.getElementById('mc-cpu-val').innerHTML = cpuPct + '% <small>current</small>';
+      document.getElementById('mc-cpu-val').innerHTML = cpuPct + '% <small>' + t('current') + '</small>';
 
       // === Charts: Memory history ===
       memHistory.push(memPct);
       if (memHistory.length > MAX_HISTORY) memHistory.shift();
       renderBarChart('mem-chart-full', memHistory, memPct + '%', 'spark-purple', 100);
-      document.getElementById('mc-mem-val').innerHTML = memPct + '% <small>of ' + formatBytes(mem.total) + '</small>';
+      document.getElementById('mc-mem-val').innerHTML = memPct + '% <small>' + t('of_total', {n: formatBytes(mem.total)}) + '</small>';
 
       // === Charts: NAT session history ===
       natHistory.push(natSessions);
       if (natHistory.length > MAX_HISTORY) natHistory.shift();
       const natMax = Math.max(10, Math.max.apply(null, natHistory));
       renderBarChart('nat-chart-full', natHistory, natSessions + '', 'spark-orange', natMax);
-      document.getElementById('mc-nat-val').innerHTML = natSessions + ' <small>sessions</small>';
+      document.getElementById('mc-nat-val').innerHTML = natSessions + ' <small>' + t('sessions') + '</small>';
 
       // === Charts: PPPoE uptime history ===
       const pppoeUptime = pppoeClient ? (pppoeClient.session_uptime_seconds || 0) : 0;
@@ -2916,20 +3613,20 @@
 
       // === Alerts based on current state ===
       // CPU alerts
-      if (cpuPct >= 90) addAlert('err', 'CPU usage critical at ' + cpuPct + '%', 'cpu-high');
-      else if (cpuPct >= 75) addAlert('warn', 'CPU usage elevated at ' + cpuPct + '%', 'cpu-high');
+      if (cpuPct >= 90) addAlert('err', t('critical_cpu') + ' ' + cpuPct + '%', 'cpu-high');
+      else if (cpuPct >= 75) addAlert('warn', t('high_cpu') + ' ' + cpuPct + '%', 'cpu-high');
       else clearAlert('cpu-high');
 
       // Memory alerts
-      if (memPct >= 90) addAlert('err', 'Memory usage critical at ' + memPct + '%', 'mem-high');
-      else if (memPct >= 80) addAlert('warn', 'Memory usage elevated at ' + memPct + '%', 'mem-high');
+      if (memPct >= 90) addAlert('err', t('critical_memory') + ' ' + memPct + '%', 'mem-high');
+      else if (memPct >= 80) addAlert('warn', t('high_memory') + ' ' + memPct + '%', 'mem-high');
       else clearAlert('mem-high');
 
       // Interface down alerts
       if (ifaces.interfaces) {
         ifaces.interfaces.forEach(iface => {
           if (iface.state === 'down' && iface.name !== 'local0') {
-            addAlert('err', 'Interface ' + iface.name + ' is DOWN', 'iface-down-' + iface.name);
+            addAlert('err', t('interface') + ' ' + iface.name + ' ' + t('down_state'), 'iface-down-' + iface.name);
           } else {
             clearAlert('iface-down-' + iface.name);
           }
@@ -2940,16 +3637,16 @@
       if (!hasPppoe) {
         // Only alert if PPPoE was previously connected (we have pppoe history with data)
         if (pppoeHistory.length > 1 && pppoeHistory[pppoeHistory.length - 2] > 0) {
-          addAlert('err', 'PPPoE session disconnected', 'pppoe-down');
+          addAlert('err', t('pppoe_session') + ' ' + t('disconnected'), 'pppoe-down');
         }
       } else {
         clearAlert('pppoe-down');
       }
 
       // DNS/DHCP disabled alerts
-      if (!dnsActive) addAlert('info', 'DNS forwarding is disabled', 'dns-off');
+      if (!dnsActive) addAlert('info', t('dns_forwarding') + ' ' + t('disabled'), 'dns-off');
       else clearAlert('dns-off');
-      if (!dhcpEnabled) addAlert('info', 'DHCP server is disabled', 'dhcp-off');
+      if (!dhcpEnabled) addAlert('info', t('dhcp_service') + ' ' + t('disabled'), 'dhcp-off');
       else clearAlert('dhcp-off');
 
       renderAlerts();
@@ -2957,8 +3654,11 @@
       // VPP status in sidebar
       const vppText = document.getElementById('vpp-status-text');
       if (health.vpp_running) {
-        vppText.textContent = 'Running';
+        vppText.textContent = t('running');
         vppText.style.color = 'var(--green)';
+      } else {
+        vppText.textContent = t('stopped');
+        vppText.style.color = 'var(--text-3)';
       }
 
       // System info card
@@ -2969,12 +3669,12 @@
       const hasPppoe = pppoe.pppoe_clients && pppoe.pppoe_clients.length > 0;
       const el = document.getElementById('sys-info');
       el.innerHTML = ''
-        + '<div class="info-row"><span class="info-k">VectorOS Version</span><span class="info-v">' + (health.version || '--') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">VPP Data Plane</span><span class="info-v">' + (health.vpp_running ? 'Running' : 'Stopped') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">PPPoE</span><span class="info-v">' + (hasPppoe ? 'Connected' : 'Not configured') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">NAT</span><span class="info-v">' + (nat.interfaces && nat.interfaces.length > 0 ? 'Enabled' : 'Disabled') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">DHCP</span><span class="info-v">' + (dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '' ? 'Enabled' : 'Disabled') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">DNS</span><span class="info-v">' + (dns.status === 'active' ? 'Enabled' : 'Disabled') + '</span></div>';
+        + '<div class="info-row"><span class="info-k">' + t('version') + '</span><span class="info-v">' + (health.version || '--') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('vpp_data_plane') + '</span><span class="info-v">' + (health.vpp_running ? t('running') : t('stopped')) + '</span></div>'
+        + '<div class="info-row"><span class="info-k">PPPoE</span><span class="info-v">' + (hasPppoe ? t('connected') : t('not_configured')) + '</span></div>'
+        + '<div class="info-row"><span class="info-k">NAT</span><span class="info-v">' + (nat.interfaces && nat.interfaces.length > 0 ? t('enabled') : t('disabled')) + '</span></div>'
+        + '<div class="info-row"><span class="info-k">DHCP</span><span class="info-v">' + (dhcp.servers && dhcp.servers.length > 0 && dhcp.servers[0] !== '' ? t('enabled') : t('disabled')) + '</span></div>'
+        + '<div class="info-row"><span class="info-k">DNS</span><span class="info-v">' + (dns.status === 'active' ? t('enabled') : t('disabled')) + '</span></div>';
     }
 
     // ============================================================
@@ -3101,7 +3801,7 @@
         const errSparks = ih.errors.slice(-20);
         const dropSparks = ih.drops.slice(-20);
 
-        const typeMap = { wan0: 'WAN', lan0: 'LAN', lan1: 'LAN', 'pppoe-wan0': 'PPPoE' };
+        const typeMap = { wan0: t('wan'), lan0: t('lan'), lan1: t('lan'), 'pppoe-wan0': t('pppoe_type') };
         const typeLabel = typeMap[name] || '';
         const badgeClass = { wan0: 'b-accent', lan0: 'b-green', lan1: 'b-green', 'pppoe-wan0': 'b-cyan' };
 
@@ -3112,31 +3812,31 @@
           + '</div>'
           + '<div class="iface-stat-body">'
           // RX bytes
-          + '<div class="if-metric"><span class="im-k">⬇ RX Bytes</span>'
+          + '<div class="if-metric"><span class="im-k">⬇ ' + t('rx_bytes_label') + '</span>'
           + '<div style="display:flex;align-items:center;gap:8px">'
           + renderMiniSparkline(rxSparks, 'cyan')
           + '<span class="im-v">' + formatBytes(rxBytes) + '</span>'
           + '</div></div>'
           // TX bytes
-          + '<div class="if-metric"><span class="im-k">⬆ TX Bytes</span>'
+          + '<div class="if-metric"><span class="im-k">⬆ ' + t('tx_bytes_label') + '</span>'
           + '<div style="display:flex;align-items:center;gap:8px">'
           + renderMiniSparkline(txSparks, 'purple')
           + '<span class="im-v">' + formatBytes(txBytes) + '</span>'
           + '</div></div>'
           // RX packets
-          + '<div class="if-metric"><span class="im-k">RX Packets</span>'
+          + '<div class="if-metric"><span class="im-k">' + t('rx_packets') + '</span>'
           + '<span class="im-v">' + formatNumber(rxPkts) + '</span></div>'
           // TX packets
-          + '<div class="if-metric"><span class="im-k">TX Packets</span>'
+          + '<div class="if-metric"><span class="im-k">' + t('tx_packets') + '</span>'
           + '<span class="im-v">' + formatNumber(txPkts) + '</span></div>'
           // Errors
-          + '<div class="if-metric"><span class="im-k">Errors</span>'
+          + '<div class="if-metric"><span class="im-k">' + t('errors') + '</span>'
           + '<div style="display:flex;align-items:center;gap:8px">'
           + renderMiniSparkline(errSparks, 'red')
           + '<span class="im-v" style="color:' + ((rxErrors + txErrors) > 0 ? 'var(--red)' : 'var(--text-1)') + '">' + (rxErrors + txErrors) + '</span>'
           + '</div></div>'
           // Drops
-          + '<div class="if-metric"><span class="im-k">Drops</span>'
+          + '<div class="if-metric"><span class="im-k">' + t('drops') + '</span>'
           + '<div style="display:flex;align-items:center;gap:8px">'
           + renderMiniSparkline(dropSparks, 'orange')
           + '<span class="im-v" style="color:' + ((rxDrops + txDrops) > 0 ? 'var(--yellow)' : 'var(--text-1)') + '">' + (rxDrops + txDrops) + '</span>'
@@ -3177,29 +3877,29 @@
       const total = disk.total || 1;
       const free = total - used;
 
-      document.getElementById('mc-disk-val').innerHTML = percent + '% <small>of ' + formatBytes(total) + '</small>';
+      document.getElementById('mc-disk-val').innerHTML = percent + '% <small>' + t('of_total', {n: formatBytes(total)}) + '</small>';
 
       const donut = document.getElementById('mem-donut');
       const legend = document.getElementById('disk-legend');
 
       donut.style.background = 'conic-gradient(var(--purple) 0% ' + percent + '%, var(--bg-4) ' + percent + '% 100%)';
-      donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">Used</div></div>';
+      donut.innerHTML = '<div class="donut-center"><div class="val">' + percent + '%</div><div class="label">' + t('used') + '</div></div>';
 
       const hole = document.createElement('div');
       hole.style.cssText = 'position:absolute;top:14px;left:14px;right:14px;bottom:14px;background:var(--bg-2);border-radius:50%;';
       donut.appendChild(hole);
 
       legend.innerHTML = ''
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Used<span class="legend-val">' + formatBytes(used) + '</span></div>'
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>Free<span class="legend-val">' + formatBytes(free) + '</span></div>'
-        + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>Total<span class="legend-val">' + formatBytes(total) + '</span></div>';
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>' + t('used') + '<span class="legend-val">' + formatBytes(used) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--bg-4)"></span>' + t('free') + '<span class="legend-val">' + formatBytes(free) + '</span></div>'
+        + '<div class="legend-item"><span class="legend-dot" style="background:var(--text-3)"></span>' + t('total_disk') + '<span class="legend-val">' + formatBytes(total) + '</span></div>';
     }
 
     // ============================================================
     // PPPoE
     // ============================================================
     async function loadPppoe() {
-      showLoading('pppoe-el', 'Loading PPPoE status...');
+      showLoading('pppoe-el', t('loading'));
       const d = await api('/api/pppoe/status');
       const el = document.getElementById('pppoe-el');
 
@@ -3210,29 +3910,29 @@
 
       if (d.pppoe_clients && d.pppoe_clients.length > 0) {
         const c = d.pppoe_clients[0];
-        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
+        const stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
         const stateClass = { 0: 'b-yellow', 1: 'b-yellow', 2: 'b-green' };
-        const stateText = stateMap[c.client_state] || 'Unknown';
+        const stateText = stateMap[c.client_state] || t('unknown');
 
         el.innerHTML = ''
-          + '<div class="info-row"><span class="info-k">State</span><span class="badge ' + stateClass[c.client_state] + '"><span class="dot"></span> ' + stateText + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Username</span><span class="info-v">' + escapeHtml(c.auth_user) + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Interface</span><span class="info-v">pppoe-wan0 (idx ' + c.pppox_sw_if_index + ')</span></div>'
-          + '<div class="info-row"><span class="info-k">MTU / MRU</span><span class="info-v">' + c.mtu + ' / ' + c.mru + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Local IPv4</span><span class="info-v">' + c.ipv4_local + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Peer IPv4</span><span class="info-v">' + c.ipv4_peer + '</span></div>'
-          + '<div class="info-row"><span class="info-k">DNS</span><span class="info-v">' + (c.use_peer_dns ? 'ISP DNS' : 'Custom') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Default Route</span><span class="info-v">' + (c.add_default_route4 ? 'IPv4' : '') + (c.add_default_route6 ? ' IPv6' : '') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Reconnects</span><span class="info-v">' + c.total_reconnects + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Session Uptime</span><span class="info-v">' + c.session_uptime_seconds + 's</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('state') + '</span><span class="badge ' + stateClass[c.client_state] + '"><span class="dot"></span> ' + stateText + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('pppoe_username') + '</span><span class="info-v">' + escapeHtml(c.auth_user) + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('pppoe_interface') + '</span><span class="info-v">pppoe-wan0 (idx ' + c.pppox_sw_if_index + ')</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('pppoe_mtu_mru') + '</span><span class="info-v">' + c.mtu + ' / ' + c.mru + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('local_ipv4') + '</span><span class="info-v">' + c.ipv4_local + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('peer_ipv4') + '</span><span class="info-v">' + c.ipv4_peer + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('pppoe_dns') + '</span><span class="info-v">' + (c.use_peer_dns ? t('pppoe_isp_dns') : t('pppoe_custom_dns')) + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('default_route') + '</span><span class="info-v">' + (c.add_default_route4 ? 'IPv4' : '') + (c.add_default_route6 ? ' IPv6' : '') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('reconnects') + '</span><span class="info-v">' + c.total_reconnects + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('session_uptime') + '</span><span class="info-v">' + c.session_uptime_seconds + 's</span></div>'
           + '<div style="margin-top:20px;display:flex;gap:10px">'
-          + '<button class="btn btn-primary" onclick="pppoeRestart()">🔄 Reconnect</button>'
-          + '<button class="btn btn-danger" onclick="pppoeStop()">⏹ Disconnect</button>'
+          + '<button class="btn btn-primary" onclick="pppoeRestart()">🔄 ' + t('reconnect') + '</button>'
+          + '<button class="btn btn-danger" onclick="pppoeStop()">⏹ ' + t('disconnect') + '</button>'
           + '</div>';
       } else {
         el.innerHTML = '<div class="empty"><div class="empty-icon">🔌</div>'
-          + '<p>No PPPoE connection configured</p>'
-          + '<p style="font-size:12px;margin-top:8px;color:var(--text-3)">Fill in the form on the left to create a connection</p></div>';
+          + '<p>' + t('no_pppoe_configured') + '</p>'
+          + '<p style="font-size:12px;margin-top:8px;color:var(--text-3)">' + t('fill_form_hint') + '</p></div>';
       }
     }
 
@@ -3240,7 +3940,7 @@
       e.preventDefault();
       const btn = document.getElementById('pppoe-submit-btn');
       const origText = btn.innerHTML;
-      btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> Connecting...';
+      btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> ' + t('connecting');
       btn.disabled = true;
 
       const config = {
@@ -3263,13 +3963,13 @@
         const data = await res.json();
 
         if (data.error) {
-          toast('Connection failed: ' + data.error, 'error');
+          toast(t('connection_failed', {msg: data.error}), 'error');
         } else {
-          toast('PPPoE client created successfully', 'success', 'Connection establishing...');
+          toast(t('pppoe_created'), 'success', t('connection_establishing'));
           loadPppoe();
         }
       } catch (e) {
-        toast('Request failed: ' + e.message, 'error');
+        toast(t('request_failed', {msg: e.message}), 'error');
       } finally {
         btn.innerHTML = origText;
         btn.disabled = false;
@@ -3277,7 +3977,7 @@
     }
 
     async function pppoeRestart() {
-      toast('Reconnecting...', 'info');
+      toast(t('reconnecting'), 'info');
       const config = {
         username: document.getElementById('pu').value || 'testuser',
         password: document.getElementById('pp').value || 'testpass',
@@ -3298,48 +3998,49 @@
         const data = await res.json();
 
         if (data.error) {
-          toast('Reconnect failed: ' + data.error, 'error');
+          toast(t('reconnect_failed', {msg: data.error}), 'error');
         } else {
-          toast('PPPoE reconnecting', 'success');
+          toast(t('pppoe_reconnecting'), 'success');
           setTimeout(loadPppoe, 2000);
         }
       } catch (e) {
-        toast('Request failed: ' + e.message, 'error');
+        toast(t('request_failed', {msg: e.message}), 'error');
       }
     }
 
     async function pppoeStop() {
-      toast('Disconnect feature coming soon', 'info');
+      toast(t('disconnect_coming_soon'), 'info');
     }
 
     // ============================================================
     // Interfaces
     // ============================================================
     async function loadIfaces() {
-      document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Loading interfaces...</div></td></tr>';
+      document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>' + t('loading_interfaces') + '</div></td></tr>';
 
       const d = await api('/api/interfaces');
       if (d.error) {
-        document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">' + escapeHtml(d.error) + '</p><button class="retry-btn" onclick="loadIfaces()">🔄 Retry</button></div></td></tr>';
+        document.getElementById('if-tb').innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">' + escapeHtml(d.error) + '</p><button class="retry-btn" onclick="loadIfaces()">🔄 ' + t('retry') + '</button></div></td></tr>';
         return;
       }
 
-      const typeMap = { local0: 'Loopback', wan0: 'WAN', lan0: 'LAN', lan1: 'LAN', 'pppoe-wan0': 'PPPoE' };
-      const descMap = { local0: 'Local loopback', wan0: 'CX4 LX Port 1 VF', lan0: 'CX4 LX Port 2 VF', lan1: 'CX4 LX Port 2 VF', 'pppoe-wan0': 'PPPoE dial-up interface' };
+      const typeMap = { local0: t('loopback'), wan0: t('wan'), lan0: t('lan'), lan1: t('lan'), 'pppoe-wan0': t('pppoe_type') };
+      const descMap = { local0: t('loopback_desc'), wan0: t('wan_desc'), lan0: t('lan_desc'), lan1: t('lan_desc'), 'pppoe-wan0': t('pppoe_desc') };
       const badgeMap = { local0: 'b-neutral', wan0: 'b-accent', lan0: 'b-green', lan1: 'b-green', 'pppoe-wan0': 'b-cyan' };
 
       document.getElementById('if-tb').innerHTML = d.interfaces.map(i => {
         const name = i.name;
-        const type = typeMap[name] || 'Unknown';
+        const type = typeMap[name] || t('unknown_type');
         const desc = descMap[name] || '';
         const statusClass = i.state === 'up' ? 'b-green' : 'b-yellow';
+        const stateText = i.state === 'up' ? t('up') : t('down_state');
         const toggleBtn = i.state === 'up'
-          ? '<button class="btn btn-danger btn-sm" onclick="ifaceDown(\'' + name + '\')">⬇ Down</button>'
-          : '<button class="btn btn-success btn-sm" onclick="ifaceUp(\'' + name + '\')">⬆ Up</button>';
+          ? '<button class="btn btn-danger btn-sm" onclick="ifaceDown(\'' + name + '\')">⬇ ' + t('down_btn') + '</button>'
+          : '<button class="btn btn-success btn-sm" onclick="ifaceUp(\'' + name + '\')">⬆ ' + t('up_btn') + '</button>';
         return '<tr>'
           + '<td><strong class="mono">' + name + '</strong></td>'
           + '<td><span class="badge ' + (badgeMap[name] || 'b-neutral') + '">' + type + '</span></td>'
-          + '<td><span class="badge ' + statusClass + '"><span class="dot"></span> ' + i.state + '</span></td>'
+          + '<td><span class="badge ' + statusClass + '"><span class="dot"></span> ' + stateText + '</span></td>'
           + '<td class="mono">' + i.mtu + '</td>'
           + '<td>' + desc + '</td>'
           + '<td>' + toggleBtn + '</td>'
@@ -3348,23 +4049,23 @@
     }
 
     async function ifaceUp(name) {
-      toast('Bringing ' + name + ' up...', 'info');
+      toast(t('bringing_up', {name: name}), 'info');
       const d = await api('/api/interfaces/' + name + '/up', { method: 'POST' });
       if (d.error) {
-        toast('Failed to bring up ' + name + ': ' + d.error, 'error');
+        toast(t('failed_up', {name: name, msg: d.error}), 'error');
       } else {
-        toast('Interface ' + name + ' is now UP', 'success');
+        toast(t('interface_up', {name: name}), 'success');
         loadIfaces();
       }
     }
 
     async function ifaceDown(name) {
-      toast('Bringing ' + name + ' down...', 'info');
+      toast(t('bringing_down', {name: name}), 'info');
       const d = await api('/api/interfaces/' + name + '/down', { method: 'POST' });
       if (d.error) {
-        toast('Failed to bring down ' + name + ': ' + d.error, 'error');
+        toast(t('failed_down', {name: name, msg: d.error}), 'error');
       } else {
-        toast('Interface ' + name + ' is now DOWN', 'success');
+        toast(t('interface_down', {name: name}), 'success');
         loadIfaces();
       }
     }
@@ -3373,19 +4074,19 @@
     // Routes
     // ============================================================
     async function loadRoutes() {
-      document.getElementById('rt-tb').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Loading routes...</div></td></tr>';
+      document.getElementById('rt-tb').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>' + t('loading_routes') + '</div></td></tr>';
 
       document.getElementById('rt-tb').innerHTML = ''
-        + '<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">Default</span></td></tr>'
-        + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">Direct</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">Connected</span></td></tr>'
-        + '<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">Reserved</span></td></tr>';
+        + '<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">' + t('route_default') + '</span></td></tr>'
+        + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">Direct</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">' + t('route_connected') + '</span></td></tr>'
+        + '<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">' + t('route_reserved') + '</span></td></tr>';
     }
 
     // ============================================================
     // DHCP
     // ============================================================
     async function loadDhcp() {
-      showLoading('dhcp-el', 'Loading DHCP status...');
+      showLoading('dhcp-el', t('loading_dhcp'));
       const d = await api('/api/dhcp/status');
       const el = document.getElementById('dhcp-el');
 
@@ -3396,26 +4097,26 @@
 
       if (d.servers && d.servers.length > 0 && d.servers[0] !== '') {
         el.innerHTML = ''
-          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
-          + '<div class="info-row"><span class="info-k">Interface</span><span class="info-v">lan0</span></div>'
-          + '<div class="info-row"><span class="info-k">Address Range</span><span class="info-v">192.168.1.100 - 192.168.1.200</span></div>'
-          + '<div class="info-row"><span class="info-k">Gateway</span><span class="info-v">192.168.1.1</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('status') + '</span><span class="badge b-green"><span class="dot"></span> ' + t('enabled') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('interface_name') + '</span><span class="info-v">lan0</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('address_range') + '</span><span class="info-v">192.168.1.100 - 192.168.1.200</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('gateway') + '</span><span class="info-v">192.168.1.1</span></div>'
           + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
-          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ DHCP service is active and serving clients</p></div>';
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ ' + t('dhcp_active_message') + '</p></div>';
       } else {
         el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div>'
-          + '<p>DHCP service is not enabled</p>'
-          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDhcp()">🚀 Enable DHCP</button></div>';
+          + '<p>' + t('dhcp_not_enabled') + '</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDhcp()">🚀 ' + t('enable_dhcp') + '</button></div>';
       }
     }
 
     async function enableDhcp() {
-      toast('Enabling DHCP...', 'info');
+      toast(t('enabling_dhcp'), 'info');
       const d = await api('/api/dhcp/enable', { method: 'POST' });
       if (d.error) {
-        toast('Failed to enable DHCP: ' + d.error, 'error');
+        toast(t('failed_enable_dhcp', {msg: d.error}), 'error');
       } else {
-        toast('DHCP enabled successfully', 'success', 'LAN clients can now obtain IP addresses');
+        toast(t('dhcp_enabled_success'), 'success', t('lan_clients_ip'));
         loadDhcp();
       }
     }
@@ -3424,7 +4125,7 @@
     // DNS
     // ============================================================
     async function loadDns() {
-      showLoading('dns-el', 'Loading DNS status...');
+      showLoading('dns-el', t('loading_dns'));
       const d = await api('/api/dns/status');
       const el = document.getElementById('dns-el');
 
@@ -3435,26 +4136,26 @@
 
       if (d.status === 'active') {
         el.innerHTML = ''
-          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
-          + '<div class="info-row"><span class="info-k">Upstream DNS</span><span class="info-v">' + (d.upstream || []).join(', ') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Cache Size</span><span class="info-v">' + d.cache_size + ' entries</span></div>'
-          + '<div class="info-row"><span class="info-k">Listen Interface</span><span class="info-v">' + d.interface + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('status') + '</span><span class="badge b-green"><span class="dot"></span> ' + t('enabled') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('upstream_dns') + '</span><span class="info-v">' + (d.upstream || []).join(', ') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('cache_size') + '</span><span class="info-v">' + d.cache_size + ' entries</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('listen_interface') + '</span><span class="info-v">' + d.interface + '</span></div>'
           + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
-          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ DNS forwarding is active for LAN clients</p></div>';
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ ' + t('dns_active_message') + '</p></div>';
       } else {
         el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>'
-          + '<p>DNS forwarding is not enabled</p>'
-          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDns()">🚀 Enable DNS</button></div>';
+          + '<p>' + t('dns_not_enabled') + '</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableDns()">🚀 ' + t('enable_dns') + '</button></div>';
       }
     }
 
     async function enableDns() {
-      toast('Enabling DNS forwarding...', 'info');
+      toast(t('enabling_dns'), 'info');
       const d = await api('/api/dns/enable', { method: 'POST' });
       if (d.error) {
-        toast('Failed to enable DNS: ' + d.error, 'error');
+        toast(t('failed_enable_dns', {msg: d.error}), 'error');
       } else {
-        toast('DNS forwarding enabled', 'success', 'LAN clients can now resolve domain names');
+        toast(t('dns_enabled_success'), 'success', t('lan_clients_resolve'));
         loadDns();
       }
     }
@@ -3463,7 +4164,7 @@
     // NAT
     // ============================================================
     async function loadNat() {
-      showLoading('nat-el', 'Loading NAT status...');
+      showLoading('nat-el', t('loading_nat'));
       const d = await api('/api/nat/status');
       const el = document.getElementById('nat-el');
 
@@ -3477,26 +4178,26 @@
         const outside = d.interfaces.find(i => i.direction === 'out');
 
         el.innerHTML = ''
-          + '<div class="info-row"><span class="info-k">Status</span><span class="badge b-green"><span class="dot"></span> Enabled</span></div>'
-          + '<div class="info-row"><span class="info-k">Inside Interface</span><span class="info-v">' + (inside ? inside.name : 'Not configured') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Outside Interface</span><span class="info-v">' + (outside ? outside.name : 'Not configured') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">Sessions</span><span class="info-v">' + d.sessions.length + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('status') + '</span><span class="badge b-green"><span class="dot"></span> ' + t('enabled') + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('inside_interface') + '</span><span class="info-v">' + (inside ? inside.name : t('not_configured')) + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('outside_interface') + '</span><span class="info-v">' + (outside ? outside.name : t('not_configured')) + '</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('sessions_count') + '</span><span class="info-v">' + d.sessions.length + '</span></div>'
           + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
-          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ NAT is active -- LAN clients can access the Internet via PPPoE</p></div>';
+          + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ ' + t('nat_active_message') + '</p></div>';
       } else {
         el.innerHTML = '<div class="empty"><div class="empty-icon">🔄</div>'
-          + '<p>NAT is not enabled</p>'
-          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableNat()">🚀 Enable NAT</button></div>';
+          + '<p>' + t('nat_not_enabled') + '</p>'
+          + '<button class="btn btn-success" style="margin-top:16px" onclick="enableNat()">🚀 ' + t('enable_nat') + '</button></div>';
       }
     }
 
     async function enableNat() {
-      toast('Enabling NAT...', 'info');
+      toast(t('enabling_nat'), 'info');
       const d = await api('/api/nat/enable', { method: 'POST' });
       if (d.error) {
-        toast('Failed to enable NAT: ' + d.error, 'error');
+        toast(t('failed_enable_nat', {msg: d.error}), 'error');
       } else {
-        toast('NAT enabled successfully', 'success', 'LAN clients can now access the Internet');
+        toast(t('nat_enabled_success'), 'success', t('lan_clients_internet'));
         loadNat();
       }
     }
@@ -3505,7 +4206,7 @@
     // System
     // ============================================================
     async function loadSystem() {
-      showLoading('sys-el', 'Loading system info...');
+      showLoading('sys-el', t('loading'));
       const d = await api('/api/system');
       const el = document.getElementById('sys-el');
 
@@ -3521,23 +4222,23 @@
       const vpp = d.vpp || {};
 
       el.innerHTML = ''
-        + '<div class="info-row"><span class="info-k">CPU Usage</span><span class="info-v">' + (cpu.percent || 0) + '%</span></div>'
-        + '<div class="info-row"><span class="info-k">CPU Cores</span><span class="info-v">' + (cpu.count || '--') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">Memory</span><span class="info-v">' + (mem.percent || 0) + '% (' + formatBytes(mem.used) + ' / ' + formatBytes(mem.total) + ')</span></div>'
-        + '<div class="info-row"><span class="info-k">Disk</span><span class="info-v">' + (disk.percent || 0) + '% (' + formatBytes(disk.used) + ' / ' + formatBytes(disk.total) + ')</span></div>'
-        + '<div class="info-row"><span class="info-k">VPP Version</span><span class="info-v" style="font-size:11px">' + (vpp.version || 'N/A') + '</span></div>'
-        + '<div class="info-row"><span class="info-k">VPP Interfaces</span><span class="info-v">' + (vpp.interface_count || 0) + '</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('cpu_usage') + '</span><span class="info-v">' + (cpu.percent || 0) + '%</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('cpu_cores') + '</span><span class="info-v">' + (cpu.count || '--') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('memory') + '</span><span class="info-v">' + (mem.percent || 0) + '% (' + formatBytes(mem.used) + ' / ' + formatBytes(mem.total) + ')</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('disk') + '</span><span class="info-v">' + (disk.percent || 0) + '% (' + formatBytes(disk.used) + ' / ' + formatBytes(disk.total) + ')</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('vpp_version') + '</span><span class="info-v" style="font-size:11px">' + (vpp.version || 'N/A') + '</span></div>'
+        + '<div class="info-row"><span class="info-k">' + t('vpp_interfaces') + '</span><span class="info-v">' + (vpp.interface_count || 0) + '</span></div>'
         + '<div style="margin-top:20px">'
         + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
-        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">CPU</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (cpu.percent || 0) + '%</span></div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">' + t('cpu_usage') + '</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (cpu.percent || 0) + '%</span></div>'
         + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--accent), var(--purple));height:100%;width:' + (cpu.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
         + '</div>'
         + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
-        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">Memory</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (mem.percent || 0) + '%</span></div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">' + t('memory') + '</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (mem.percent || 0) + '%</span></div>'
         + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--green), var(--cyan));height:100%;width:' + (mem.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
         + '</div>'
         + '<div style="background:var(--bg-1);border-radius:var(--radius-xs);padding:14px;border:1px solid var(--border)">'
-        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">Disk</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (disk.percent || 0) + '%</span></div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-3);font-weight:600">' + t('disk') + '</span><span style="font-size:12px;color:var(--text-1);font-weight:700;font-family:JetBrains Mono,monospace">' + (disk.percent || 0) + '%</span></div>'
         + '<div style="background:var(--bg-4);border-radius:6px;height:10px;overflow:hidden"><div style="background:linear-gradient(90deg, var(--purple), var(--orange));height:100%;width:' + (disk.percent || 0) + '%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:6px"></div></div>'
         + '</div>'
         + '</div>';
@@ -3552,15 +4253,15 @@
       const hasPppoe = pppoeData.pppoe_clients && pppoeData.pppoe_clients.length > 0;
       if (hasPppoe) {
         const c = pppoeData.pppoe_clients[0];
-        const stateMap = { 0: 'Discovering', 1: 'Requesting', 2: 'Session' };
+        const stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
         document.getElementById('svc-pppoe-badge').className = 'badge b-green';
-        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>Connected';
-        document.getElementById('svc-pppoe-state').textContent = stateMap[c.client_state] || 'Unknown';
+        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>' + t('connected');
+        document.getElementById('svc-pppoe-state').textContent = stateMap[c.client_state] || t('unknown');
         document.getElementById('svc-pppoe-iface').textContent = 'pppoe-wan0';
       } else {
         document.getElementById('svc-pppoe-badge').className = 'badge b-neutral';
-        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>Idle';
-        document.getElementById('svc-pppoe-state').textContent = 'Not configured';
+        document.getElementById('svc-pppoe-badge').innerHTML = '<span class="dot"></span>' + t('idle');
+        document.getElementById('svc-pppoe-state').textContent = t('not_configured');
         document.getElementById('svc-pppoe-iface').textContent = '--';
       }
     }

@@ -706,5 +706,300 @@ pub async fn list_flows() -> Json<Value> {
     }
 }
 
+// ── Connection tracking handlers ────────────────────────────────────
+
+pub async fn get_conntrack_status() -> Json<Value> {
+    match crate::services::conntrack::get_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_conntrack_connections() -> Json<Value> {
+    match crate::services::conntrack::list_connections() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_conntrack_stats() -> Json<Value> {
+    match crate::services::conntrack::get_stats() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_conntrack_top() -> Json<Value> {
+    match crate::services::conntrack::get_top_talkers() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConntrackFilterRequest {
+    pub ip: Option<String>,
+    pub port: Option<u32>,
+    pub protocol: Option<String>,
+}
+
+pub async fn filter_conntrack_connections(Json(req): Json<ConntrackFilterRequest>) -> Json<Value> {
+    let filter = crate::services::conntrack::ConntrackFilter {
+        ip: req.ip,
+        port: req.port,
+        protocol: req.protocol,
+    };
+    match crate::services::conntrack::filter_connections(&filter) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_conntrack_detail() -> Json<Value> {
+    match crate::services::conntrack::get_nat_detail() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
 // ── Backup management handlers ─────────────────────────────────────
+
+// ── Traffic control handlers (native Rust) ────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct TrafficLimitRequest {
+    pub rate: u64,
+    pub burst: u64,
+    #[serde(default = "default_traffic_direction")]
+    pub direction: String,
+}
+
+fn default_traffic_direction() -> String {
+    "both".to_string()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrafficIpLimitRequest {
+    pub ip: String,
+    pub rate: u64,
+    pub burst: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrafficPriorityRequest {
+    pub name: String,
+    pub queue: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrafficAppClassRequest {
+    pub name: String,
+    #[serde(default)]
+    pub ports: String,
+    #[serde(default)]
+    pub protocol: String,
+    #[serde(default = "default_traffic_priority")]
+    pub priority: String,
+    pub dscp: Option<u32>,
+    pub description: Option<String>,
+}
+
+fn default_traffic_priority() -> String {
+    "medium".to_string()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrafficIpDeleteRequest {
+    pub ip: String,
+}
+
+/// GET /api/traffic/status
+pub async fn get_traffic_status() -> Json<Value> {
+    match crate::services::traffic::show_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/traffic/limit
+/// Set bandwidth limit on an interface or IP.
+/// Body: { "type": "interface"|"ip", "target": "..."|"...", ... }
+#[derive(Debug, Deserialize)]
+pub struct TrafficLimitBody {
+    #[serde(rename = "type")]
+    pub limit_type: String,
+    pub target: Option<String>,
+    pub ip: Option<String>,
+    pub rate: u64,
+    pub burst: u64,
+    #[serde(default = "default_traffic_direction")]
+    pub direction: String,
+}
+
+pub async fn set_traffic_limit(Json(body): Json<TrafficLimitBody>) -> Json<Value> {
+    match body.limit_type.as_str() {
+        "interface" => {
+            let target = match body.target {
+                Some(t) => t,
+                None => return Json(json!({ "error": "target (interface name) is required" })),
+            };
+            let req = crate::services::traffic::SetInterfaceLimitRequest {
+                rate: body.rate,
+                burst: body.burst,
+                direction: body.direction,
+            };
+            match crate::services::traffic::set_interface_limit(&target, req) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": e.to_string() })),
+            }
+        }
+        "ip" => {
+            let ip = match body.ip {
+                Some(i) => i,
+                None => match body.target {
+                    Some(t) => t,
+                    None => return Json(json!({ "error": "ip is required" })),
+                },
+            };
+            let req = crate::services::traffic::SetIpLimitRequest {
+                ip,
+                rate: body.rate,
+                burst: body.burst,
+            };
+            match crate::services::traffic::set_ip_limit(req) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": e.to_string() })),
+            }
+        }
+        _ => Json(json!({ "error": "Invalid limit type. Use 'interface' or 'ip'" })),
+    }
+}
+
+/// DELETE /api/traffic/limit/interface/:iface
+pub async fn remove_traffic_interface_limit(Path(iface): Path<String>) -> Json<Value> {
+    match crate::services::traffic::remove_interface_limit(&iface) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// DELETE /api/traffic/limit/ip/:ip
+pub async fn remove_traffic_ip_limit(Path(ip): Path<String>) -> Json<Value> {
+    match crate::services::traffic::remove_ip_limit(&ip) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/traffic/priority
+pub async fn set_traffic_priority(Json(req): Json<TrafficPriorityRequest>) -> Json<Value> {
+    let traffic_req = crate::services::traffic::SetPriorityRequest {
+        name: req.name,
+        queue: req.queue,
+        description: req.description,
+    };
+    match crate::services::traffic::set_priority(traffic_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/traffic/app-class
+pub async fn set_traffic_app_class(Json(req): Json<TrafficAppClassRequest>) -> Json<Value> {
+    let traffic_req = crate::services::traffic::SetAppClassRequest {
+        name: req.name,
+        ports: req.ports,
+        protocol: req.protocol,
+        priority: req.priority,
+        dscp: req.dscp,
+        description: req.description,
+    };
+    match crate::services::traffic::set_app_class(traffic_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// DELETE /api/traffic/app-class/:name
+pub async fn remove_traffic_app_class(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::traffic::remove_app_class(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/traffic/defaults
+pub async fn load_traffic_defaults() -> Json<Value> {
+    match crate::services::traffic::load_defaults() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// GET /api/traffic/stats
+pub async fn get_traffic_stats() -> Json<Value> {
+    match crate::services::traffic::get_stats() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/traffic/reset
+pub async fn reset_traffic() -> Json<Value> {
+    match crate::services::traffic::reset() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── VPN management handlers ────────────────────────────────────────
+
+pub async fn get_vpn_status() -> Json<Value> {
+    match crate::services::vpn::get_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_vpn_connections() -> Json<Value> {
+    match crate::services::vpn::list_connections() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VpnDownRequest {
+    pub vpn_type: String,
+    pub name: String,
+}
+
+pub async fn configure_wireguard(Json(req): Json<crate::services::vpn::WireGuardConfigRequest>) -> Json<Value> {
+    match crate::services::vpn::configure_wireguard(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn configure_ipsec(Json(req): Json<crate::services::vpn::IpsecConfigRequest>) -> Json<Value> {
+    match crate::services::vpn::configure_ipsec(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn configure_openvpn(Json(req): Json<crate::services::vpn::OpenVpnConfigRequest>) -> Json<Value> {
+    match crate::services::vpn::configure_openvpn(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn vpn_down(Json(req): Json<VpnDownRequest>) -> Json<Value> {
+    match crate::services::vpn::bring_down(&req.vpn_type, &req.name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
 

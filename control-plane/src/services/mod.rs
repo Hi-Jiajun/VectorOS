@@ -1,3 +1,4 @@
+pub mod conntrack;
 pub mod dhcp;
 pub mod dns;
 pub mod firewall;
@@ -7,3 +8,5 @@ pub mod ipv6;
 pub mod logger;
 pub mod logs;
 pub mod qos;
+pub mod traffic;
+pub mod vpn;
