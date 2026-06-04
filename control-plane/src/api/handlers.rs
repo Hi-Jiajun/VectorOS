@@ -197,9 +197,13 @@ pub async fn get_system_status() -> Json<Value> {
     match cmd.output() {
         Ok(output) => {
             let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if !stderr.is_empty() {
+                tracing::warn!("system_monitor stderr: {}", stderr);
+            }
             match serde_json::from_str::<Value>(&stdout) {
                 Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e), "raw": stdout.to_string() })),
             }
         }
         Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
