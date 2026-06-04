@@ -549,6 +549,14 @@ pub async fn save_config(Json(config): Json<Value>) -> Json<Value> {
 
 // ── DNS handlers (native Rust) ──────────────────────────────────────
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DnsEnableRequest {
+    pub upstream: Option<String>,
+    pub upstream_v6: Option<String>,
+    pub interface: Option<String>,
+    pub cache_size: Option<u32>,
+}
+
 /// Get DNS resolver status.
 #[utoipa::path(
     get,
@@ -565,17 +573,24 @@ pub async fn get_dns_status() -> Json<Value> {
     }
 }
 
-/// Enable the DNS resolver with default configuration.
+/// Enable the DNS resolver with the provided configuration.
 #[utoipa::path(
     post,
     path = "/api/dns/enable",
     tag = "DNS",
+    request_body = DnsEnableRequest,
     responses(
         (status = 200, description = "DNS enabled", body = Value)
     )
 )]
-pub async fn enable_dns() -> Json<Value> {
-    match crate::services::dns::enable(crate::services::dns::DnsEnableConfig::default()) {
+pub async fn enable_dns(Json(req): Json<DnsEnableRequest>) -> Json<Value> {
+    let config = crate::services::dns::DnsEnableConfig {
+        upstream: req.upstream.unwrap_or_default(),
+        upstream_v6: req.upstream_v6.unwrap_or_default(),
+        interface: req.interface.unwrap_or_default(),
+        cache_size: req.cache_size.unwrap_or_default(),
+    };
+    match crate::services::dns::enable(config) {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
@@ -677,6 +692,16 @@ pub async fn del_frr_route(Json(req): Json<DelRouteRequest>) -> Json<Value> {
 
 // ── DHCP handlers (native Rust) ────────────────────────────────────
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DhcpEnableRequest {
+    pub interface: Option<String>,
+    pub start_ip: Option<String>,
+    pub end_ip: Option<String>,
+    pub gateway: Option<String>,
+    pub lease_time: Option<u32>,
+    pub dns_servers: Option<String>,
+}
+
 /// Get DHCP server status and active leases.
 #[utoipa::path(
     get,
@@ -693,17 +718,25 @@ pub async fn get_dhcp_status() -> Json<Value> {
     }
 }
 
-/// Enable the DHCP server with default configuration.
+/// Enable the DHCP server with the provided configuration.
 #[utoipa::path(
     post,
     path = "/api/dhcp/enable",
     tag = "DHCP",
+    request_body = DhcpEnableRequest,
     responses(
         (status = 200, description = "DHCP enabled", body = Value)
     )
 )]
-pub async fn enable_dhcp() -> Json<Value> {
-    let config = crate::services::dhcp::DhcpEnableConfig::default();
+pub async fn enable_dhcp(Json(req): Json<DhcpEnableRequest>) -> Json<Value> {
+    let config = crate::services::dhcp::DhcpEnableConfig {
+        interface: req.interface.unwrap_or_default(),
+        start_ip: req.start_ip.unwrap_or_default(),
+        end_ip: req.end_ip.unwrap_or_default(),
+        gateway: req.gateway.unwrap_or_default(),
+        lease_time: req.lease_time.unwrap_or_default(),
+        dns_servers: req.dns_servers,
+    };
     match crate::services::dhcp::enable(config) {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),

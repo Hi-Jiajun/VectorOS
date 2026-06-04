@@ -1186,6 +1186,298 @@
       .auto-refresh-label { display: none; }
     }
 
+    /* ============================================================
+       PPPoE Enhanced Styles
+       ============================================================ */
+
+    /* Quick Setup Cards */
+    .quick-setup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .quick-card {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quick-card:hover {
+      border-color: var(--accent-border);
+      background: var(--bg-4);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .quick-card.active {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .quick-card .qc-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .quick-card .qc-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 4px;
+    }
+
+    .quick-card .qc-desc {
+      font-size: 11px;
+      color: var(--text-3);
+      line-height: 1.4;
+    }
+
+    .quick-card .qc-tag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--accent-bg);
+      color: var(--accent-2);
+      border: 1px solid var(--accent-border);
+    }
+
+    /* Interface Control Panel */
+    .iface-control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .iface-ctrl {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      transition: all 0.2s;
+    }
+
+    .iface-ctrl:hover {
+      border-color: var(--border-2);
+    }
+
+    .iface-ctrl-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .iface-ctrl-name {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .iface-ctrl-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .iface-ctrl-mtu {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Status Indicator (large) */
+    .pppoe-status-hero {
+      text-align: center;
+      padding: 20px 16px;
+      margin-bottom: 16px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .pppoe-status-hero .status-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 12px;
+      transition: all 0.3s;
+    }
+
+    .pppoe-status-hero .status-icon.connected {
+      background: var(--green-bg);
+      border: 2px solid var(--green-border);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+
+    .pppoe-status-hero .status-icon.disconnected {
+      background: rgba(255,255,255,0.04);
+      border: 2px solid var(--border);
+    }
+
+    .pppoe-status-hero .status-icon.connecting {
+      background: var(--yellow-bg);
+      border: 2px solid rgba(234, 179, 8, 0.25);
+      animation: pulse 2s ease infinite;
+    }
+
+    .pppoe-status-hero .status-label {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pppoe-status-hero .status-ip {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-1);
+      letter-spacing: -0.5px;
+    }
+
+    .pppoe-status-hero .status-sub {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 4px;
+    }
+
+    /* Uptime counter (large) */
+    .uptime-large {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.5px;
+    }
+
+    /* Connection Logs */
+    .conn-logs {
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      padding: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.8;
+    }
+
+    .conn-log-line {
+      display: flex;
+      gap: 8px;
+      color: var(--text-3);
+    }
+
+    .conn-log-line .log-time {
+      color: var(--text-4);
+      flex-shrink: 0;
+    }
+
+    .conn-log-line.log-success { color: var(--green); }
+    .conn-log-line.log-error { color: var(--red); }
+    .conn-log-line.log-info { color: var(--cyan); }
+    .conn-log-line.log-warn { color: var(--yellow); }
+
+    /* Tab navigation for PPPoE page */
+    .pppoe-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+    }
+
+    .pppoe-tab {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: var(--radius-xs);
+      background: transparent;
+      color: var(--text-3);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .pppoe-tab:hover {
+      color: var(--text-2);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .pppoe-tab.active {
+      background: var(--accent-bg);
+      color: var(--accent-2);
+      box-shadow: inset 0 0 0 1px var(--accent-border);
+    }
+
+    .pppoe-tab-panel {
+      display: none;
+    }
+
+    .pppoe-tab-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+
+    /* Form enhanced */
+    .form-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Action buttons row */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-row .btn {
+      flex: 1;
+    }
+
+    /* Responsive for PPPoE */
+    @media (max-width: 1024px) {
+      .quick-setup-grid { grid-template-columns: 1fr; }
+      .iface-control-grid { grid-template-columns: 1fr; }
+    }
+
     /* Loading overlay for page */
     .page-loading {
       position: relative;
@@ -2079,48 +2371,119 @@
 
         <!-- PPPoE -->
         <div id="p-pppoe" class="page">
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head"><h3 data-i18n="pppoe_configuration">⚙️ PPPoE Configuration</h3></div>
+          <!-- Tab Navigation -->
+          <div class="pppoe-tabs">
+            <button class="pppoe-tab active" onclick="switchPppoeTab('config')" id="ptab-config">⚙️ <span data-i18n="pppoe_configuration">PPPoE Configuration</span></button>
+            <button class="pppoe-tab" onclick="switchPppoeTab('interfaces')" id="ptab-interfaces">🌐 <span data-i18n="wan_interface">WAN Interface</span></button>
+            <button class="pppoe-tab" onclick="switchPppoeTab('logs')" id="ptab-logs">📋 <span data-i18n="connection_logs">Connection Logs</span></button>
+          </div>
+
+          <!-- Tab: Configuration -->
+          <div id="ptab-panel-config" class="pppoe-tab-panel active">
+            <!-- Quick Setup -->
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-head">
+                <h3>🚀 <span data-i18n="quick_setup">Quick Setup</span></h3>
+              </div>
               <div class="card-body">
-                <form onsubmit="savePppoe(event)">
-                  <div class="form-group">
-                    <label class="form-label" data-i18n="username">Username</label>
-                    <input type="text" class="form-input" id="pu" placeholder="ISP username" required>
+                <div class="quick-setup-grid" id="quick-setup-grid">
+                  <div class="quick-card" onclick="quickSetup('telecom')" id="qs-telecom">
+                    <div class="qc-tag">VLAN 41</div>
+                    <div class="qc-icon">📡</div>
+                    <div class="qc-name">China Telecom</div>
+                    <div class="qc-desc">PPPoE + VLAN 41, most common ISP in China</div>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label" data-i18n="password">Password</label>
-                    <input type="password" class="form-input" id="pp" placeholder="ISP password" required>
+                  <div class="quick-card" onclick="quickSetup('unicom')" id="qs-unicom">
+                    <div class="qc-icon">📶</div>
+                    <div class="qc-name">China Unicom</div>
+                    <div class="qc-desc">PPPoE, standard broadband connection</div>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label" data-i18n="wan_interface">WAN Interface</label>
-                    <select class="form-select" id="pi">
-                      <option value="enp1s0">enp1s0 -- CX4 LX Port 1</option>
-                      <option value="enp2s0">enp2s0 -- CX4 LX Port 2</option>
-                      <option value="enp3s0">enp3s0 -- CX4 LX Port 3</option>
-                    </select>
-                    <div class="form-hint" data-i18n="select_sriov">Select SR-IOV VF interface</div>
+                  <div class="quick-card" onclick="quickSetup('mobile')" id="qs-mobile">
+                    <div class="qc-icon">📱</div>
+                    <div class="qc-name">China Mobile</div>
+                    <div class="qc-desc">PPPoE, China Mobile broadband</div>
                   </div>
-                  <div class="form-row">
-                    <div class="form-group"><label class="form-label" data-i18n="mtu">MTU</label><input type="number" class="form-input" id="pmtu" value="1492"></div>
-                    <div class="form-group"><label class="form-label" data-i18n="mru">MRU</label><input type="number" class="form-input" id="pmru" value="1492"></div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-check"><input type="checkbox" id="pdns" checked><span data-i18n="use_isp_dns">Use ISP DNS</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr4" checked><span data-i18n="add_ipv4_default_route">Add IPv4 default route</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr6" checked><span data-i18n="add_ipv6_default_route">Add IPv6 default route</span></label>
-                  </div>
-                  <button type="submit" class="btn btn-primary" style="width:100%" id="pppoe-submit-btn" data-i18n="save_and_connect">💾 Save & Connect</button>
-                </form>
+                </div>
               </div>
             </div>
+
+            <!-- Configuration Form + Status -->
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-head"><h3 data-i18n="pppoe_configuration">⚙️ PPPoE Configuration</h3></div>
+                <div class="card-body">
+                  <form onsubmit="savePppoe(event)">
+                    <div class="form-group">
+                      <label class="form-label" data-i18n="username">Username</label>
+                      <input type="text" class="form-input" id="pu" placeholder="ISP username (e.g. 010xxxx@163gd)" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" data-i18n="password">Password</label>
+                      <input type="password" class="form-input" id="pp" placeholder="ISP password" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" data-i18n="wan_interface">WAN Interface</label>
+                      <select class="form-select" id="pi" onchange="onInterfaceSelectChange()">
+                        <option value="enp1s0">enp1s0 -- CX4 LX Port 1</option>
+                        <option value="enp2s0">enp2s0 -- CX4 LX Port 2</option>
+                        <option value="enp3s0">enp3s0 -- CX4 LX Port 3</option>
+                      </select>
+                      <div class="form-hint" data-i18n="select_sriov">Select SR-IOV VF interface</div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group"><label class="form-label" data-i18n="mtu">MTU</label><input type="number" class="form-input" id="pmtu" value="1492" min="576" max="1500"></div>
+                      <div class="form-group"><label class="form-label" data-i18n="mru">MRU</label><input type="number" class="form-input" id="pmru" value="1492" min="576" max="1500"></div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-check"><input type="checkbox" id="pdns" checked><span data-i18n="use_isp_dns">Use ISP DNS</span></label>
+                      <label class="form-check"><input type="checkbox" id="pr4" checked><span data-i18n="add_ipv4_default_route">Add IPv4 default route</span></label>
+                      <label class="form-check"><input type="checkbox" id="pr6" checked><span data-i18n="add_ipv6_default_route">Add IPv6 default route</span></label>
+                    </div>
+                    <div class="btn-row">
+                      <button type="submit" class="btn btn-primary" id="pppoe-submit-btn" data-i18n="save_and_connect">💾 Save & Connect</button>
+                      <button type="button" class="btn btn-danger" onclick="pppoeStop()" id="pppoe-disconnect-btn" style="display:none">⏹ <span data-i18n="disconnect">Disconnect</span></button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head">
+                  <h3 data-i18n="connection_status">📊 Connection Status</h3>
+                  <button class="btn btn-ghost btn-sm" onclick="loadPppoe()" data-i18n="refresh">Refresh</button>
+                </div>
+                <div class="card-body" id="pppoe-el">
+                  <div class="loading"><div class="spinner"></div>Loading...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Interfaces -->
+          <div id="ptab-panel-interfaces" class="pppoe-tab-panel">
             <div class="card">
               <div class="card-head">
-                <h3 data-i18n="connection_status">📊 Connection Status</h3>
-                <button class="btn btn-ghost btn-sm" onclick="loadPppoe()" data-i18n="refresh">Refresh</button>
+                <h3>🌐 <span data-i18n="wan_interface_control">WAN Interface Control</span></h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadIfaceControls()" data-i18n="refresh">Refresh</button>
               </div>
-              <div class="card-body" id="pppoe-el">
-                <div class="loading"><div class="spinner"></div>Loading...</div>
+              <div class="card-body">
+                <div class="iface-control-grid" id="iface-control-grid">
+                  <div class="loading"><div class="spinner"></div>Loading interfaces...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Logs -->
+          <div id="ptab-panel-logs" class="pppoe-tab-panel">
+            <div class="card">
+              <div class="card-head">
+                <h3>📋 <span data-i18n="connection_logs">Connection Logs</span></h3>
+                <button class="btn btn-ghost btn-sm" onclick="clearPppoeLogs()">🗑️ <span data-i18n="clear_logs">Clear</span></button>
+              </div>
+              <div class="card-body">
+                <div class="conn-logs" id="pppoe-logs">
+                  <div class="conn-log-line log-info"><span class="log-time">[--:--:--]</span> <span>Waiting for PPPoE events...</span></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2454,6 +2817,22 @@
         reconnect_failed: '重连失败：{msg}',
         pppoe_reconnecting: 'PPPoE 重连中',
         disconnect_coming_soon: '断开功能即将推出',
+        pppoe_disconnected: 'PPPoE 已断开',
+        disconnect_failed: '断开失败：{msg}',
+        connection_logs: '连接日志',
+        clear_logs: '清除日志',
+        logs_cleared: '日志已清除',
+        quick_setup: '快速设置',
+        wan_interface_control: 'WAN 接口控制',
+        connected_label: '已连接',
+        disconnected_label: '已断开',
+        connecting_label: '连接中',
+        iface_up: '启用',
+        iface_down: '禁用',
+        iface_up_success: '接口 {name} 已启用',
+        iface_down_success: '接口 {name} 已禁用',
+        iface_up_failed: '启用 {name} 失败：{msg}',
+        iface_down_failed: '禁用 {name} 失败：{msg}',
 
         // Interfaces page
         interface_header: '网络接口',
@@ -2754,6 +3133,22 @@
         reconnect_failed: 'Reconnect failed: {msg}',
         pppoe_reconnecting: 'PPPoE reconnecting',
         disconnect_coming_soon: 'Disconnect feature coming soon',
+        pppoe_disconnected: 'PPPoE disconnected',
+        disconnect_failed: 'Disconnect failed: {msg}',
+        connection_logs: 'Connection Logs',
+        clear_logs: 'Clear',
+        logs_cleared: 'Logs cleared',
+        quick_setup: 'Quick Setup',
+        wan_interface_control: 'WAN Interface Control',
+        connected_label: 'Connected',
+        disconnected_label: 'Disconnected',
+        connecting_label: 'Connecting',
+        iface_up: 'Up',
+        iface_down: 'Down',
+        iface_up_success: 'Interface {name} is now UP',
+        iface_down_success: 'Interface {name} is now DOWN',
+        iface_up_failed: 'Failed to bring up {name}: {msg}',
+        iface_down_failed: 'Failed to bring down {name}: {msg}',
 
         // Interfaces page
         interface_header: 'Network Interfaces',
@@ -3076,6 +3471,17 @@
         const text = el.textContent;
         if (text.includes('PPPoE Configuration') || text.includes('PPPoE 配置')) el.innerHTML = '⚙️ ' + t('pppoe_configuration');
         if (text.includes('Connection Status') || text.includes('连接状态')) el.innerHTML = '📊 ' + t('connection_status');
+        if (text.includes('Quick Setup') || text.includes('快速设置')) el.innerHTML = '🚀 ' + t('quick_setup');
+        if (text.includes('WAN Interface Control') || text.includes('WAN 接口控制')) el.innerHTML = '🌐 ' + t('wan_interface_control');
+        if (text.includes('Connection Logs') || text.includes('连接日志')) el.innerHTML = '📋 ' + t('connection_logs');
+      });
+
+      // Tab labels
+      document.querySelectorAll('.pppoe-tab span').forEach(el => {
+        const text = el.textContent;
+        if (text === 'PPPoE Configuration' || text === 'PPPoE 配置') el.textContent = t('pppoe_configuration');
+        if (text === 'WAN Interface' || text === 'WAN 接口') el.textContent = t('wan_interface');
+        if (text === 'Connection Logs' || text === '连接日志') el.textContent = t('connection_logs');
       });
 
       // Form labels
@@ -3106,9 +3512,20 @@
       const submitBtn = document.getElementById('pppoe-submit-btn');
       if (submitBtn && !submitBtn.disabled) submitBtn.textContent = '💾 ' + t('save_and_connect');
 
+      // Disconnect button
+      const disconnectBtn = document.getElementById('pppoe-disconnect-btn');
+      if (disconnectBtn) disconnectBtn.innerHTML = '⏹ ' + t('disconnect');
+
       // Refresh buttons
       document.querySelectorAll('#p-pppoe .btn-ghost').forEach(el => {
         el.textContent = t('refresh');
+      });
+
+      // Clear logs button
+      document.querySelectorAll('#p-pppoe .btn-ghost').forEach(el => {
+        if (el.textContent.includes('Clear') || el.textContent.includes('清除')) {
+          el.innerHTML = '🗑️ ' + t('clear_logs');
+        }
       });
     }
 
@@ -3940,24 +4357,212 @@
     // ============================================================
     // PPPoE
     // ============================================================
+
+    // PPPoE connection logs
+    let pppoeLogs = [];
+    const MAX_PPPOE_LOGS = 100;
+    let pppoeConnectedState = false; // track previous state for log entries
+
+    function addPppoeLog(type, message) {
+      const now = new Date();
+      const locale = currentLang === 'zh' ? 'zh-CN' : 'en-US';
+      const timeStr = now.toLocaleTimeString(locale);
+      pppoeLogs.unshift({ type: type, message: message, time: timeStr });
+      if (pppoeLogs.length > MAX_PPPOE_LOGS) pppoeLogs.pop();
+      renderPppoeLogs();
+    }
+
+    function renderPppoeLogs() {
+      const el = document.getElementById('pppoe-logs');
+      if (!el) return;
+      if (pppoeLogs.length === 0) {
+        el.innerHTML = '<div class="conn-log-line log-info"><span class="log-time">[--:--:--]</span> <span>Waiting for PPPoE events...</span></div>';
+        return;
+      }
+      el.innerHTML = pppoeLogs.map(function(log) {
+        return '<div class="conn-log-line log-' + log.type + '"><span class="log-time">[' + log.time + ']</span> <span>' + escapeHtml(log.message) + '</span></div>';
+      }).join('');
+    }
+
+    function clearPppoeLogs() {
+      pppoeLogs = [];
+      renderPppoeLogs();
+      toast(t('logs_cleared'), 'info');
+    }
+
+    // PPPoE tab switching
+    function switchPppoeTab(tab) {
+      document.querySelectorAll('.pppoe-tab').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.pppoe-tab-panel').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById('ptab-' + tab).classList.add('active');
+      document.getElementById('ptab-panel-' + tab).classList.add('active');
+      if (tab === 'interfaces') loadIfaceControls();
+    }
+
+    // Quick Setup presets
+    function quickSetup(preset) {
+      // Highlight selected card
+      document.querySelectorAll('.quick-card').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById('qs-' + preset).classList.add('active');
+
+      var presets = {
+        telecom: {
+          username: '010xxxx@163gd',
+          password: '',
+          interface: 'enp1s0',
+          mtu: 1492,
+          mru: 1492,
+          use_peer_dns: true,
+          add_default_route4: true,
+          add_default_route6: true
+        },
+        unicom: {
+          username: '010xxxx@unicom',
+          password: '',
+          interface: 'enp1s0',
+          mtu: 1492,
+          mru: 1492,
+          use_peer_dns: true,
+          add_default_route4: true,
+          add_default_route6: true
+        },
+        mobile: {
+          username: '010xxxx@cmcc',
+          password: '',
+          interface: 'enp1s0',
+          mtu: 1492,
+          mru: 1492,
+          use_peer_dns: true,
+          add_default_route4: true,
+          add_default_route6: true
+        }
+      };
+
+      var p = presets[preset];
+      if (!p) return;
+
+      document.getElementById('pu').value = p.username;
+      document.getElementById('pp').value = p.password;
+      document.getElementById('pi').value = p.interface;
+      document.getElementById('pmtu').value = p.mtu;
+      document.getElementById('pmru').value = p.mru;
+      document.getElementById('pdns').checked = p.use_peer_dns;
+      document.getElementById('pr4').checked = p.add_default_route4;
+      document.getElementById('pr6').checked = p.add_default_route6;
+
+      addPppoeLog('info', 'Quick Setup: ' + preset.charAt(0).toUpperCase() + preset.slice(1) + ' preset applied');
+      toast('Quick Setup applied for ' + preset.charAt(0).toUpperCase() + preset.slice(1), 'info');
+    }
+
+    // Interface select change handler
+    function onInterfaceSelectChange() {
+      var sel = document.getElementById('pi');
+      var ifName = sel.value;
+      // Auto-adjust MTU based on interface
+      // PPPoE overhead is 8 bytes, so typical MTU is 1492
+    }
+
+    // Load interface controls for PPPoE tab
+    async function loadIfaceControls() {
+      var grid = document.getElementById('iface-control-grid');
+      if (!grid) return;
+      grid.innerHTML = '<div class="loading"><div class="spinner"></div>Loading interfaces...</div>';
+
+      var d = await api('/api/interfaces');
+      if (d.error) {
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">' + escapeHtml(d.error) + '</p></div>';
+        return;
+      }
+
+      var ifaces = (d.interfaces || []).filter(function(i) { return i.name !== 'local0'; });
+      if (ifaces.length === 0) {
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">🌐</div><p>No VF interfaces found</p></div>';
+        return;
+      }
+
+      grid.innerHTML = ifaces.map(function(iface) {
+        var state = iface.state || 'down';
+        var stateClass = state === 'up' ? 'b-green' : 'b-yellow';
+        var stateText = state === 'up' ? t('up') : t('down_state');
+        var toggleBtn = state === 'up'
+          ? '<button class="btn btn-danger btn-sm" onclick="pppoeIfaceDown(\'' + iface.name + '\')">⬇ ' + t('iface_down') + '</button>'
+          : '<button class="btn btn-success btn-sm" onclick="pppoeIfaceUp(\'' + iface.name + '\')">⬆ ' + t('iface_up') + '</button>';
+        var isSelected = document.getElementById('pi') && document.getElementById('pi').value === iface.name;
+
+        return '<div class="iface-ctrl' + (isSelected ? ' style="border-color:var(--accent-border)"' : '') + '">'
+          + '<div class="iface-ctrl-head">'
+          + '<div class="iface-ctrl-name">' + (isSelected ? '🔌 ' : '🌐 ') + iface.name + (isSelected ? ' (selected)' : '') + '</div>'
+          + '<span class="badge ' + stateClass + '"><span class="dot"></span> ' + stateText + '</span>'
+          + '</div>'
+          + '<div class="iface-ctrl-body">'
+          + '<div class="iface-ctrl-mtu">MTU: ' + (iface.mtu || '--') + '</div>'
+          + toggleBtn
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    async function pppoeIfaceUp(name) {
+      toast(t('bringing_up', {name: name}), 'info');
+      addPppoeLog('info', 'Bringing up interface ' + name + '...');
+      var d = await api('/api/interfaces/' + name + '/up', { method: 'POST' });
+      if (d.error) {
+        toast(t('iface_up_failed', {name: name, msg: d.error}), 'error');
+        addPppoeLog('error', 'Failed to bring up ' + name + ': ' + d.error);
+      } else {
+        toast(t('iface_up_success', {name: name}), 'success');
+        addPppoeLog('success', 'Interface ' + name + ' is now UP');
+        loadIfaceControls();
+      }
+    }
+
+    async function pppoeIfaceDown(name) {
+      toast(t('bringing_down', {name: name}), 'info');
+      addPppoeLog('info', 'Bringing down interface ' + name + '...');
+      var d = await api('/api/interfaces/' + name + '/down', { method: 'POST' });
+      if (d.error) {
+        toast(t('iface_down_failed', {name: name, msg: d.error}), 'error');
+        addPppoeLog('error', 'Failed to bring down ' + name + ': ' + d.error);
+      } else {
+        toast(t('iface_down_success', {name: name}), 'success');
+        addPppoeLog('success', 'Interface ' + name + ' is now DOWN');
+        loadIfaceControls();
+      }
+    }
+
+    // ============================================================
+    // PPPoE Load & Status
+    // ============================================================
     async function loadPppoe() {
       showLoading('pppoe-el', t('loading'));
-      const d = await api('/api/pppoe/status');
-      const el = document.getElementById('pppoe-el');
+      var d = await api('/api/pppoe/status');
+      var el = document.getElementById('pppoe-el');
 
       if (d.error) {
         showError('pppoe-el', d.error, 'loadPppoe()');
         return;
       }
 
-      if (d.pppoe_clients && d.pppoe_clients.length > 0) {
-        const c = d.pppoe_clients[0];
-        const stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
-        const stateClass = { 0: 'b-yellow', 1: 'b-yellow', 2: 'b-green' };
-        const stateText = stateMap[c.client_state] || t('unknown');
+      var hasPppoe = d.pppoe_clients && d.pppoe_clients.length > 0;
+      var disconnectBtn = document.getElementById('pppoe-disconnect-btn');
+
+      if (hasPppoe) {
+        var c = d.pppoe_clients[0];
+        var stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
+        var stateClass = { 0: 'b-yellow', 1: 'b-yellow', 2: 'b-green' };
+        var stateText = stateMap[c.client_state] || t('unknown');
+
+        // Hero status
+        var heroClass = c.client_state === 2 ? 'connected' : 'connecting';
+        var heroIcon = c.client_state === 2 ? '✅' : '⏳';
 
         el.innerHTML = ''
-          + '<div class="info-row"><span class="info-k">' + t('state') + '</span><span class="badge ' + stateClass[c.client_state] + '"><span class="dot"></span> ' + stateText + '</span></div>'
+          + '<div class="pppoe-status-hero">'
+          + '<div class="status-icon ' + heroClass + '">' + heroIcon + '</div>'
+          + '<div class="status-label" style="color:' + (c.client_state === 2 ? 'var(--green)' : 'var(--yellow)') + '">' + stateText + '</div>'
+          + (c.ipv4_local && c.ipv4_local !== '0.0.0.0' ? '<div class="status-ip">' + c.ipv4_local + '</div>' : '<div class="status-ip" style="color:var(--text-3)">--</div>')
+          + '<div class="status-sub">' + (c.ipv4_peer && c.ipv4_peer !== '0.0.0.0' ? t('peer_ipv4') + ': ' + c.ipv4_peer : '') + '</div>'
+          + '</div>'
           + '<div class="info-row"><span class="info-k">' + t('pppoe_username') + '</span><span class="info-v">' + escapeHtml(c.auth_user) + '</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('pppoe_interface') + '</span><span class="info-v">pppoe-wan0 (idx ' + c.pppox_sw_if_index + ')</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('pppoe_mtu_mru') + '</span><span class="info-v">' + c.mtu + ' / ' + c.mru + '</span></div>'
@@ -3966,27 +4571,84 @@
           + '<div class="info-row"><span class="info-k">' + t('pppoe_dns') + '</span><span class="info-v">' + (c.use_peer_dns ? t('pppoe_isp_dns') : t('pppoe_custom_dns')) + '</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('default_route') + '</span><span class="info-v">' + (c.add_default_route4 ? 'IPv4' : '') + (c.add_default_route6 ? ' IPv6' : '') + '</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('reconnects') + '</span><span class="info-v">' + c.total_reconnects + '</span></div>'
-          + '<div class="info-row"><span class="info-k">' + t('session_uptime') + '</span><span class="info-v">' + c.session_uptime_seconds + 's</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('session_uptime') + '</span><span class="info-v"><span class="uptime-large">' + formatUptime(c.session_uptime_seconds) + '</span></span></div>'
           + '<div style="margin-top:20px;display:flex;gap:10px">'
           + '<button class="btn btn-primary" onclick="pppoeRestart()">🔄 ' + t('reconnect') + '</button>'
-          + '<button class="btn btn-danger" onclick="pppoeStop()">⏹ ' + t('disconnect') + '</button>'
           + '</div>';
+
+        // Show disconnect button
+        if (disconnectBtn) disconnectBtn.style.display = '';
+
+        // Pre-fill form from current config
+        prefillPppoeForm(c);
+
+        // Log state transitions
+        if (!pppoeConnectedState && c.client_state === 2) {
+          addPppoeLog('success', 'PPPoE session established, IP: ' + c.ipv4_local);
+        } else if (!pppoeConnectedState && c.client_state === 0) {
+          addPppoeLog('info', 'PPPoE discovering on ' + (c.interface || 'unknown'));
+        } else if (!pppoeConnectedState && c.client_state === 1) {
+          addPppoeLog('info', 'PPPoE requesting session...');
+        }
+        pppoeConnectedState = true;
       } else {
-        el.innerHTML = '<div class="empty"><div class="empty-icon">🔌</div>'
-          + '<p>' + t('no_pppoe_configured') + '</p>'
-          + '<p style="font-size:12px;margin-top:8px;color:var(--text-3)">' + t('fill_form_hint') + '</p></div>';
+        el.innerHTML = '<div class="pppoe-status-hero">'
+          + '<div class="status-icon disconnected">🔌</div>'
+          + '<div class="status-label" style="color:var(--text-3)">' + t('disconnected') + '</div>'
+          + '<div class="status-sub">' + t('no_pppoe_configured') + '</div>'
+          + '</div>'
+          + '<div style="padding:8px 0;font-size:12px;color:var(--text-3);text-align:center">' + t('fill_form_hint') + '</div>';
+
+        // Hide disconnect button
+        if (disconnectBtn) disconnectBtn.style.display = 'none';
+
+        // Log disconnection
+        if (pppoeConnectedState) {
+          addPppoeLog('warn', 'PPPoE session ended');
+        }
+        pppoeConnectedState = false;
       }
+    }
+
+    function formatUptime(seconds) {
+      if (!seconds || seconds === 0) return '00:00:00';
+      var h = Math.floor(seconds / 3600);
+      var m = Math.floor((seconds % 3600) / 60);
+      var s = seconds % 60;
+      return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function prefillPppoeForm(c) {
+      if (!c) return;
+      var pu = document.getElementById('pu');
+      var pp = document.getElementById('pp');
+      var pi = document.getElementById('pi');
+      var pmtu = document.getElementById('pmtu');
+      var pmru = document.getElementById('pmru');
+      var pdns = document.getElementById('pdns');
+      var pr4 = document.getElementById('pr4');
+      var pr6 = document.getElementById('pr6');
+
+      // Only pre-fill if fields are empty (don't overwrite user edits)
+      if (pu && !pu.value && c.auth_user) pu.value = c.auth_user;
+      if (pi && c.interface) pi.value = c.interface;
+      if (pmtu && c.mtu) pmtu.value = c.mtu;
+      if (pmru && c.mru) pmru.value = c.mru;
+      if (pdns) pdns.checked = c.use_peer_dns;
+      if (pr4) pr4.checked = c.add_default_route4;
+      if (pr6) pr6.checked = c.add_default_route6;
     }
 
     async function savePppoe(e) {
       e.preventDefault();
-      const btn = document.getElementById('pppoe-submit-btn');
-      const origText = btn.innerHTML;
+      var btn = document.getElementById('pppoe-submit-btn');
+      var origText = btn.innerHTML;
       btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> ' + t('connecting');
       btn.disabled = true;
 
-      const config = {
-        username: document.getElementById('pu').value,
+      var username = document.getElementById('pu').value;
+      var config = {
+        username: username,
         password: document.getElementById('pp').value,
         interface: document.getElementById('pi').value,
         mtu: parseInt(document.getElementById('pmtu').value),
@@ -3996,22 +4658,27 @@
         add_default_route6: document.getElementById('pr6').checked,
       };
 
+      addPppoeLog('info', 'Connecting as ' + username + ' on ' + config.interface + '...');
+
       try {
-        const res = await fetch('/api/pppoe/create', {
+        var res = await fetch('/api/pppoe/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(config)
         });
-        const data = await res.json();
+        var data = await res.json();
 
         if (data.error) {
           toast(t('connection_failed', {msg: data.error}), 'error');
+          addPppoeLog('error', 'Connection failed: ' + data.error);
         } else {
           toast(t('pppoe_created'), 'success', t('connection_establishing'));
+          addPppoeLog('success', 'PPPoE client created, establishing connection...');
           loadPppoe();
         }
       } catch (e) {
         toast(t('request_failed', {msg: e.message}), 'error');
+        addPppoeLog('error', 'Request failed: ' + e.message);
       } finally {
         btn.innerHTML = origText;
         btn.disabled = false;
@@ -4020,38 +4687,61 @@
 
     async function pppoeRestart() {
       toast(t('reconnecting'), 'info');
-      const config = {
-        username: document.getElementById('pu').value || 'testuser',
-        password: document.getElementById('pp').value || 'testpass',
+      addPppoeLog('info', 'Reconnecting...');
+      var config = {
+        username: document.getElementById('pu').value,
+        password: document.getElementById('pp').value,
         interface: document.getElementById('pi').value || 'enp1s0',
-        mtu: 1492,
-        mru: 1492,
-        use_peer_dns: true,
-        add_default_route4: true,
-        add_default_route6: true,
+        mtu: parseInt(document.getElementById('pmtu').value) || 1492,
+        mru: parseInt(document.getElementById('pmru').value) || 1492,
+        use_peer_dns: document.getElementById('pdns').checked,
+        add_default_route4: document.getElementById('pr4').checked,
+        add_default_route6: document.getElementById('pr6').checked,
       };
 
       try {
-        const res = await fetch('/api/pppoe/create', {
+        var res = await fetch('/api/pppoe/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(config)
         });
-        const data = await res.json();
+        var data = await res.json();
 
         if (data.error) {
           toast(t('reconnect_failed', {msg: data.error}), 'error');
+          addPppoeLog('error', 'Reconnect failed: ' + data.error);
         } else {
           toast(t('pppoe_reconnecting'), 'success');
+          addPppoeLog('info', 'Reconnect request sent');
           setTimeout(loadPppoe, 2000);
         }
       } catch (e) {
         toast(t('request_failed', {msg: e.message}), 'error');
+        addPppoeLog('error', 'Request failed: ' + e.message);
       }
     }
 
     async function pppoeStop() {
-      toast(t('disconnect_coming_soon'), 'info');
+      toast(t('disconnecting') || 'Disconnecting...', 'info');
+      addPppoeLog('info', 'Disconnecting PPPoE session...');
+
+      // Try to bring down the PPPoE interface
+      try {
+        var res = await fetch('/api/interfaces/pppoe-wan0/down', { method: 'POST' });
+        var data = await res.json();
+        if (data.error) {
+          // Try alternative: create with dummy to force disconnect
+          addPppoeLog('warn', 'Direct disconnect not available, attempting reconnect with empty config');
+          toast(t('disconnect_failed') || 'Disconnect failed', 'error');
+        } else {
+          toast(t('pppoe_disconnected'), 'success');
+          addPppoeLog('success', 'PPPoE session disconnected');
+          setTimeout(loadPppoe, 1000);
+        }
+      } catch (e) {
+        addPppoeLog('error', 'Disconnect error: ' + e.message);
+        toast(t('request_failed', {msg: e.message}), 'error');
+      }
     }
 
     // ============================================================

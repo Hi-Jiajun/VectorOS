@@ -28,9 +28,11 @@
 
   // Alias form
   let aliasForm: any = { name: '', type: 'host', entries: '', description: '', refresh_interval: 0 };
+  let editingAliasName: string | null = null;
 
   // Schedule form
   let scheduleForm: any = { name: '', description: '', time_ranges: [{ day: 1, start: '08:00', end: '17:00' }] };
+  let editingScheduleName: string | null = null;
 
   // GeoIP form
   let geoipForm: any = { enabled: false, default_action: 'block', blocked_countries: '', allowed_countries: '' };
@@ -49,7 +51,7 @@
 
   function resetRuleForm() {
     return {
-      action: 'pass', direction: 'both', protocol: 'ip',
+      name: '', action: 'pass', direction: 'both', protocol: 'ip',
       src_ip: '', dst_ip: '', src_port: '', dst_port: '',
       src_alias: '', dst_alias: '', src_port_alias: '', dst_port_alias: '',
       group: '', schedule: '', log: false, description: '', dscp: '',
@@ -100,6 +102,7 @@
     const payload: any = { ...ruleForm };
     if (ruleForm.src_port) payload.src_port = ruleForm.src_port;
     if (ruleForm.dst_port) payload.dst_port = ruleForm.dst_port;
+    if (!ruleForm.name) delete payload.name;
     if (!ruleForm.src_alias) delete payload.src_alias;
     if (!ruleForm.dst_alias) delete payload.dst_alias;
     if (!ruleForm.src_port_alias) delete payload.src_port_alias;
@@ -134,6 +137,7 @@
   function editRule(rule: any) {
     editingRuleId = rule.id;
     ruleForm = {
+      name: rule.name || '',
       action: rule.action,
       direction: rule.direction || 'both',
       protocol: rule.protocol || 'ip',
@@ -248,6 +252,41 @@
     else { success = `Alias '${aliasForm.name}' created`; aliasForm = { name: '', type: 'host', entries: '', description: '', refresh_interval: 0 }; await fetchAll(); }
   }
 
+  function editAlias(alias: any) {
+    editingAliasName = alias.name;
+    aliasForm = {
+      name: alias.name,
+      type: alias.type || 'host',
+      entries: (alias.entries || []).join(', '),
+      description: alias.description || '',
+      refresh_interval: alias.refresh_interval || 0,
+    };
+    activeTab = 'aliases';
+  }
+
+  async function saveAlias() {
+    if (!aliasForm.name || !aliasForm.type) { error = 'Name and type required'; return; }
+    error = ''; success = '';
+    const entries = aliasForm.entries.split(/[,\n]/).map((e: string) => e.trim()).filter((e: string) => e);
+    const res = await fetch('/api/firewall/aliases/add', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...aliasForm, entries })
+    });
+    const data = await res.json();
+    if (data.error) error = data.error;
+    else {
+      success = editingAliasName ? `Alias '${aliasForm.name}' updated` : `Alias '${aliasForm.name}' created`;
+      aliasForm = { name: '', type: 'host', entries: '', description: '', refresh_interval: 0 };
+      editingAliasName = null;
+      await fetchAll();
+    }
+  }
+
+  function cancelEditAlias() {
+    editingAliasName = null;
+    aliasForm = { name: '', type: 'host', entries: '', description: '', refresh_interval: 0 };
+  }
+
   async function deleteAlias(name: string) {
     if (!confirm(`Delete alias '${name}'?`)) return;
     const res = await fetch(`/api/firewall/aliases/${encodeURIComponent(name)}/delete`, { method: 'POST' });
@@ -282,6 +321,38 @@
     const data = await res.json();
     if (data.error) error = data.error;
     else { success = `Schedule '${scheduleForm.name}' created`; scheduleForm = { name: '', description: '', time_ranges: [{ day: 1, start: '08:00', end: '17:00' }] }; await fetchAll(); }
+  }
+
+  function editSchedule(sched: any) {
+    editingScheduleName = sched.name;
+    scheduleForm = {
+      name: sched.name,
+      description: sched.description || '',
+      time_ranges: (sched.time_ranges || []).map((tr: any) => ({ day: tr.day, start: tr.start, end: tr.end })),
+    };
+    activeTab = 'schedules';
+  }
+
+  async function saveSchedule() {
+    if (!scheduleForm.name) { error = 'Schedule name required'; return; }
+    error = ''; success = '';
+    const res = await fetch('/api/firewall/schedules/add', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scheduleForm)
+    });
+    const data = await res.json();
+    if (data.error) error = data.error;
+    else {
+      success = editingScheduleName ? `Schedule '${scheduleForm.name}' updated` : `Schedule '${scheduleForm.name}' created`;
+      scheduleForm = { name: '', description: '', time_ranges: [{ day: 1, start: '08:00', end: '17:00' }] };
+      editingScheduleName = null;
+      await fetchAll();
+    }
+  }
+
+  function cancelEditSchedule() {
+    editingScheduleName = null;
+    scheduleForm = { name: '', description: '', time_ranges: [{ day: 1, start: '08:00', end: '17:00' }] };
   }
 
   async function deleteSchedule(name: string) {
@@ -411,7 +482,7 @@
             {firewallStatus.enabled ? 'ENABLED' : 'DISABLED'}
           </span>
           <span class="fw-policy">Default: {firewallStatus.default_policy || 'block'}</span>
-          <span class="fw-count">{firewallStatus.total_rules || 0} rules</span>
+          <span class="fw-count">{firewallStatus.active_rules ?? rules.filter(r => r.enabled).length}/{firewallStatus.total_rules ?? rules.length} rules active</span>
         {/if}
       </div>
     </div>
@@ -464,6 +535,10 @@
       <form on:submit|preventDefault={saveRule}>
         <div class="form-grid-4">
           <div class="form-group">
+            <label>Rule Name</label>
+            <input type="text" bind:value={ruleForm.name} placeholder="e.g. allow-ssh" />
+          </div>
+          <div class="form-group">
             <label>Action</label>
             <select bind:value={ruleForm.action}>
               <option value="pass">Pass (Allow)</option>
@@ -487,15 +562,6 @@
               {/each}
             </select>
           </div>
-          <div class="form-group">
-            <label>DSCP</label>
-            <select bind:value={ruleForm.dscp}>
-              <option value="">None</option>
-              {#each dscpOptions.filter(d => d) as d}
-                <option value={d}>{d.toUpperCase()}</option>
-              {/each}
-            </select>
-          </div>
         </div>
 
         <div class="form-grid-4">
@@ -514,6 +580,18 @@
           <div class="form-group">
             <label>Destination Port / Alias</label>
             <input type="text" bind:value={ruleForm.dst_port} placeholder="Port or alias" />
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-group">
+            <label>DSCP</label>
+            <select bind:value={ruleForm.dscp}>
+              <option value="">None</option>
+              {#each dscpOptions.filter(d => d) as d}
+                <option value={d}>{d.toUpperCase()}</option>
+              {/each}
+            </select>
           </div>
         </div>
 
@@ -616,6 +694,7 @@
             <span class="col-drag"></span>
             <span class="col-enable"></span>
             <span class="col-order">#</span>
+            <span class="col-name">Name</span>
             <span class="col-action">Action</span>
             <span class="col-dir">Dir</span>
             <span class="col-proto">Proto</span>
@@ -653,6 +732,7 @@
                 </button>
               </span>
               <span class="col-order">{i + 1}</span>
+              <span class="col-name">{rule.name || '-'}</span>
               <span class="col-action">
                 <span class="action-badge" class:act-pass={rule.action === 'pass'} class:act-block={rule.action === 'block'} class:act-reject={rule.action === 'reject'}>
                   {rule.action === 'pass' ? 'PASS' : rule.action === 'block' ? 'BLOCK' : 'REJECT'}
@@ -749,12 +829,12 @@
   <!-- ═══════════════════════════════════════════════════════════════ -->
   {#if activeTab === 'aliases' && !loading}
     <div class="fw-card">
-      <h2>Add Alias</h2>
-      <form on:submit|preventDefault={addAlias}>
+      <h2>{editingAliasName ? `Edit Alias '${editingAliasName}'` : 'Add Alias'}</h2>
+      <form on:submit|preventDefault={saveAlias}>
         <div class="form-grid-4">
           <div class="form-group">
             <label>Name</label>
-            <input type="text" bind:value={aliasForm.name} placeholder="e.g. blocked-ips" />
+            <input type="text" bind:value={aliasForm.name} placeholder="e.g. blocked-ips" disabled={editingAliasName !== null} />
           </div>
           <div class="form-group">
             <label>Type</label>
@@ -778,7 +858,12 @@
           <label>Entries (comma or newline separated{aliasForm.type === 'url' ? ' -- one URL per line' : ''})</label>
           <textarea bind:value={aliasForm.entries} rows="4" placeholder={aliasForm.type === 'url' ? 'https://example.com/blocklist.txt' : aliasForm.type === 'port' ? '80, 443, 8080-8090' : '192.168.1.0/24, 10.0.0.0/8'}></textarea>
         </div>
-        <button type="submit" class="btn-primary">Add Alias</button>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">{editingAliasName ? 'Update Alias' : 'Add Alias'}</button>
+          {#if editingAliasName !== null}
+            <button type="button" class="btn-cancel" on:click={cancelEditAlias}>Cancel</button>
+          {/if}
+        </div>
       </form>
     </div>
 
@@ -811,6 +896,7 @@
                     </span>
                   </td>
                   <td class="ops-cell">
+                    <button class="btn-small" on:click={() => editAlias(a)}>Edit</button>
                     {#if a.type === 'url'}
                       <button class="btn-small" on:click={() => refreshAlias(a.name)}>Refresh</button>
                     {/if}
@@ -830,12 +916,12 @@
   <!-- ═══════════════════════════════════════════════════════════════ -->
   {#if activeTab === 'schedules' && !loading}
     <div class="fw-card">
-      <h2>Add Schedule</h2>
-      <form on:submit|preventDefault={addSchedule}>
+      <h2>{editingScheduleName ? `Edit Schedule '${editingScheduleName}'` : 'Add Schedule'}</h2>
+      <form on:submit|preventDefault={saveSchedule}>
         <div class="form-grid-3">
           <div class="form-group">
             <label>Name</label>
-            <input type="text" bind:value={scheduleForm.name} placeholder="e.g. business-hours" />
+            <input type="text" bind:value={scheduleForm.name} placeholder="e.g. business-hours" disabled={editingScheduleName !== null} />
           </div>
           <div class="form-group">
             <label>Description</label>
@@ -868,7 +954,10 @@
         <button type="button" class="btn-small" on:click={addTimeRange}>+ Add Time Range</button>
 
         <div class="form-actions" style="margin-top: 1rem;">
-          <button type="submit" class="btn-primary">Create Schedule</button>
+          <button type="submit" class="btn-primary">{editingScheduleName ? 'Update Schedule' : 'Create Schedule'}</button>
+          {#if editingScheduleName !== null}
+            <button type="button" class="btn-cancel" on:click={cancelEditSchedule}>Cancel</button>
+          {/if}
         </div>
       </form>
     </div>
@@ -899,6 +988,7 @@
                     </span>
                   </td>
                   <td>
+                    <button class="btn-small" on:click={() => editSchedule(s)}>Edit</button>
                     <button class="btn-delete-small" on:click={() => deleteSchedule(s.name)}>Delete</button>
                   </td>
                 </tr>
@@ -1307,7 +1397,7 @@
   .rules-table { font-size: 0.85rem; overflow-x: auto; }
   .rule-header, .rule-row {
     display: grid;
-    grid-template-columns: 30px 45px 35px 70px 45px 50px 1fr 1fr 120px 90px 1fr 70px;
+    grid-template-columns: 30px 45px 35px 100px 70px 45px 50px 1fr 1fr 120px 90px 1fr 70px;
     gap: 0.3rem; padding: 0.5rem 0.3rem; border-bottom: 1px solid #2a2a3e;
     align-items: center;
   }
@@ -1393,7 +1483,7 @@
 
   @media (max-width: 1200px) {
     .form-grid-4 { grid-template-columns: 1fr 1fr; }
-    .rule-header, .rule-row { grid-template-columns: 25px 40px 30px 60px 40px 40px 1fr 1fr 90px 60px; }
+    .rule-header, .rule-row { grid-template-columns: 25px 40px 30px 80px 60px 40px 40px 1fr 1fr 90px 60px; }
     .col-group, .col-desc { display: none; }
   }
   @media (max-width: 800px) {
