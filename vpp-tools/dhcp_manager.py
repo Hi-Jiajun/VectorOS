@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""VectorOS DHCP Manager - Python wrapper for VPP DHCP API"""
+"""VectorOS DHCP Manager - dnsmasq wrapper"""
 
 import sys
 import json
 import argparse
 import subprocess
+import os
 
-def run_vppctl(cmd):
-    """Run a vppctl command"""
+def run_cmd(cmd):
+    """Run a command"""
     try:
         result = subprocess.run(
-            ['vppctl'] + cmd.split(),
+            cmd.split(),
             capture_output=True,
             text=True,
             timeout=10
@@ -21,43 +22,71 @@ def run_vppctl(cmd):
 
 def dhcp_enable(interface='lan0', start_ip='192.168.1.100', end_ip='192.168.1.200',
                 gateway='192.168.1.1', lease_time=86400):
-    """Enable DHCP server on interface"""
-    errors = []
+    """Enable DHCP server using dnsmasq"""
+    # Create dnsmasq config
+    config = f"""# VectorOS DHCP Configuration
+interface={interface}
+bind-interfaces
+dhcp-range={start_ip},{end_ip},{lease_time}s
+dhcp-option=option:router,{gateway}
+dhcp-option=option:dns-server,8.8.8.8,1.1.1.1
+log-dhcp
+"""
 
-    # Set interface IP address if not set
-    stdout, stderr, rc = run_vppctl(f'set interface ip address {interface} {gateway}/24')
-    if rc != 0 and 'already' not in stderr.lower():
-        errors.append(f'IP address: {stderr}')
+    # Write config
+    config_path = '/etc/dnsmasq.d/vectoros.conf'
+    try:
+        with open(config_path, 'w') as f:
+            f.write(config)
+    except Exception as e:
+        return {'error': f'Failed to write config: {e}'}
 
-    # Enable DHCP server
-    stdout, stderr, rc = run_vppctl(f'dhcp server add-del {interface} start {start_ip} end {end_ip} gateway {gateway} lease {lease_time}')
+    # Start dnsmasq
+    stdout, stderr, rc = run_cmd('systemctl restart dnsmasq')
     if rc != 0:
-        errors.append(f'DHCP server: {stderr}')
+        # Try to start dnsmasq directly
+        stdout, stderr, rc = run_cmd('dnsmasq --conf-file=/etc/dnsmasq.d/vectoros.conf')
+        if rc != 0:
+            return {'error': f'Failed to start dnsmasq: {stderr}'}
 
-    if errors:
-        return {'error': '; '.join(errors)}
     return {'status': 'ok', 'message': 'DHCP server enabled'}
 
-def dhcp_disable(interface='lan0'):
-    """Disable DHCP server on interface"""
-    stdout, stderr, rc = run_vppctl(f'dhcp server add-del {interface} del')
+def dhcp_disable():
+    """Disable DHCP server"""
+    stdout, stderr, rc = run_cmd('systemctl stop dnsmasq')
     if rc != 0:
-        return {'error': stderr}
+        return {'error': f'Failed to stop dnsmasq: {stderr}'}
+
+    # Remove config
+    try:
+        os.remove('/etc/dnsmasq.d/vectoros.conf')
+    except:
+        pass
+
     return {'status': 'ok', 'message': 'DHCP server disabled'}
 
 def dhcp_show():
     """Show DHCP server status and leases"""
-    result = {'servers': [], 'leases': []}
+    result = {'status': 'unknown', 'leases': []}
 
-    # Get DHCP servers
-    stdout, stderr, rc = run_vppctl('show dhcp server')
-    if rc == 0 and stdout:
-        result['servers'] = stdout.split('\n')
+    # Check if dnsmasq is running
+    stdout, stderr, rc = run_cmd('systemctl is-active dnsmasq')
+    result['status'] = 'active' if rc == 0 else 'inactive'
 
-    # Get DHCP leases
-    stdout, stderr, rc = run_vppctl('show dhcp lease')
-    if rc == 0 and stdout:
-        result['leases'] = stdout.split('\n')
+    # Read leases file
+    try:
+        with open('/var/lib/misc/dnsmasq.leases', 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) >= 4:
+                    result['leases'].append({
+                        'mac': parts[1],
+                        'ip': parts[2],
+                        'hostname': parts[3],
+                        'expires': parts[0]
+                    })
+    except FileNotFoundError:
+        pass
 
     return result
 
@@ -77,7 +106,7 @@ def main():
             result = dhcp_enable(args.interface, args.start_ip, args.end_ip,
                                args.gateway, args.lease_time)
         elif args.action == 'disable':
-            result = dhcp_disable(args.interface)
+            result = dhcp_disable()
         elif args.action == 'show':
             result = dhcp_show()
 
