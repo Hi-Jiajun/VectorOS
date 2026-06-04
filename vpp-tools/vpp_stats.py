@@ -138,17 +138,19 @@ def get_memory():
     if rc != 0:
         return {"total_mb": 0, "used_mb": 0, "free_mb": 0, "percent": 0}
 
+    # Look for the main heap (first "total:" line)
     for line in output.split("\n"):
-        if "total:" in line and "used:" in line:
+        if "total:" in line and "used:" in line and "free:" in line:
             parts = line.split()
             try:
-                total_idx = parts.index("total:") + 1
-                used_idx = parts.index("used:") + 1
-                free_idx = parts.index("free:") + 1
+                # Parse "total: 512.00M, used: 320.76M, free: 191.24M"
+                total_str = parts[1].rstrip("Mm,")
+                used_str = parts[3].rstrip("Mm,")
+                free_str = parts[5].rstrip("Mm,")
 
-                total = float(parts[total_idx].rstrip("Mm"))
-                used = float(parts[used_idx].rstrip("Mm"))
-                free = float(parts[free_idx].rstrip("Mm"))
+                total = float(total_str)
+                used = float(used_str)
+                free = float(free_str)
 
                 return {
                     "total_mb": total,
