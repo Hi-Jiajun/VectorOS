@@ -1,5 +1,7 @@
 pub mod conntrack;
+pub mod config_cli;
 pub mod dhcp;
+pub mod diag;
 pub mod dns;
 pub mod firewall;
 pub mod flow;

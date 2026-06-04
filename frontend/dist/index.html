@@ -1874,7 +1874,7 @@
             <span class="nav-icon">🔍</span><span data-i18n="dns">DNS 转发</span>
           </a>
           <a class="nav-item" data-page="nat" onclick="nav('nat')">
-            <span class="nav-icon">🔄</span><span>NAT</span>
+            <span class="nav-icon">🔄</span><span data-i18n="nat">NAT</span>
           </a>
         </div>
         <div class="nav-group">
@@ -1887,7 +1887,7 @@
 
       <div class="sidebar-foot">
         <span class="pulse" id="vpp-pulse"></span>
-        <span class="foot-text">VPP <b id="vpp-status-text">Running</b></span>
+        <span class="foot-text">VPP <b id="vpp-status-text" data-i18n="running">Running</b></span>
       </div>
     </aside>
 
@@ -1900,18 +1900,18 @@
         <div class="hdr-right">
           <div class="conn-status">
             <span class="conn-dot" id="conn-dot"></span>
-            <span id="conn-text">Connected</span>
+            <span id="conn-text" data-i18n="connected">Connected</span>
           </div>
           <div class="hdr-chip" id="health-chip">
             <span class="dot"></span>
-            <span id="health-text">Healthy</span>
+            <span id="health-text" data-i18n="healthy">Healthy</span>
           </div>
           <label class="auto-refresh-toggle" title="Auto-refresh every 2 seconds">
             <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
             <span class="toggle-track"></span>
-            <span class="auto-refresh-label">Auto</span>
+            <span class="auto-refresh-label" data-i18n="auto">Auto</span>
           </label>
-          <button class="hdr-btn" onclick="refreshAll()">🔄 Refresh</button>
+          <button class="hdr-btn" onclick="refreshAll()" data-i18n="refresh">🔄 Refresh</button>
           <button class="hdr-btn" id="lang-btn" onclick="toggleLang()" title="切换语言">中/EN</button>
         </div>
       </header>
@@ -1922,7 +1922,7 @@
           <!-- System Health Bar -->
           <div class="health-bar">
             <div class="health-dot-lg ok" id="health-dot-lg"></div>
-            <span class="health-label" id="health-label">System Healthy</span>
+            <span class="health-label" id="health-label" data-i18n="system_healthy">System Healthy</span>
             <span class="health-detail" id="health-detail">All services operating normally</span>
             <div class="health-chips" id="health-chips"></div>
           </div>
@@ -1932,36 +1932,36 @@
             <div class="mini-stat accent">
               <div class="ms-icon">⏱️</div>
               <div class="ms-val uptime-counter" id="ms-uptime">--:--:--</div>
-              <div class="ms-label">System Uptime</div>
+              <div class="ms-label" data-i18n="system_uptime">System Uptime</div>
             </div>
             <div class="mini-stat green">
               <div class="ms-icon">🔌</div>
               <div class="ms-val" id="ms-pppoe-state">--</div>
-              <div class="ms-label">PPPoE Session</div>
+              <div class="ms-label" data-i18n="pppoe_session">PPPoE Session</div>
               <div class="ms-sub" id="ms-pppoe-sub">--</div>
             </div>
             <div class="mini-stat purple">
               <div class="ms-icon">📡</div>
               <div class="ms-val" id="ms-dhcp-count">--</div>
-              <div class="ms-label">DHCP Leases</div>
+              <div class="ms-label" data-i18n="dhcp_leases">DHCP Leases</div>
               <div class="ms-sub" id="ms-dhcp-sub">active clients</div>
             </div>
             <div class="mini-stat cyan">
               <div class="ms-icon">🔍</div>
               <div class="ms-val" id="ms-dns-hits">--</div>
-              <div class="ms-label">DNS Cache</div>
+              <div class="ms-label" data-i18n="dns_cache">DNS Cache</div>
               <div class="ms-sub" id="ms-dns-sub">forwarder active</div>
             </div>
             <div class="mini-stat orange">
               <div class="ms-icon">🔄</div>
               <div class="ms-val" id="ms-nat-sessions">--</div>
-              <div class="ms-label">NAT Sessions</div>
+              <div class="ms-label" data-i18n="nat_sessions">NAT Sessions</div>
               <div class="ms-sub" id="ms-nat-sub">inside/outside</div>
             </div>
             <div class="mini-stat accent">
               <div class="ms-icon">🌐</div>
               <div class="ms-val" id="ms-ifaces">--</div>
-              <div class="ms-label">Interfaces</div>
+              <div class="ms-label" data-i18n="interfaces_label">Interfaces</div>
               <div class="ms-sub" id="ms-ifaces-sub">total</div>
             </div>
           </div>
@@ -1970,7 +1970,7 @@
           <div class="chart-row">
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">📊 CPU Usage (60s history)</div>
+                <div class="mc-title" data-i18n="cpu_usage_60s">📊 CPU Usage (60s history)</div>
                 <div class="mc-value" id="mc-cpu-val">--%</div>
               </div>
               <div class="bar-chart-full" id="cpu-chart-full"></div>
@@ -1978,7 +1978,7 @@
             </div>
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">🧠 Memory Usage (60s history)</div>
+                <div class="mc-title" data-i18n="memory_usage_60s">🧠 Memory Usage (60s history)</div>
                 <div class="mc-value" id="mc-mem-val">--%</div>
               </div>
               <div class="bar-chart-full" id="mem-chart-full"></div>
@@ -1990,7 +1990,7 @@
           <div class="chart-row">
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">📈 Network Throughput</div>
+                <div class="mc-title" data-i18n="network_throughput">📈 Network Throughput</div>
                 <div class="mc-value" id="mc-tp-val">-- <small>rx / tx</small></div>
               </div>
               <div class="throughput-chart" id="tp-chart"></div>
@@ -2002,7 +2002,7 @@
             </div>
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">🔄 NAT Sessions (60s history)</div>
+                <div class="mc-title" data-i18n="nat_sessions_chart">🔄 NAT Sessions (60s history)</div>
                 <div class="mc-value" id="mc-nat-val">--</div>
               </div>
               <div class="bar-chart-full" id="nat-chart-full"></div>
@@ -2014,7 +2014,7 @@
           <div class="chart-row-3">
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">🔌 PPPoE Uptime</div>
+                <div class="mc-title" data-i18n="pppoe_uptime_chart">🔌 PPPoE Uptime</div>
                 <div class="mc-value" id="mc-pppoe-val">--<small>s</small></div>
               </div>
               <div class="bar-chart-full" id="pppoe-chart-full"></div>
@@ -2022,7 +2022,7 @@
             </div>
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">💾 Disk Usage</div>
+                <div class="mc-title" data-i18n="disk_usage">💾 Disk Usage</div>
                 <div class="mc-value" id="mc-disk-val">--%</div>
               </div>
               <div class="donut-wrap">
@@ -2032,7 +2032,7 @@
             </div>
             <div class="monitor-chart">
               <div class="mc-head">
-                <div class="mc-title">⚠️ Alerts</div>
+                <div class="mc-title" data-i18n="alerts">⚠️ Alerts</div>
                 <span class="alerts-count zero" id="alert-count">0</span>
               </div>
               <div class="alerts-body" id="alerts-body">
@@ -2050,15 +2050,15 @@
           <div class="grid-2">
             <div class="card">
               <div class="card-head">
-                <h3>📋 System Information</h3>
-                <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">Refresh</button>
+                <h3 data-i18n="system_information">📋 System Information</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadDashboard()" data-i18n="refresh">Refresh</button>
               </div>
               <div class="card-body" id="sys-info">
                 <div class="loading"><div class="spinner"></div>Loading...</div>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><h3>⚡ Quick Actions</h3></div>
+              <div class="card-head"><h3 data-i18n="quick_actions">⚡ Quick Actions</h3></div>
               <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
                 <div class="action" onclick="nav('pppoe')">
                   <div class="action-ico">🔌</div>
@@ -2081,43 +2081,43 @@
         <div id="p-pppoe" class="page">
           <div class="grid-2">
             <div class="card">
-              <div class="card-head"><h3>⚙️ PPPoE Configuration</h3></div>
+              <div class="card-head"><h3 data-i18n="pppoe_configuration">⚙️ PPPoE Configuration</h3></div>
               <div class="card-body">
                 <form onsubmit="savePppoe(event)">
                   <div class="form-group">
-                    <label class="form-label">Username</label>
+                    <label class="form-label" data-i18n="username">Username</label>
                     <input type="text" class="form-input" id="pu" placeholder="ISP username" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Password</label>
+                    <label class="form-label" data-i18n="password">Password</label>
                     <input type="password" class="form-input" id="pp" placeholder="ISP password" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">WAN Interface</label>
+                    <label class="form-label" data-i18n="wan_interface">WAN Interface</label>
                     <select class="form-select" id="pi">
                       <option value="enp1s0">enp1s0 -- CX4 LX Port 1</option>
                       <option value="enp2s0">enp2s0 -- CX4 LX Port 2</option>
                       <option value="enp3s0">enp3s0 -- CX4 LX Port 3</option>
                     </select>
-                    <div class="form-hint">Select SR-IOV VF interface</div>
+                    <div class="form-hint" data-i18n="select_sriov">Select SR-IOV VF interface</div>
                   </div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">MTU</label><input type="number" class="form-input" id="pmtu" value="1492"></div>
-                    <div class="form-group"><label class="form-label">MRU</label><input type="number" class="form-input" id="pmru" value="1492"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="mtu">MTU</label><input type="number" class="form-input" id="pmtu" value="1492"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="mru">MRU</label><input type="number" class="form-input" id="pmru" value="1492"></div>
                   </div>
                   <div class="form-group">
-                    <label class="form-check"><input type="checkbox" id="pdns" checked><span>Use ISP DNS</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr4" checked><span>Add IPv4 default route</span></label>
-                    <label class="form-check"><input type="checkbox" id="pr6" checked><span>Add IPv6 default route</span></label>
+                    <label class="form-check"><input type="checkbox" id="pdns" checked><span data-i18n="use_isp_dns">Use ISP DNS</span></label>
+                    <label class="form-check"><input type="checkbox" id="pr4" checked><span data-i18n="add_ipv4_default_route">Add IPv4 default route</span></label>
+                    <label class="form-check"><input type="checkbox" id="pr6" checked><span data-i18n="add_ipv6_default_route">Add IPv6 default route</span></label>
                   </div>
-                  <button type="submit" class="btn btn-primary" style="width:100%" id="pppoe-submit-btn">💾 Save & Connect</button>
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="pppoe-submit-btn" data-i18n="save_and_connect">💾 Save & Connect</button>
                 </form>
               </div>
             </div>
             <div class="card">
               <div class="card-head">
-                <h3>📊 Connection Status</h3>
-                <button class="btn btn-ghost btn-sm" onclick="loadPppoe()">Refresh</button>
+                <h3 data-i18n="connection_status">📊 Connection Status</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadPppoe()" data-i18n="refresh">Refresh</button>
               </div>
               <div class="card-body" id="pppoe-el">
                 <div class="loading"><div class="spinner"></div>Loading...</div>
@@ -2130,11 +2130,11 @@
         <div id="p-interfaces" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🌐 Network Interfaces</h3>
-              <button class="btn btn-ghost btn-sm" onclick="loadIfaces()">Refresh</button>
+              <h3 data-i18n="interface_header">🌐 Network Interfaces</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadIfaces()" data-i18n="refresh">Refresh</button>
             </div>
             <table>
-              <thead><tr><th>Interface</th><th>Type</th><th>Status</th><th>MTU</th><th>Description</th><th>Actions</th></tr></thead>
+              <thead><tr><th data-i18n="interface">Interface</th><th data-i18n="type">Type</th><th data-i18n="status">Status</th><th data-i18n="mtu_label">MTU</th><th data-i18n="description">Description</th><th data-i18n="actions">Actions</th></tr></thead>
               <tbody id="if-tb"><tr><td colspan="6"><div class="loading"><div class="spinner"></div>Loading...</div></td></tr></tbody>
             </table>
           </div>
@@ -2144,11 +2144,11 @@
         <div id="p-routes" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🛣️ Routing Table</h3>
-              <button class="btn btn-ghost btn-sm" onclick="loadRoutes()">Refresh</button>
+              <h3 data-i18n="routing_table">🛣️ Routing Table</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadRoutes()" data-i18n="refresh">Refresh</button>
             </div>
             <table>
-              <thead><tr><th>Destination</th><th>Next Hop</th><th>Interface</th><th>Distance</th><th>Type</th></tr></thead>
+              <thead><tr><th data-i18n="destination">Destination</th><th data-i18n="next_hop">Next Hop</th><th data-i18n="interface_label">Interface</th><th data-i18n="distance">Distance</th><th data-i18n="type_label">Type</th></tr></thead>
               <tbody id="rt-tb"><tr><td colspan="5"><div class="loading"><div class="spinner"></div>Loading...</div></td></tr></tbody>
             </table>
           </div>
@@ -2158,8 +2158,8 @@
         <div id="p-dhcp" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>📡 DHCP Service</h3>
-              <button class="btn btn-ghost btn-sm" onclick="loadDhcp()">Refresh</button>
+              <h3 data-i18n="dhcp_service">📡 DHCP Service</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadDhcp()" data-i18n="refresh">Refresh</button>
             </div>
             <div class="card-body" id="dhcp-el">
               <div class="loading"><div class="spinner"></div>Loading...</div>
@@ -2171,8 +2171,8 @@
         <div id="p-dns" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🔍 DNS Forwarding</h3>
-              <button class="btn btn-ghost btn-sm" onclick="loadDns()">Refresh</button>
+              <h3 data-i18n="dns_forwarding">🔍 DNS Forwarding</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadDns()" data-i18n="refresh">Refresh</button>
             </div>
             <div class="card-body" id="dns-el">
               <div class="loading"><div class="spinner"></div>Loading...</div>
@@ -2184,8 +2184,8 @@
         <div id="p-nat" class="page">
           <div class="card">
             <div class="card-head">
-              <h3>🔄 NAT Status</h3>
-              <button class="btn btn-ghost btn-sm" onclick="loadNat()">Refresh</button>
+              <h3 data-i18n="nat_status">🔄 NAT Status</h3>
+              <button class="btn btn-ghost btn-sm" onclick="loadNat()" data-i18n="refresh">Refresh</button>
             </div>
             <div class="card-body" id="nat-el">
               <div class="loading"><div class="spinner"></div>Loading...</div>
@@ -2202,8 +2202,8 @@
                 <span class="badge b-green"><span class="dot"></span>Running</span>
               </div>
               <div class="svc-body" id="svc-vectoros">
-                <div class="svc-row"><span class="k">Version</span><span class="v" id="svc-ver">--</span></div>
-                <div class="svc-row"><span class="k">API Port</span><span class="v">8080</span></div>
+                <div class="svc-row"><span class="k" data-i18n="version">Version</span><span class="v" id="svc-ver">--</span></div>
+                <div class="svc-row"><span class="k" data-i18n="api_port">API Port</span><span class="v">8080</span></div>
               </div>
             </div>
             <div class="service-card">
@@ -2212,8 +2212,8 @@
                 <span class="badge b-green" id="svc-vpp-badge"><span class="dot"></span>Running</span>
               </div>
               <div class="svc-body" id="svc-vpp">
-                <div class="svc-row"><span class="k">Version</span><span class="v" id="svc-vpp-ver">--</span></div>
-                <div class="svc-row"><span class="k">Interfaces</span><span class="v" id="svc-vpp-ifaces">--</span></div>
+                <div class="svc-row"><span class="k" data-i18n="version">Version</span><span class="v" id="svc-vpp-ver">--</span></div>
+                <div class="svc-row"><span class="k" data-i18n="vpp_interfaces">Interfaces</span><span class="v" id="svc-vpp-ifaces">--</span></div>
               </div>
             </div>
             <div class="service-card">
@@ -2222,8 +2222,8 @@
                 <span class="badge b-neutral" id="svc-pppoe-badge"><span class="dot"></span>Idle</span>
               </div>
               <div class="svc-body" id="svc-pppoe">
-                <div class="svc-row"><span class="k">State</span><span class="v" id="svc-pppoe-state">--</span></div>
-                <div class="svc-row"><span class="k">Interface</span><span class="v" id="svc-pppoe-iface">--</span></div>
+                <div class="svc-row"><span class="k" data-i18n="state_label">State</span><span class="v" id="svc-pppoe-state">--</span></div>
+                <div class="svc-row"><span class="k" data-i18n="pppoe_interface_label">Interface</span><span class="v" id="svc-pppoe-iface">--</span></div>
               </div>
             </div>
           </div>
@@ -2231,15 +2231,15 @@
           <div class="grid-2">
             <div class="card">
               <div class="card-head">
-                <h3>📊 System Resources</h3>
-                <button class="btn btn-ghost btn-sm" onclick="loadSystem()">Refresh</button>
+                <h3 data-i18n="system_resources">📊 System Resources</h3>
+                <button class="btn btn-ghost btn-sm" onclick="loadSystem()" data-i18n="refresh">Refresh</button>
               </div>
               <div class="card-body" id="sys-el">
                 <div class="loading"><div class="spinner"></div>Loading...</div>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><h3>🔗 API Endpoints</h3></div>
+              <div class="card-head"><h3 data-i18n="api_endpoints">🔗 API Endpoints</h3></div>
               <div class="card-body">
                 <div class="info-row"><span class="info-k">/api/health</span><span class="badge b-green">GET</span></div>
                 <div class="info-row"><span class="info-k">/api/system</span><span class="badge b-green">GET</span></div>
@@ -2356,6 +2356,7 @@
         network_throughput: '网络吞吐量',
         rx_in: '接收（入）',
         tx_out: '发送（出）',
+        rx_tx_label: '收 / 发',
         nat_sessions_chart: 'NAT 会话（60秒历史）',
         sessions: '会话',
         pppoe_uptime_chart: 'PPPoE 运行时间',
@@ -2485,6 +2486,7 @@
         loading_routes: '正在加载路由...',
         route_default: '默认',
         route_connected: '已连接',
+        route_direct: '直连',
         route_reserved: '保留',
 
         // DHCP page
@@ -2581,6 +2583,15 @@
         seconds: '秒',
         minutes: '分钟',
         hours: '小时',
+
+        // Alert types
+        alert_warn: '警告',
+        alert_err: '错误',
+        alert_info: '信息',
+
+        // Misc
+        route_direct: '直连',
+        no_ip: '无 IP',
       },
       en: {
         // Navigation
@@ -2645,6 +2656,7 @@
         network_throughput: 'Network Throughput',
         rx_in: 'RX (in)',
         tx_out: 'TX (out)',
+        rx_tx_label: 'rx / tx',
         nat_sessions_chart: 'NAT Sessions (60s history)',
         sessions: 'sessions',
         pppoe_uptime_chart: 'PPPoE Uptime',
@@ -2774,6 +2786,7 @@
         loading_routes: 'Loading routes...',
         route_default: 'Default',
         route_connected: 'Connected',
+        route_direct: 'Direct',
         route_reserved: 'Reserved',
 
         // DHCP page
@@ -2870,6 +2883,15 @@
         seconds: 's',
         minutes: 'm',
         hours: 'h',
+
+        // Alert types
+        alert_warn: 'WARN',
+        alert_err: 'ERR',
+        alert_info: 'INFO',
+
+        // Misc
+        route_direct: 'Direct',
+        no_ip: 'No IP',
       }
     };
 
@@ -2890,16 +2912,18 @@
     }
 
     function applyLang() {
-      // Update navigation labels
-      document.querySelectorAll('.nav-label').forEach(el => {
+      // Update all elements with data-i18n attribute (generic handler)
+      document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.dataset.i18n;
-        if (key) el.textContent = t(key);
-      });
-
-      // Update nav item text
-      document.querySelectorAll('.nav-item span:not(.nav-icon):not(.nav-badge)').forEach(el => {
-        const key = el.dataset.i18n;
-        if (key) el.textContent = t(key);
+        if (key && i18n[currentLang][key]) {
+          // Preserve emoji prefix if present in original text
+          const emojiMatch = el.textContent.match(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u);
+          if (emojiMatch) {
+            el.textContent = emojiMatch[0] + t(key);
+          } else {
+            el.textContent = t(key);
+          }
+        }
       });
 
       // Update header
@@ -2965,6 +2989,24 @@
       const healthDetail = document.getElementById('health-detail');
       if (healthLabel) healthLabel.textContent = t('system_healthy');
       if (healthDetail) healthDetail.textContent = t('all_services_operating', {n: '3'});
+
+      // Mini stat sub labels (set default translated values)
+      const msSubs = [
+        { id: 'ms-pppoe-sub', defaultKey: 'not_configured' },
+        { id: 'ms-dhcp-sub', defaultKey: 'active_clients' },
+        { id: 'ms-dns-sub', defaultKey: 'forwarder_active' },
+        { id: 'ms-nat-sub', defaultKey: 'nat_inside_outside' },
+        { id: 'ms-ifaces-sub', defaultKey: 'total' }
+      ];
+      msSubs.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el && (el.textContent === 'active clients' || el.textContent === 'forwarder active'
+          || el.textContent === 'inside/outside' || el.textContent === 'total'
+          || el.textContent === '活跃客户端' || el.textContent === '转发器已激活'
+          || el.textContent === '内网/外网' || el.textContent === '合计')) {
+          el.textContent = t(item.defaultKey);
+        }
+      });
 
       // Mini stat labels
       const miniLabels = [
@@ -3426,7 +3468,7 @@
           + '<div class="alert-msg">' + escapeHtml(a.message) + '</div>'
           + '<div class="alert-time">' + a.timeStr + '</div>'
           + '</div>'
-          + '<span class="alert-badge ' + a.type + '">' + a.type.toUpperCase() + '</span>'
+          + '<span class="alert-badge ' + a.type + '">' + t('alert_' + a.type) + '</span>'
           + '</div>';
       }).join('');
     }
@@ -3547,7 +3589,7 @@
       if (hasPppoe) {
         const stateMap = { 0: t('discovering'), 1: t('requesting'), 2: t('session') };
         document.getElementById('ms-pppoe-state').textContent = stateMap[pppoeClient.client_state] || t('unknown');
-        document.getElementById('ms-pppoe-sub').textContent = pppoeClient.ipv4_local || 'No IP';
+        document.getElementById('ms-pppoe-sub').textContent = pppoeClient.ipv4_local || t('no_ip');
       } else {
         document.getElementById('ms-pppoe-state').textContent = t('idle');
         document.getElementById('ms-pppoe-sub').textContent = t('not_configured');
@@ -3744,7 +3786,7 @@
       }
       el.innerHTML = html;
 
-      document.getElementById('mc-tp-val').innerHTML = formatThroughput(rxRate) + ' / ' + formatThroughput(txRate) + ' <small>rx / tx</small>';
+      document.getElementById('mc-tp-val').innerHTML = formatThroughput(rxRate) + ' / ' + formatThroughput(txRate) + ' <small>' + t('rx_tx_label') + '</small>';
     }
 
     // ============================================================
@@ -3766,7 +3808,7 @@
         const name = iface.name;
         const state = iface.state || 'down';
         const stateClass = state === 'up' ? 'b-green' : 'b-yellow';
-        const stateText = state === 'up' ? 'UP' : 'DOWN';
+        const stateText = state === 'up' ? t('up') : t('down_state');
 
         // Calculate throughput for this interface
         if (!ifaceHistory[name]) {
@@ -4078,7 +4120,7 @@
 
       document.getElementById('rt-tb').innerHTML = ''
         + '<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">' + t('route_default') + '</span></td></tr>'
-        + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">Direct</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">' + t('route_connected') + '</span></td></tr>'
+        + '<tr><td class="mono">192.168.1.0/24</td><td class="mono">' + t('route_direct') + '</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">' + t('route_connected') + '</span></td></tr>'
         + '<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">' + t('route_reserved') + '</span></td></tr>';
     }
 
@@ -4138,7 +4180,7 @@
         el.innerHTML = ''
           + '<div class="info-row"><span class="info-k">' + t('status') + '</span><span class="badge b-green"><span class="dot"></span> ' + t('enabled') + '</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('upstream_dns') + '</span><span class="info-v">' + (d.upstream || []).join(', ') + '</span></div>'
-          + '<div class="info-row"><span class="info-k">' + t('cache_size') + '</span><span class="info-v">' + d.cache_size + ' entries</span></div>'
+          + '<div class="info-row"><span class="info-k">' + t('cache_size') + '</span><span class="info-v">' + t('cache_entries', {n: d.cache_size || 0}) + '</span></div>'
           + '<div class="info-row"><span class="info-k">' + t('listen_interface') + '</span><span class="info-v">' + d.interface + '</span></div>'
           + '<div style="margin-top:20px;padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius-xs)">'
           + '<p style="font-size:13px;color:var(--green);font-weight:600">✓ ' + t('dns_active_message') + '</p></div>';
@@ -4270,6 +4312,7 @@
     // Initialize
     // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
+      applyLang();
       loadDashboard();
       startAutoRefresh();
     });

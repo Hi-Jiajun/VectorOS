@@ -498,17 +498,190 @@ pub async fn clear_logs() -> Json<Value> {
 #[derive(Debug, Deserialize)]
 pub struct FirewallRuleRequest {
     pub action: String,
+    #[serde(default)]
+    pub direction: String,
+    #[serde(default)]
     pub src_ip: Option<String>,
+    #[serde(default)]
     pub dst_ip: Option<String>,
-    pub src_port: Option<u32>,
-    pub dst_port: Option<u32>,
+    #[serde(default)]
+    pub src_port: Option<String>,
+    #[serde(default)]
+    pub dst_port: Option<String>,
+    #[serde(default)]
+    pub src_alias: Option<String>,
+    #[serde(default)]
+    pub dst_alias: Option<String>,
+    #[serde(default)]
+    pub src_port_alias: Option<String>,
+    #[serde(default)]
+    pub dst_port_alias: Option<String>,
+    #[serde(default)]
     pub protocol: Option<String>,
+    #[serde(default)]
+    pub group: Option<String>,
+    #[serde(default)]
+    pub schedule: Option<String>,
+    #[serde(default)]
+    pub log: Option<bool>,
+    #[serde(default)]
     pub description: Option<String>,
+    #[serde(default)]
+    pub dscp: Option<String>,
+    #[serde(default)]
+    pub log_prefix: Option<String>,
+    #[serde(default)]
+    pub geoip_countries: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct FirewallRuleDelete {
     pub id: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FirewallRuleUpdate {
+    pub id: u32,
+    #[serde(default)]
+    pub action: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub direction: Option<String>,
+    #[serde(default)]
+    pub src_ip: Option<String>,
+    #[serde(default)]
+    pub dst_ip: Option<String>,
+    #[serde(default)]
+    pub src_port: Option<String>,
+    #[serde(default)]
+    pub dst_port: Option<String>,
+    #[serde(default)]
+    pub src_alias: Option<String>,
+    #[serde(default)]
+    pub dst_alias: Option<String>,
+    #[serde(default)]
+    pub src_port_alias: Option<String>,
+    #[serde(default)]
+    pub dst_port_alias: Option<String>,
+    #[serde(default)]
+    pub protocol: Option<String>,
+    #[serde(default)]
+    pub group: Option<String>,
+    #[serde(default)]
+    pub schedule: Option<String>,
+    #[serde(default)]
+    pub log: Option<bool>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub dscp: Option<String>,
+    #[serde(default)]
+    pub geoip_countries: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ReorderRulesReq {
+    pub rule_ids: Vec<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddGroupReq {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default = "default_true_bool")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub interfaces: Vec<String>,
+}
+
+fn default_true_bool() -> bool { true }
+
+#[derive(Debug, Deserialize)]
+pub struct GroupRuleReq {
+    pub rule_id: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddAliasReq {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub alias_type: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default = "default_true_bool")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub entries: Vec<String>,
+    #[serde(default)]
+    pub refresh_interval: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAliasReq {
+    #[serde(default)]
+    pub entries: Option<Vec<String>>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddScheduleReq {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default = "default_true_bool")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub time_ranges: Vec<crate::services::firewall::TimeRange>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeoIpReq {
+    pub enabled: bool,
+    #[serde(default)]
+    pub default_action: String,
+    #[serde(default)]
+    pub blocked_countries: Vec<String>,
+    #[serde(default)]
+    pub allowed_countries: Vec<String>,
+    #[serde(default)]
+    pub db_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShaperIfaceReq {
+    pub interface: String,
+    pub bandwidth: u64,
+    #[serde(default)]
+    pub download: Option<u64>,
+    #[serde(default)]
+    pub upload: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShaperQueueReq {
+    pub name: String,
+    pub weight: u32,
+    pub priority: u32,
+    #[serde(default)]
+    pub dscp: Option<String>,
+    #[serde(default)]
+    pub interface: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct IdsConfigReq {
+    pub enabled: bool,
+    #[serde(default)]
+    pub interfaces: Vec<String>,
+    #[serde(default)]
+    pub rule_categories: Option<std::collections::HashMap<String, bool>>,
 }
 
 pub async fn get_firewall_status() -> Json<Value> {
@@ -521,12 +694,23 @@ pub async fn get_firewall_status() -> Json<Value> {
 pub async fn add_firewall_rule(Json(req): Json<FirewallRuleRequest>) -> Json<Value> {
     let rule_req = crate::services::firewall::AddRuleRequest {
         action: req.action,
+        direction: req.direction,
         src_ip: req.src_ip,
         dst_ip: req.dst_ip,
         src_port: req.src_port,
         dst_port: req.dst_port,
+        src_alias: req.src_alias,
+        dst_alias: req.dst_alias,
+        src_port_alias: req.src_port_alias,
+        dst_port_alias: req.dst_port_alias,
         protocol: req.protocol,
+        group: req.group,
+        schedule: req.schedule,
+        log: req.log,
         description: req.description,
+        dscp: req.dscp,
+        log_prefix: req.log_prefix,
+        geoip_countries: req.geoip_countries,
     };
 
     match crate::services::firewall::add_rule(rule_req) {
@@ -535,8 +719,47 @@ pub async fn add_firewall_rule(Json(req): Json<FirewallRuleRequest>) -> Json<Val
     }
 }
 
+pub async fn update_firewall_rule(Json(req): Json<FirewallRuleUpdate>) -> Json<Value> {
+    let rule_req = crate::services::firewall::UpdateRuleRequest {
+        id: req.id,
+        action: req.action,
+        enabled: req.enabled,
+        direction: req.direction,
+        src_ip: req.src_ip,
+        dst_ip: req.dst_ip,
+        src_port: req.src_port,
+        dst_port: req.dst_port,
+        src_alias: req.src_alias,
+        dst_alias: req.dst_alias,
+        src_port_alias: req.src_port_alias,
+        dst_port_alias: req.dst_port_alias,
+        protocol: req.protocol,
+        group: req.group,
+        schedule: req.schedule,
+        log: req.log,
+        description: req.description,
+        dscp: req.dscp,
+        geoip_countries: req.geoip_countries,
+    };
+
+    match crate::services::firewall::update_rule(rule_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
 pub async fn delete_firewall_rule(Json(req): Json<FirewallRuleDelete>) -> Json<Value> {
     match crate::services::firewall::del_rule(req.id) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn reorder_firewall_rules(Json(req): Json<ReorderRulesReq>) -> Json<Value> {
+    let reorder_req = crate::services::firewall::ReorderRequest {
+        rule_ids: req.rule_ids,
+    };
+    match crate::services::firewall::reorder_rules(reorder_req) {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
@@ -551,6 +774,234 @@ pub async fn enable_firewall() -> Json<Value> {
 
 pub async fn disable_firewall() -> Json<Value> {
     match crate::services::firewall::disable() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── Firewall Groups ─────────────────────────────────────────────────
+
+pub async fn add_firewall_group(Json(req): Json<AddGroupReq>) -> Json<Value> {
+    let group_req = crate::services::firewall::AddGroupRequest {
+        name: req.name,
+        description: req.description,
+        enabled: req.enabled,
+        interfaces: req.interfaces,
+    };
+    match crate::services::firewall::add_group(group_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn delete_firewall_group(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::del_group(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn add_rule_to_group(
+    Path(group_name): Path<String>,
+    Json(req): Json<GroupRuleReq>,
+) -> Json<Value> {
+    match crate::services::firewall::add_rule_to_group(&group_name, req.rule_id) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn remove_rule_from_group(
+    Path(group_name): Path<String>,
+    Json(req): Json<GroupRuleReq>,
+) -> Json<Value> {
+    match crate::services::firewall::remove_rule_from_group(&group_name, req.rule_id) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn list_firewall_groups() -> Json<Value> {
+    match crate::services::firewall::list_groups() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── Firewall Aliases ────────────────────────────────────────────────
+
+pub async fn add_firewall_alias(Json(req): Json<AddAliasReq>) -> Json<Value> {
+    let alias_req = crate::services::firewall::AddAliasRequest {
+        name: req.name,
+        alias_type: req.alias_type,
+        description: req.description,
+        enabled: req.enabled,
+        entries: req.entries,
+        refresh_interval: req.refresh_interval,
+    };
+    match crate::services::firewall::add_alias(alias_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn update_firewall_alias(
+    Path(name): Path<String>,
+    Json(req): Json<UpdateAliasReq>,
+) -> Json<Value> {
+    match crate::services::firewall::update_alias(&name, req.entries, req.enabled, req.description) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn delete_firewall_alias(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::del_alias(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn list_firewall_aliases() -> Json<Value> {
+    match crate::services::firewall::list_aliases() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn refresh_firewall_alias(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::refresh_url_alias(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── Firewall Schedules ──────────────────────────────────────────────
+
+pub async fn add_firewall_schedule(Json(req): Json<AddScheduleReq>) -> Json<Value> {
+    let schedule_req = crate::services::firewall::AddScheduleRequest {
+        name: req.name,
+        description: req.description,
+        enabled: req.enabled,
+        time_ranges: req.time_ranges,
+    };
+    match crate::services::firewall::add_schedule(schedule_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn delete_firewall_schedule(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::del_schedule(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn list_firewall_schedules() -> Json<Value> {
+    match crate::services::firewall::list_schedules() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── GeoIP ───────────────────────────────────────────────────────────
+
+pub async fn update_firewall_geoip(Json(req): Json<GeoIpReq>) -> Json<Value> {
+    let geoip = crate::services::firewall::GeoIpConfig {
+        enabled: req.enabled,
+        default_action: req.default_action,
+        blocked_countries: req.blocked_countries,
+        allowed_countries: req.allowed_countries,
+        db_path: req.db_path,
+    };
+    match crate::services::firewall::update_geoip(geoip) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── Traffic Shaper ──────────────────────────────────────────────────
+
+pub async fn set_shaper_interface(Json(req): Json<ShaperIfaceReq>) -> Json<Value> {
+    let shaper_req = crate::services::firewall::ShaperIfaceRequest {
+        interface: req.interface,
+        bandwidth: req.bandwidth,
+        download: req.download,
+        upload: req.upload,
+    };
+    match crate::services::firewall::set_shaper_interface(shaper_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn remove_shaper_interface(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::remove_shaper_interface(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn add_shaper_queue(Json(req): Json<ShaperQueueReq>) -> Json<Value> {
+    let queue_req = crate::services::firewall::ShaperQueueRequest {
+        name: req.name,
+        weight: req.weight,
+        priority: req.priority,
+        dscp: req.dscp,
+        interface: req.interface,
+        description: req.description,
+    };
+    match crate::services::firewall::add_shaper_queue(queue_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn delete_shaper_queue(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::firewall::del_shaper_queue(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_shaper_status() -> Json<Value> {
+    match crate::services::firewall::get_shaper_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── IDS / Suricata ──────────────────────────────────────────────────
+
+pub async fn update_ids_config(Json(req): Json<IdsConfigReq>) -> Json<Value> {
+    let ids_req = crate::services::firewall::IdsConfigRequest {
+        enabled: req.enabled,
+        interfaces: req.interfaces,
+        rule_categories: req.rule_categories,
+    };
+    match crate::services::firewall::update_ids(ids_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_ids_alerts() -> Json<Value> {
+    match crate::services::firewall::get_ids_alerts(Some(100)) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn clear_ids_alerts() -> Json<Value> {
+    match crate::services::firewall::clear_ids_alerts() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_ids_stats() -> Json<Value> {
+    match crate::services::firewall::get_ids_stats() {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
@@ -1001,5 +1452,251 @@ pub async fn vpn_down(Json(req): Json<VpnDownRequest>) -> Json<Value> {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
+}
+
+// ── Network diagnostics handlers (native Rust) ──────────────────────
+
+pub async fn get_diag_status() -> Json<Value> {
+    match crate::services::diag::get_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn diag_ping(Json(req): Json<crate::services::diag::PingRequest>) -> Json<Value> {
+    match crate::services::diag::ping(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn diag_traceroute(Json(req): Json<crate::services::diag::TracerouteRequest>) -> Json<Value> {
+    match crate::services::diag::traceroute(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn diag_dns(Json(req): Json<crate::services::diag::DnsRequest>) -> Json<Value> {
+    match crate::services::diag::dns_lookup(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn diag_portscan(Json(req): Json<crate::services::diag::PortScanRequest>) -> Json<Value> {
+    match crate::services::diag::port_scan(req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── VyOS-style configuration management handlers ────────────────
+
+/// GET /api/config/tree
+/// Get the full configuration as a hierarchical tree.
+pub async fn get_config_tree() -> Json<Value> {
+    let tree = crate::services::config_cli::get_tree();
+    Json(json!({
+        "status": "ok",
+        "tree": tree
+    }))
+}
+
+/// GET /api/config/staging
+/// Get the staged (uncommitted) configuration tree.
+pub async fn get_config_staging() -> Json<Value> {
+    match crate::services::config_cli::get_staging_tree() {
+        Some(staging) => Json(json!({
+            "status": "ok",
+            "staging": staging
+        })),
+        None => Json(json!({
+            "status": "ok",
+            "staging": null,
+            "message": "No staged changes"
+        })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfigSetRequest {
+    pub path: String,
+    pub value: serde_json::Value,
+}
+
+/// POST /api/config/set
+/// Set a configuration value at a dot-separated path (staged).
+pub async fn config_set_value(Json(req): Json<ConfigSetRequest>) -> Json<Value> {
+    match crate::services::config_cli::set_value(&req.path, req.value) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfigDeleteRequest {
+    pub path: String,
+}
+
+/// POST /api/config/delete
+/// Delete a configuration value at a dot-separated path (staged).
+pub async fn config_delete_value(Json(req): Json<ConfigDeleteRequest>) -> Json<Value> {
+    match crate::services::config_cli::delete_value(&req.path) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/config/commit
+/// Commit all staged configuration changes.
+pub async fn config_commit() -> Json<Value> {
+    match crate::services::config_cli::commit() {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/config/rollback/:version
+/// Rollback configuration to a specific version.
+pub async fn config_rollback(Path(version): Path<String>) -> Json<Value> {
+    match crate::services::config_cli::rollback(&version) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// POST /api/config/discard
+/// Discard staged (uncommitted) changes.
+pub async fn config_discard() -> Json<Value> {
+    let result = crate::services::config_cli::execute_cli("", "discard");
+    Json(json!(result))
+}
+
+/// GET /api/config/diff
+/// Get diff between committed and staged configuration.
+pub async fn config_diff() -> Json<Value> {
+    let diff = crate::services::config_cli::get_diff();
+    Json(json!({
+        "status": "ok",
+        "changes": diff.len(),
+        "diff": diff
+    }))
+}
+
+/// GET /api/config/diff/:v1/:v2
+/// Get diff between two specific config versions.
+pub async fn config_diff_versions(
+    Path((v1, v2)): Path<(String, String)>,
+) -> Json<Value> {
+    match crate::services::config_cli::get_diff_versions(&v1, &v2) {
+        Ok(diff) => Json(json!({
+            "status": "ok",
+            "changes": diff.len(),
+            "diff": diff
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// GET /api/config/history
+/// Get configuration version history.
+pub async fn config_history() -> Json<Value> {
+    let history = crate::services::config_cli::list_history();
+    Json(json!({
+        "status": "ok",
+        "history": history,
+        "count": history.len()
+    }))
+}
+
+/// GET /api/config/templates
+/// List saved configuration templates.
+pub async fn config_list_templates() -> Json<Value> {
+    let templates = crate::services::config_cli::list_templates();
+    Json(json!({
+        "status": "ok",
+        "templates": templates,
+        "count": templates.len()
+    }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveTemplateRequest {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+}
+
+/// POST /api/config/template/save
+/// Save current configuration as a named template.
+pub async fn config_save_template(Json(req): Json<SaveTemplateRequest>) -> Json<Value> {
+    let tree = crate::services::config_cli::get_tree();
+    match crate::services::config_cli::save_template(&req.name, &req.description, &tree) {
+        Ok(()) => Json(json!({
+            "status": "ok",
+            "message": format!("Template '{}' saved", req.name)
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ApplyTemplateRequest {
+    pub name: String,
+    #[serde(default)]
+    pub variables: std::collections::HashMap<String, String>,
+}
+
+/// POST /api/config/template/apply
+/// Apply a named template (with optional variable substitution) to staging.
+pub async fn config_apply_template(Json(req): Json<ApplyTemplateRequest>) -> Json<Value> {
+    let vars = if req.variables.is_empty() {
+        None
+    } else {
+        Some(&req.variables)
+    };
+    match crate::services::config_cli::apply_template(&req.name, vars) {
+        Ok(result) => Json(json!(result)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CliSessionRequest {
+    #[serde(default)]
+    pub command: Option<String>,
+}
+
+/// POST /api/config/cli/session
+/// Create a new CLI session or execute a command in an existing session.
+pub async fn config_cli_session(Json(req): Json<CliSessionRequest>) -> Json<Value> {
+    let session = crate::services::config_cli::create_session();
+    if let Some(cmd) = &req.command {
+        let result = crate::services::config_cli::execute_cli(&session.id, cmd);
+        Json(json!({
+            "status": "ok",
+            "session": session,
+            "result": result
+        }))
+    } else {
+        Json(json!({
+            "status": "ok",
+            "session": session
+        }))
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CliExecuteRequest {
+    pub session_id: String,
+    pub command: String,
+}
+
+/// POST /api/config/cli/execute
+/// Execute a CLI command in an existing session.
+pub async fn config_cli_execute(Json(req): Json<CliExecuteRequest>) -> Json<Value> {
+    let result = crate::services::config_cli::execute_cli(&req.session_id, &req.command);
+    Json(json!(result))
 }
 
