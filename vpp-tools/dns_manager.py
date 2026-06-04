@@ -52,7 +52,7 @@ log-queries
     # If DHCP is configured, merge configs
     if 'dhcp-range' in dhcp_config:
         # Extract DHCP lines (skip interface line, use our own)
-        dhcp_lines = [l for l in dhcp_config.split('\n()
+        dhcp_lines = [l for l in dhcp_config.split('\n')
                       if 'dhcp' in l.lower() and not l.strip().startswith('#')]
         if dhcp_lines:
             config += '\n' + '\n'.join(dhcp_lines) + '\n'
