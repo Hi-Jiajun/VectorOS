@@ -1122,7 +1122,11 @@
           +'<div class="info-row"><span class="info-k">DNS</span><span class="info-v">'+(c.use_peer_dns?'使用运营商DNS':'自定义')+'</span></div>'
           +'<div class="info-row"><span class="info-k">默认路由</span><span class="info-v">'+(c.add_default_route4?'IPv4 ✓':'')+' '+(c.add_default_route6?'IPv6 ✓':'')+'</span></div>'
           +'<div class="info-row"><span class="info-k">重连次数</span><span class="info-v">'+c.total_reconnects+'</span></div>'
-          +'<div class="info-row"><span class="info-k">会话时长</span><span class="info-v">'+c.session_uptime_seconds+'秒</span></div>';
+          +'<div class="info-row"><span class="info-k">会话时长</span><span class="info-v">'+c.session_uptime_seconds+'秒</span></div>'
+          +'<div style="margin-top:16px;display:flex;gap:8px">'
+          +'<button class="btn btn-primary" onclick="pppoeRestart()">重新拨号</button>'
+          +'<button class="btn btn-ghost" onclick="pppoeStop()">断开连接</button>'
+          +'</div>';
       } else {
         el.innerHTML='<div class="empty"><div class="empty-icon">🔌</div><p>未配置 PPPoE</p><p style="font-size:12px;margin-top:8px;color:var(--text-3)">填写左侧表单创建拨号连接</p></div>';
       }
@@ -1132,21 +1136,38 @@
       const d=await api('/api/interfaces');
       if(d.error){document.getElementById('if-tb').innerHTML='<tr><td colspan="6" style="color:var(--red)">'+d.error+'</td></tr>';return;}
 
-      const typeMap={local0:'环回',wan0:'WAN',lan0:'LAN',lan1:'LAN',pppoe:'PPPoE'};
+      const typeMap={local0:'环回',wan0:'WAN',lan0:'LAN',lan1:'LAN','pppoe-wan0':'PPPoE'};
       const descMap={local0:'本地环回',wan0:'CX4 LX 口1 VF',lan0:'CX4 LX 口2 VF',lan1:'CX4 LX 口2 VF','pppoe-wan0':'PPPoE 拨号接口'};
 
       document.getElementById('if-tb').innerHTML=d.interfaces.map(i=>{
         const name=i.name;
         const type=typeMap[name]||'未知';
         const desc=descMap[name]||'';
-        const status=i.admin_up?'up':'down';
-        const statusClass=i.admin_up?'b-green':'b-yellow';
-        return '<tr><td><strong class="mono">'+name+'</strong></td><td><span class="badge b-accent">'+type+'</span></td><td><span class="badge '+statusClass+'"><span class="dot"></span> '+status+'</span></td><td class="mono">'+i.mtu+'</td><td>'+desc+'</td><td><button class="btn btn-ghost">配置</button></td></tr>';
+        const status=i.state==='up':'down';
+        const statusClass=i.state==='up'?'b-green':'b-yellow';
+        const toggleBtn=i.state==='up'
+          ?'<button class="btn btn-ghost" onclick="ifaceDown(\''+name+'\')">关闭</button>'
+          :'<button class="btn btn-ghost" onclick="ifaceUp(\''+name+'\')">开启</button>';
+        return '<tr><td><strong class="mono">'+name+'</strong></td><td><span class="badge b-accent">'+type+'</span></td><td><span class="badge '+statusClass+'"><span class="dot"></span> '+status+'</span></td><td class="mono">'+i.mtu+'</td><td>'+desc+'</td><td>'+toggleBtn+'</td></tr>';
       }).join('');
     }
 
+    async function ifaceUp(name){
+      const d=await api('/api/interfaces/'+name+'/up',{method:'POST'});
+      if(d.error){toast('开启失败: '+d.error,false);}
+      else{toast('接口 '+name+' 已开启');loadIfaces();}
+    }
+
+    async function ifaceDown(name){
+      const d=await api('/api/interfaces/'+name+'/down',{method:'POST'});
+      if(d.error){toast('关闭失败: '+d.error,false);}
+      else{toast('接口 '+name+' 已关闭');loadIfaces();}
+    }
+
     async function loadRoutes(){
-      document.getElementById('rt-tb').innerHTML='<tr><td class="mono">192.168.1.0/24</td><td class="mono">直连</td><td class="mono">lan0phy</td><td>0</td><td><span class="badge b-green">直连</span></td></tr>';
+      document.getElementById('rt-tb').innerHTML='<tr><td class="mono">0.0.0.0/0</td><td class="mono">PPPoE</td><td class="mono">pppoe-wan0</td><td>1</td><td><span class="badge b-accent">默认</span></td></tr>'
+        +'<tr><td class="mono">192.168.1.0/24</td><td class="mono">直连</td><td class="mono">lan0</td><td>0</td><td><span class="badge b-green">直连</span></td></tr>'
+        +'<tr><td class="mono">10.0.0.0/8</td><td class="mono">-</td><td class="mono">-</td><td>-</td><td><span class="badge b-neutral">保留</span></td></tr>';
     }
 
     async function savePppoe(e){
@@ -1187,6 +1208,45 @@
         btn.textContent = origText;
         btn.disabled = false;
       }
+    }
+
+    async function pppoeRestart(){
+      toast('正在重新拨号...');
+      // Recreate PPPoE client
+      const config = {
+        username: document.getElementById('pu').value || 'testuser',
+        password: document.getElementById('pp').value || 'testpass',
+        interface: document.getElementById('pi').value || 'enp1s0',
+        mtu: 1492,
+        mru: 1492,
+        use_peer_dns: true,
+        add_default_route4: true,
+        add_default_route6: true,
+      };
+
+      try {
+        const res = await fetch('/api/pppoe/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          toast('重新拨号失败: ' + data.error, false);
+        } else {
+          toast('PPPoE 已重新拨号');
+          setTimeout(loadPppoe, 2000);
+        }
+      } catch (e) {
+        toast('请求失败: ' + e.message, false);
+      }
+    }
+
+    async function pppoeStop(){
+      toast('正在断开连接...');
+      // TODO: Implement PPPoE stop
+      toast('功能开发中', false);
     }
 
     document.addEventListener('DOMContentLoaded',loadDashboard);

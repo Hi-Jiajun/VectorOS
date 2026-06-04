@@ -8,6 +8,8 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/health", get(handlers::health))
         .route("/api/config", get(handlers::get_config))
         .route("/api/interfaces", get(handlers::get_interfaces))
+        .route("/api/interfaces/:name/up", post(handlers::iface_up))
+        .route("/api/interfaces/:name/down", post(handlers::iface_down))
         .route("/api/pppoe/clients", get(handlers::get_pppoe_clients))
         .route("/api/pppoe/status", get(handlers::get_pppoe_status))
         .route("/api/pppoe/create", post(handlers::create_pppoe_client))

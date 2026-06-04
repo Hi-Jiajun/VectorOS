@@ -1,4 +1,4 @@
-use axum::extract::State;
+use axum::extract::{State, Path};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -57,9 +57,53 @@ pub async fn get_config(State(state): State<Arc<AppState>>) -> Json<Value> {
 }
 
 pub async fn get_interfaces() -> Json<Value> {
-    match run_vpp_cmd("interfaces", &[]) {
-        Ok(data) => Json(json!({ "interfaces": data })),
-        Err(e) => Json(json!({ "error": e })),
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
+    cmd.arg("list");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn iface_up(Path(name): Path<String>) -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
+    cmd.arg("up").arg("--name").arg(&name);
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn iface_down(Path(name): Path<String>) -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
+    cmd.arg("down").arg("--name").arg(&name);
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
     }
 }
 
