@@ -925,8 +925,13 @@
         <!-- NAT -->
         <div id="p-nat" class="page">
           <div class="card">
-            <div class="card-head"><h3>🔄 NAT</h3></div>
-            <div class="card-body"><div class="empty"><div class="empty-icon">🔄</div><p>NAT 未配置</p></div></div>
+            <div class="card-head">
+              <h3>🔄 NAT 状态</h3>
+              <button class="btn btn-ghost" onclick="loadNat()">刷新</button>
+            </div>
+            <div class="card-body" id="nat-el">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
           </div>
         </div>
 
@@ -979,7 +984,7 @@
       setTimeout(()=>{d.style.opacity='0';d.style.transform='translateX(100%)';d.style.transition='all 0.3s';setTimeout(()=>d.remove(),300);},3000);
     }
 
-    async function api(u){try{return await(await fetch(u)).json();}catch(e){return{error:e.message};}}
+    async function api(u,opts={}){try{return await(await fetch(u,opts)).json();}catch(e){return{error:e.message};}}
 
     async function refresh(){await Promise.all([loadDashboard(),loadPppoe(),loadIfaces(),loadRoutes()]);toast('已刷新');}
 
@@ -988,6 +993,32 @@
       else if(p==='pppoe')loadPppoe();
       else if(p==='interfaces')loadIfaces();
       else if(p==='routes')loadRoutes();
+      else if(p==='nat')loadNat();
+    }
+
+    async function loadNat(){
+      const d=await api('/api/nat/status'),el=document.getElementById('nat-el');
+      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
+
+      if(d.interfaces && d.interfaces.length > 0){
+        const inside=d.interfaces.find(i=>i.direction==='in');
+        const outside=d.interfaces.find(i=>i.direction==='out');
+
+        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
+          +'<div class="info-row"><span class="info-k">内部接口</span><span class="info-v">'+(inside?inside.name:'未配置')+'</span></div>'
+          +'<div class="info-row"><span class="info-k">外部接口</span><span class="info-v">'+(outside?outside.name:'未配置')+'</span></div>'
+          +'<div class="info-row"><span class="info-k">会话数</span><span class="info-v">'+d.sessions.length+'</span></div>'
+          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ NAT 已启用，LAN 客户端可通过 PPPoE 上网</p></div>';
+      } else {
+        el.innerHTML='<div class="empty"><div class="empty-icon">🔄</div><p>NAT 未启用</p>'
+          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableNat()">启用 NAT</button></div>';
+      }
+    }
+
+    async function enableNat(){
+      const d=await api('/api/nat/enable', {method:'POST'});
+      if(d.error){toast('NAT 启用失败: '+d.error,false);}
+      else{toast('NAT 已启用');loadNat();}
     }
 
     async function loadDashboard(){
