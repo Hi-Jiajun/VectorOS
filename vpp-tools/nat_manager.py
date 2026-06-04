@@ -14,16 +14,17 @@ def connect():
     return api
 
 def nat_enable(api, inside_if, outside_if):
-    """Enable NAT44 on interfaces"""
+    """Enable NAT44 EI on interfaces"""
     try:
-        # Enable NAT plugin
-        result = api.api.nat44_ei_plugin_enable(
+        # Enable NAT44 EI plugin
+        result = api.api.nat44_ei_plugin_enable_disable(
+            enable=True,
             sessions=65536,
             users=8192
         )
         print(f'NAT enable result: {result}', file=sys.stderr)
 
-        # Set inside interface
+        # Set inside interface (LAN)
         result = api.api.nat44_ei_interface_add_del_feature(
             sw_if_index=inside_if,
             is_add=True,
@@ -31,7 +32,7 @@ def nat_enable(api, inside_if, outside_if):
         )
         print(f'Inside interface result: {result}', file=sys.stderr)
 
-        # Set outside interface
+        # Set outside interface (PPPoE)
         result = api.api.nat44_ei_interface_add_del_feature(
             sw_if_index=outside_if,
             is_add=True,
@@ -39,22 +40,28 @@ def nat_enable(api, inside_if, outside_if):
         )
         print(f'Outside interface result: {result}', file=sys.stderr)
 
+        # Add interface address for NAT
+        result = api.api.nat44_ei_add_del_interface_addr(
+            sw_if_index=outside_if,
+            is_add=True
+        )
+        print(f'Interface addr result: {result}', file=sys.stderr)
+
         return {'status': 'ok', 'message': 'NAT enabled'}
     except Exception as e:
         return {'error': str(e)}
 
 def nat_disable(api):
-    """Disable NAT44"""
+    """Disable NAT44 EI"""
     try:
-        result = api.api.nat44_ei_plugin_disable()
+        result = api.api.nat44_ei_plugin_enable_disable(enable=False)
         return {'status': 'ok', 'message': 'NAT disabled'}
     except Exception as e:
-        return {'error': str(api)}
+        return {'error': str(e)}
 
 def nat_show(api):
     """Show NAT status"""
     try:
-        # Get NAT interfaces
         interfaces = []
         try:
             result = api.api.nat44_ei_interface_dump()
@@ -63,22 +70,21 @@ def nat_show(api):
                     'sw_if_index': iface.sw_if_index,
                     'is_inside': iface.is_inside,
                 })
-        except:
-            pass
+        except Exception as e:
+            print(f'Interface dump error: {e}', file=sys.stderr)
 
-        # Get NAT sessions
         sessions = []
         try:
-            result = api.api.nat44_ei_session_dump()
-            for session in result[:10]:  # Limit to 10
+            result = api.api.nat44_ei_user_session_dump()
+            for session in result[:10]:
                 sessions.append({
                     'src': str(session.in_src_address),
                     'dst': str(session.in_dst_address),
                     'outside_src': str(session.out_src_address),
                     'outside_dst': str(session.out_dst_address),
                 })
-        except:
-            pass
+        except Exception as e:
+            print(f'Session dump error: {e}', file=sys.stderr)
 
         return {
             'interfaces': interfaces,
