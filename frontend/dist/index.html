@@ -1143,7 +1143,7 @@
         const name=i.name;
         const type=typeMap[name]||'未知';
         const desc=descMap[name]||'';
-        const status=i.state==='up':'down';
+        const status=i.state;
         const statusClass=i.state==='up'?'b-green':'b-yellow';
         const toggleBtn=i.state==='up'
           ?'<button class="btn btn-ghost" onclick="ifaceDown(\''+name+'\')">关闭</button>'
