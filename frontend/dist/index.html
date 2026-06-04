@@ -919,10 +919,12 @@
         <!-- DNS -->
         <div id="p-dns" class="page">
           <div class="card">
-            <div class="card-head"><h3>🔍 DNS</h3></div>
-            <div class="card-body">
-              <div class="info-row"><span class="info-k">8.8.8.8</span><span class="badge b-accent">Google</span></div>
-              <div class="info-row"><span class="info-k">1.1.1.1</span><span class="badge b-accent">Cloudflare</span></div>
+            <div class="card-head">
+              <h3>🔍 DNS 转发</h3>
+              <button class="btn btn-ghost" onclick="loadDns()">刷新</button>
+            </div>
+            <div class="card-body" id="dns-el">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
             </div>
           </div>
         </div>
@@ -1000,6 +1002,29 @@
       else if(p==='routes')loadRoutes();
       else if(p==='nat')loadNat();
       else if(p==='dhcp')loadDhcp();
+      else if(p==='dns')loadDns();
+    }
+
+    async function loadDns(){
+      const d=await api('/api/dns/status'),el=document.getElementById('dns-el');
+      if(d.error){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p style="color:var(--red)">'+d.error+'</p></div>';return;}
+
+      if(d.status==='active'){
+        el.innerHTML='<div class="info-row"><span class="info-k">状态</span><span class="badge b-green"><span class="dot"></span> 已启用</span></div>'
+          +'<div class="info-row"><span class="info-k">上游 DNS</span><span class="info-v">'+(d.upstream||[]).join(', ')+'</span></div>'
+          +'<div class="info-row"><span class="info-k">缓存大小</span><span class="info-v">'+d.cache_size+' 条</span></div>'
+          +'<div class="info-row"><span class="info-k">监听接口</span><span class="info-v">'+d.interface+'</span></div>'
+          +'<div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px"><p style="font-size:12px;color:var(--green)">✓ DNS 转发已启用，LAN 客户端可解析域名</p></div>';
+      } else {
+        el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><p>DNS 转发未启用</p>'
+          +'<button class="btn btn-primary" style="margin-top:16px" onclick="enableDns()">启用 DNS 转发</button></div>';
+      }
+    }
+
+    async function enableDns(){
+      const d=await api('/api/dns/enable', {method:'POST'});
+      if(d.error){toast('DNS 启用失败: '+d.error,false);}
+      else{toast('DNS 转发已启用');loadDns();}
     }
 
     async function loadDhcp(){

@@ -15,5 +15,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/nat/enable", post(handlers::enable_nat))
         .route("/api/dhcp/status", get(handlers::get_dhcp_status))
         .route("/api/dhcp/enable", post(handlers::enable_dhcp))
+        .route("/api/dns/status", get(handlers::get_dns_status))
+        .route("/api/dns/enable", post(handlers::enable_dns))
         .route("/api/routes", get(handlers::get_routes))
 }
