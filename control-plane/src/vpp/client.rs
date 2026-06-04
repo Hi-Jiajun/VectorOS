@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use super::message::{
     VppMessage, VppMsgHeader, VppRetval,
@@ -19,7 +19,6 @@ pub struct VppClient {
     context_counter: AtomicU32,
 }
 
-// UnixStream with Mutex is Send + Sync
 unsafe impl Send for VppClient {}
 unsafe impl Sync for VppClient {}
 
@@ -30,9 +29,11 @@ impl VppClient {
         let stream = UnixStream::connect(socket_path)
             .with_context(|| format!("Failed to connect to VPP socket: {}", socket_path))?;
 
+        // Ensure blocking mode
         stream.set_nonblocking(false)?;
-        stream.set_read_timeout(Some(Duration::from_secs(5)))?;
-        stream.set_write_timeout(Some(Duration::from_secs(5)))?;
+        // No timeout - let VPP take its time
+        stream.set_read_timeout(None)?;
+        stream.set_write_timeout(None)?;
 
         let client = Self {
             stream: Mutex::new(stream),
@@ -57,49 +58,46 @@ impl VppClient {
         let encoded = msg.encode();
         let mut stream = self.stream.lock().unwrap();
 
-        debug!("Sending message type={} context={}", msg_type, context);
+        debug!("Sending message type={} context={} len={}", msg_type, context, encoded.len());
         stream.write_all(&encoded)?;
+        stream.flush()?;
 
-        // Read reply header
-        let mut header_buf = vec![0u8; VppMsgHeader::SIZE];
+        // Read reply header (16 bytes)
+        let mut header_buf = [0u8; VppMsgHeader::SIZE];
         stream.read_exact(&mut header_buf)?;
         let reply_header = VppMsgHeader::decode(&header_buf)?;
 
         debug!("Received reply type={} context={}", reply_header.msg_type, reply_header.context);
 
-        // For autoreply messages, the body is just retval (4 bytes)
-        // For dump messages, we get multiple details messages followed by a control_ping_reply
-        let mut data = BytesMut::with_capacity(8192);
+        // Read reply body based on message type
+        let mut data = BytesMut::new();
 
-        // Read body based on message type
-        // For now, read a fixed amount for replies
         if reply_header.msg_type == MSG_GET_FIRST_MSG_ID_REPLY {
-            // get_first_msg_id_reply: retval (4) + first_msg_id (2)
+            // get_first_msg_id_reply: retval (4) + first_msg_id (2) = 6 bytes
             let mut body = [0u8; 6];
             stream.read_exact(&mut body)?;
             data.extend_from_slice(&body);
-        } else if reply_header.msg_type <= 2 {
-            // Control ping reply or similar - read retval
-            let mut body = [0u8; 4];
-            stream.read_exact(&mut body)?;
-            data.extend_from_slice(&body);
-        } else {
-            // For other messages, try to read available data
-            // TODO: Implement proper message length parsing
-            stream.set_nonblocking(true)?;
-            let mut buf = [0u8; 4096];
-            loop {
-                match stream.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(n) => data.extend_from_slice(&buf[..n]),
-                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
-                    Err(e) => {
-                        stream.set_nonblocking(false)?;
-                        return Err(e.into());
-                    }
+        } else if reply_header.msg_type == msg_type + 1 {
+            // Standard reply (request + 1 = reply)
+            // Body is typically: retval (4 bytes) + optional data
+            let mut body = [0u8; 256]; // Read up to 256 bytes for reply
+            match stream.read(&mut body) {
+                Ok(n) => data.extend_from_slice(&body[..n]),
+                Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                    warn!("Timeout reading reply body");
                 }
+                Err(e) => return Err(e.into()),
             }
-            stream.set_nonblocking(false)?;
+        } else {
+            // Other message types - try to read some data
+            let mut body = [0u8; 1024];
+            match stream.read(&mut body) {
+                Ok(n) => data.extend_from_slice(&body[..n]),
+                Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                    debug!("Timeout reading body (expected for some messages)");
+                }
+                Err(e) => return Err(e.into()),
+            }
         }
 
         Ok(VppMessage {
