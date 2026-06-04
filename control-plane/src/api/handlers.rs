@@ -318,7 +318,12 @@ pub async fn get_vpp_performance() -> Json<Value> {
                 "interfaces": perf.interfaces,
                 "nat": perf.nat,
                 "pppoe": perf.pppoe,
-                "memory": perf.memory,
+                "memory": {
+                    "total_mb": perf.memory.total,
+                    "used_mb": perf.memory.used,
+                    "free_mb": perf.memory.free,
+                    "percent": perf.memory.percent,
+                },
                 "threads": perf.threads,
                 "errors": perf.errors,
             }
