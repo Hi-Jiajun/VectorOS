@@ -57,53 +57,23 @@ pub async fn get_config(State(state): State<Arc<AppState>>) -> Json<Value> {
 }
 
 pub async fn get_interfaces() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
-    cmd.arg("list");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::vpp::native::get_interfaces() {
+        Ok(interfaces) => Json(json!({ "interfaces": interfaces })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn iface_up(Path(name): Path<String>) -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
-    cmd.arg("up").arg("--name").arg(&name);
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::vpp::native::set_interface_state(&name, "up") {
+        Ok(()) => Json(json!({ "status": "ok", "message": format!("Interface {} set to up", name) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
 pub async fn iface_down(Path(name): Path<String>) -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/interface_manager.py");
-    cmd.arg("down").arg("--name").arg(&name);
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::vpp::native::set_interface_state(&name, "down") {
+        Ok(()) => Json(json!({ "status": "ok", "message": format!("Interface {} set to down", name) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
@@ -115,9 +85,9 @@ pub async fn get_pppoe_clients() -> Json<Value> {
 }
 
 pub async fn get_pppoe_status() -> Json<Value> {
-    match run_vpp_cmd("status", &[]) {
-        Ok(data) => Json(data),
-        Err(e) => Json(json!({ "error": e })),
+    match crate::vpp::native::get_pppoe_status() {
+        Ok(status) => Json(json!(status)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
@@ -150,19 +120,9 @@ pub async fn create_pppoe_client(
 }
 
 pub async fn get_nat_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
-    cmd.arg("show");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    match crate::vpp::native::get_nat_status() {
+        Ok(status) => Json(json!(status)),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
@@ -191,22 +151,32 @@ pub async fn get_routes() -> Json<Value> {
 }
 
 pub async fn get_system_status() -> Json<Value> {
-    let mut cmd = std::process::Command::new("python3");
-    cmd.arg("/root/VectorOS/vpp-tools/system_monitor.py");
-
-    match cmd.output() {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if !stderr.is_empty() {
-                tracing::warn!("system_monitor stderr: {}", stderr);
-            }
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e), "raw": stdout.to_string() })),
-            }
+    match crate::vpp::native::get_system_info() {
+        Ok(info) => {
+            Json(json!({
+                "system": {
+                    "cpu": {
+                        "percent": info.cpu_percent,
+                        "count": info.cpu_count
+                    },
+                    "memory": {
+                        "total": info.memory_total,
+                        "used": info.memory_used,
+                        "percent": info.memory_percent
+                    },
+                    "disk": {
+                        "total": info.disk_total,
+                        "used": info.disk_used,
+                        "percent": info.disk_percent
+                    }
+                },
+                "vpp": {
+                    "version": info.vpp_version,
+                    "interface_count": info.interface_count
+                }
+            }))
         }
-        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 

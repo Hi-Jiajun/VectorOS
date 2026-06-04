@@ -35,3 +35,6 @@ clap = { version = "4", features = ["derive"] }
 # Byte encoding
 bytes = "1"
 byteorder = "1"
+
+# System info
+num_cpus = "1"
