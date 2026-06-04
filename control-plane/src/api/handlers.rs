@@ -101,6 +101,72 @@ pub async fn iface_down(Path(name): Path<String>) -> Json<Value> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct InterfaceConfigRequest {
+    pub mtu: Option<u32>,
+    pub ip_add: Option<String>,
+    pub ip_remove: Option<String>,
+    pub promiscuous: Option<bool>,
+}
+
+/// POST /api/interfaces/:name/config
+/// Configure interface: MTU, IP add/remove, promiscuous mode.
+pub async fn configure_interface(
+    Path(name): Path<String>,
+    Json(req): Json<InterfaceConfigRequest>,
+) -> Json<Value> {
+    let mut errors: Vec<String> = Vec::new();
+    let mut applied: Vec<String> = Vec::new();
+
+    if let Some(mtu) = req.mtu {
+        match crate::vpp::native::set_interface_mtu(&name, mtu) {
+            Ok(()) => applied.push(format!("mtu set to {}", mtu)),
+            Err(e) => errors.push(format!("mtu: {}", e)),
+        }
+    }
+
+    if let Some(ip) = req.ip_add {
+        match crate::vpp::native::set_interface_ip(&name, &ip) {
+            Ok(()) => applied.push(format!("IP {} added", ip)),
+            Err(e) => errors.push(format!("ip add {}: {}", ip, e)),
+        }
+    }
+
+    if let Some(ip) = req.ip_remove {
+        match crate::vpp::native::remove_interface_ip(&name, &ip) {
+            Ok(()) => applied.push(format!("IP {} removed", ip)),
+            Err(e) => errors.push(format!("ip remove {}: {}", ip, e)),
+        }
+    }
+
+    if let Some(promisc) = req.promiscuous {
+        let result = if promisc {
+            crate::vpp::native::enable_interface_promisc(&name)
+        } else {
+            crate::vpp::native::disable_interface_promisc(&name)
+        };
+        match result {
+            Ok(()) => applied.push(format!("promiscuous mode {}", if promisc { "enabled" } else { "disabled" })),
+            Err(e) => errors.push(format!("promiscuous: {}", e)),
+        }
+    }
+
+    if errors.is_empty() {
+        Json(json!({ "status": "ok", "applied": applied }))
+    } else {
+        Json(json!({ "status": if applied.is_empty() { "error" } else { "partial" }, "applied": applied, "errors": errors }))
+    }
+}
+
+/// GET /api/interfaces/:name/stats
+/// Get detailed interface statistics (packets, bytes, errors, drops).
+pub async fn get_interface_stats(Path(name): Path<String>) -> Json<Value> {
+    match crate::vpp::native::get_interface_stats(&name) {
+        Ok(stats) => Json(json!({ "stats": stats })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
 pub async fn get_pppoe_clients() -> Json<Value> {
     match run_vpp_cmd("dump", &[]) {
         Ok(data) => Json(json!({ "clients": data })),
@@ -175,9 +241,12 @@ pub async fn get_routes() -> Json<Value> {
 }
 
 pub async fn get_system_status() -> Json<Value> {
-    match crate::vpp::native::get_system_info() {
+    let system_info = crate::vpp::native::get_system_info();
+    let vpp_perf = crate::vpp::native::get_vpp_performance();
+
+    match system_info {
         Ok(info) => {
-            Json(json!({
+            let mut response = json!({
                 "system": {
                     "cpu": {
                         "percent": info.cpu_percent,
@@ -198,8 +267,62 @@ pub async fn get_system_status() -> Json<Value> {
                     "version": info.vpp_version,
                     "interface_count": info.interface_count
                 }
-            }))
+            });
+
+            // Merge VPP performance metrics when available
+            if let Ok(perf) = vpp_perf {
+                if let Some(obj) = response.as_object_mut() {
+                    obj.insert("performance".to_string(), json!({
+                        "packet_rate": perf.packet_rate,
+                        "interfaces": perf.interfaces,
+                        "nat": perf.nat,
+                        "pppoe": perf.pppoe,
+                        "memory": perf.memory,
+                        "threads": perf.threads,
+                        "errors": perf.errors,
+                    }));
+                }
+            }
+
+            Json(response)
         }
+        Err(e) => {
+            // Even if system info fails, try to return VPP performance alone
+            match vpp_perf {
+                Ok(perf) => Json(json!({
+                    "system": { "error": e.to_string() },
+                    "vpp": { "performance": {
+                        "packet_rate": perf.packet_rate,
+                        "interfaces": perf.interfaces,
+                        "nat": perf.nat,
+                        "pppoe": perf.pppoe,
+                        "memory": perf.memory,
+                        "threads": perf.threads,
+                        "errors": perf.errors,
+                    }}
+                })),
+                Err(e2) => Json(json!({
+                    "error": e.to_string(),
+                    "performance_error": e2.to_string()
+                })),
+            }
+        }
+    }
+}
+
+pub async fn get_vpp_performance() -> Json<Value> {
+    match crate::vpp::native::get_vpp_performance() {
+        Ok(perf) => Json(json!({
+            "performance": {
+                "packet_rate": perf.packet_rate,
+                "interfaces": perf.interfaces,
+                "nat": perf.nat,
+                "pppoe": perf.pppoe,
+                "memory": perf.memory,
+                "threads": perf.threads,
+                "errors": perf.errors,
+            }
+        })),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
@@ -450,6 +573,132 @@ pub async fn get_dhcpv6_status() -> Json<Value> {
         "status": "inactive",
         "message": "DHCPv6 management not yet implemented"
     }))
+}
+
+// ── QoS management handlers (native Rust) ─────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CreatePolicerReq {
+    pub name: String,
+    pub rate: u64,
+    pub burst: u64,
+    #[serde(default = "default_policer_type")]
+    pub policer_type: String,
+}
+
+fn default_policer_type() -> String {
+    "single_rate_two_color".to_string()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetInterfaceLimitReq {
+    pub rate: u64,
+    pub burst: u64,
+    #[serde(default = "default_limit_direction")]
+    pub direction: String,
+}
+
+fn default_limit_direction() -> String {
+    "both".to_string()
+}
+
+pub async fn get_qos_status() -> Json<Value> {
+    match crate::services::qos::show_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn create_policer(Json(req): Json<CreatePolicerReq>) -> Json<Value> {
+    let qos_req = crate::services::qos::CreatePolicerRequest {
+        name: req.name,
+        rate: req.rate,
+        burst: req.burst,
+        policer_type: req.policer_type,
+    };
+    match crate::services::qos::create_policer(qos_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn delete_policer(Path(name): Path<String>) -> Json<Value> {
+    match crate::services::qos::delete_policer(&name) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn set_interface_rate_limit(
+    Path(name): Path<String>,
+    Json(req): Json<SetInterfaceLimitReq>,
+) -> Json<Value> {
+    let qos_req = crate::services::qos::SetInterfaceLimitRequest {
+        rate: req.rate,
+        burst: req.burst,
+        direction: req.direction,
+    };
+    match crate::services::qos::set_interface_limit(&name, qos_req) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+// ── Flow monitoring handlers ──────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct FlowExportSetRequest {
+    pub collector_ip: String,
+    pub collector_port: u32,
+}
+
+pub async fn get_flow_status() -> Json<Value> {
+    match crate::services::flow::get_status() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn get_flow_top() -> Json<Value> {
+    match crate::services::flow::get_top_talkers() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn set_flow_export(Json(req): Json<FlowExportSetRequest>) -> Json<Value> {
+    match crate::services::flow::set_export_collector(&req.collector_ip, req.collector_port) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn enable_flow_export() -> Json<Value> {
+    match crate::services::flow::enable_export() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn disable_flow_export() -> Json<Value> {
+    match crate::services::flow::disable_export() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn setup_flow_classify() -> Json<Value> {
+    match crate::services::flow::setup_classify() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+pub async fn list_flows() -> Json<Value> {
+    match crate::services::flow::list_flows() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
 }
 
 // ── Backup management handlers ─────────────────────────────────────

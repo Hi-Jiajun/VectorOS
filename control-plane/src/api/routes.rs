@@ -1,5 +1,5 @@
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{get, post, delete};
 use std::sync::Arc;
 use crate::api::{handlers, AppState};
 
@@ -14,6 +14,8 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/interfaces", get(handlers::get_interfaces))
         .route("/api/interfaces/:name/up", post(handlers::iface_up))
         .route("/api/interfaces/:name/down", post(handlers::iface_down))
+        .route("/api/interfaces/:name/config", post(handlers::configure_interface))
+        .route("/api/interfaces/:name/stats", get(handlers::get_interface_stats))
         .route("/api/pppoe/clients", get(handlers::get_pppoe_clients))
         .route("/api/pppoe/status", get(handlers::get_pppoe_status))
         .route("/api/pppoe/create", post(handlers::create_pppoe_client))
@@ -25,6 +27,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/dns/enable", post(handlers::enable_dns))
         .route("/api/routes", get(handlers::get_routes))
         .route("/api/system", get(handlers::get_system_status))
+        .route("/api/system/vpp-performance", get(handlers::get_vpp_performance))
         .route("/api/config/status", get(handlers::get_config_status))
         // FRRouting
         .route("/api/frr/status", get(handlers::get_frr_status))
@@ -44,4 +47,17 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/firewall/del-rule", post(handlers::delete_firewall_rule))
         .route("/api/firewall/enable", post(handlers::enable_firewall))
         .route("/api/firewall/disable", post(handlers::disable_firewall))
+        // QoS management
+        .route("/api/qos/status", get(handlers::get_qos_status))
+        .route("/api/qos/policer", post(handlers::create_policer))
+        .route("/api/qos/policer/:name", delete(handlers::delete_policer))
+        .route("/api/qos/interface/:name/limit", post(handlers::set_interface_rate_limit))
+        // Flow monitoring
+        .route("/api/flows/status", get(handlers::get_flow_status))
+        .route("/api/flows/top", get(handlers::get_flow_top))
+        .route("/api/flows/export", post(handlers::set_flow_export))
+        .route("/api/flows/export/enable", post(handlers::enable_flow_export))
+        .route("/api/flows/export/disable", post(handlers::disable_flow_export))
+        .route("/api/flows/classify-setup", post(handlers::setup_flow_classify))
+        .route("/api/flows/list", get(handlers::list_flows))
 }
