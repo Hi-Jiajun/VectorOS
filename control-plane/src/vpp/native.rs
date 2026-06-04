@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 /// Path to the VPP performance stats Python script
-const VPP_STATS_SCRIPT: &str = "/home/hiliang/Github/vectoros/vpp-tools/vpp_stats.py";
+const VPP_STATS_SCRIPT: &str = "/root/VectorOS/vpp-tools/vpp_stats.py";
 
 /// Native VPP command execution
 /// Replaces Python subprocess calls with direct vppctl commands
