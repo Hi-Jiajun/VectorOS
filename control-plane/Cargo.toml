@@ -10,9 +10,12 @@ license = "Apache-2.0"
 tokio = { version = "1", features = ["full", "sync"] }
 
 # Web framework
-axum = { version = "0.7", features = ["json"] }
+axum = { version = "0.7", features = ["json", "ws"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "fs"] }
+
+# WebSocket support
+futures = "0.3"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -45,3 +48,11 @@ bcrypt = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 axum-extra = { version = "0.9", features = ["typed-header"] }
 rusqlite = "0.40.0"
+
+# Async trait support (needed for Service trait object)
+async-trait = "0.1"
+
+# OpenAPI documentation
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
+utoipa-redoc = { version = "5", features = ["axum"] }

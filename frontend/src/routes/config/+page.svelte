@@ -9,7 +9,7 @@
   let diff: any[] = [];
   let loading = true;
   let error = '';
-  let activeTab: 'tree' | 'diff' | 'history' | 'templates' | 'cli' = 'tree';
+  let activeTab: 'tree' | 'diff' | 'history' | 'templates' | 'cli' | 'import-export' = 'tree';
 
   // Set form
   let setPath = '';
@@ -32,6 +32,26 @@
   let cliSessionId = '';
   let cliCommand = '';
   let cliHistory: Array<{ cmd: string; output: string; status: string }> = [];
+
+  // Import/Export state
+  let exportHostname = '';
+  let exportDescription = '';
+  let exportFormat: 'json' | 'toml' = 'json';
+  let importJson = '';
+  let importSections: string[] = [];
+  let importOverwrite = true;
+  let importAutoCommit = false;
+  let importDescription = '';
+  let importHistory: any[] = [];
+  let validationResult: any = null;
+  let importResult: any = null;
+  let importLoading = false;
+  let validateLoading = false;
+
+  const allSections = [
+    'interfaces', 'pppoe', 'dhcp', 'dns', 'nat',
+    'firewall', 'ipv6', 'vpn', 'qos', 'traffic', 'frr'
+  ];
 
   // Expanded nodes in tree view
   let expandedNodes = new Set<string>();
@@ -276,6 +296,152 @@
     }
   }
 
+  // ── Import/Export functions ────────────────────────────────
+
+  async function handleExport() {
+    error = '';
+    try {
+      const params = new URLSearchParams();
+      if (exportHostname) params.set('hostname', exportHostname);
+      if (exportDescription) params.set('description', exportDescription);
+      params.set('format', exportFormat);
+
+      const res = await fetch(`/api/config/export?${params.toString()}`);
+      const data = await res.json();
+
+      if (data.status === 'error') {
+        error = data.error || 'Export failed';
+        return;
+      }
+
+      // Download the file
+      const blob = new Blob([data.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vectoros-config-${new Date().toISOString().slice(0, 10)}.${exportFormat}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      error = 'Failed to export configuration';
+    }
+  }
+
+  async function handleFileUpload(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      importJson = (e.target?.result as string) || '';
+      // Reset validation and results
+      validationResult = null;
+      importResult = null;
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleValidate() {
+    if (!importJson.trim()) {
+      error = 'Please paste or upload a config file first';
+      return;
+    }
+    validateLoading = true;
+    error = '';
+    validationResult = null;
+
+    try {
+      const res = await fetch('/api/config/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          export_json: importJson,
+          sections: importSections
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'error') {
+        error = data.error;
+      } else {
+        validationResult = data.validation;
+      }
+    } catch (e) {
+      error = 'Failed to validate configuration';
+    } finally {
+      validateLoading = false;
+    }
+  }
+
+  async function handleImport() {
+    if (!importJson.trim()) {
+      error = 'Please paste or upload a config file first';
+      return;
+    }
+    importLoading = true;
+    error = '';
+    importResult = null;
+
+    try {
+      const res = await fetch('/api/config/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          export_json: importJson,
+          sections: importSections,
+          overwrite: importOverwrite,
+          auto_commit: importAutoCommit,
+          description: importDescription || 'Config import via UI'
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'error') {
+        error = data.error;
+      } else {
+        importResult = data;
+        // Reload config data
+        await loadAll();
+        // Reload import history
+        await loadImportHistory();
+      }
+    } catch (e) {
+      error = 'Failed to import configuration';
+    } finally {
+      importLoading = false;
+    }
+  }
+
+  async function loadImportHistory() {
+    try {
+      const res = await fetch('/api/config/import/history');
+      const data = await res.json();
+      if (data.status === 'ok') {
+        importHistory = data.history || [];
+      }
+    } catch (e) {
+      // Ignore errors for history loading
+    }
+  }
+
+  function toggleImportSection(section: string) {
+    const idx = importSections.indexOf(section);
+    if (idx >= 0) {
+      importSections = importSections.filter(s => s !== section);
+    } else {
+      importSections = [...importSections, section];
+    }
+  }
+
+  function selectAllSections() {
+    importSections = [...allSections];
+  }
+
+  function deselectAllSections() {
+    importSections = [];
+  }
+
   // ── Tree helpers ───────────────────────────────────────────────
 
   function toggleNode(path: string) {
@@ -339,6 +505,9 @@
     </button>
     <button class="tab" class:active={activeTab === 'cli'} on:click={() => activeTab = 'cli'}>
       CLI Terminal
+    </button>
+    <button class="tab" class:active={activeTab === 'import-export'} on:click={() => { activeTab = 'import-export'; loadImportHistory(); }}>
+      Import/Export
     </button>
   </div>
 
@@ -641,6 +810,221 @@
               class="cli-input"
             />
           </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- ═══════════════ Import/Export Tab ═══════════════ -->
+
+    {#if activeTab === 'import-export'}
+      <div class="import-export-panel">
+        <div class="panel-grid">
+          <!-- Left: Export Panel -->
+          <div class="export-panel">
+            <div class="panel-header">
+              <h2>Export Configuration</h2>
+            </div>
+            <div class="ops-card">
+              <p class="ops-desc">Export the current router configuration as a downloadable file for migration or backup.</p>
+              <form on:submit|preventDefault={handleExport}>
+                <div class="form-group">
+                  <label>Router Hostname (optional)</label>
+                  <input type="text" bind:value={exportHostname} placeholder="e.g. router-office-1" />
+                </div>
+                <div class="form-group">
+                  <label>Description (optional)</label>
+                  <input type="text" bind:value={exportDescription} placeholder="e.g. Production config backup" />
+                </div>
+                <div class="form-group">
+                  <label>Format</label>
+                  <select bind:value={exportFormat}>
+                    <option value="json">JSON</option>
+                    <option value="toml">TOML</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-primary">Export & Download</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right: Import Panel -->
+          <div class="import-panel">
+            <div class="panel-header">
+              <h2>Import Configuration</h2>
+            </div>
+
+            <!-- Upload/Paste -->
+            <div class="ops-card">
+              <h3>Upload Config File</h3>
+              <p class="ops-desc">Upload a previously exported configuration file or paste JSON directly.</p>
+              <div class="form-group">
+                <label>Select File</label>
+                <input type="file" accept=".json,.toml" on:change={handleFileUpload} />
+              </div>
+              <div class="form-group">
+                <label>Or Paste JSON</label>
+                <textarea bind:value={importJson} rows="8" placeholder='{"version": "1.0", ...}' class="json-textarea"></textarea>
+              </div>
+            </div>
+
+            <!-- Section Selection -->
+            <div class="ops-card">
+              <h3>Select Sections to Import</h3>
+              <p class="ops-desc">Choose which configuration sections to import. Leave empty to import all.</p>
+              <div class="section-selector">
+                <div class="section-actions">
+                  <button type="button" class="btn-sm" on:click={selectAllSections}>Select All</button>
+                  <button type="button" class="btn-sm" on:click={deselectAllSections}>Deselect All</button>
+                </div>
+                <div class="section-checkboxes">
+                  {#each allSections as section}
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={importSections.includes(section)}
+                        on:change={() => toggleImportSection(section)}
+                      />
+                      <span>{section}</span>
+                    </label>
+                  {/each}
+                </div>
+              </div>
+            </div>
+
+            <!-- Options -->
+            <div class="ops-card">
+              <h3>Import Options</h3>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" bind:checked={importOverwrite} />
+                  <span>Overwrite existing values (uncheck to merge)</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" bind:checked={importAutoCommit} />
+                  <span>Auto-commit after import (skip staging)</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" bind:value={importDescription} placeholder="e.g. Import from production" />
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="ops-card">
+              <div class="button-row">
+                <button class="btn-secondary" on:click={handleValidate} disabled={!importJson.trim() || validateLoading}>
+                  {validateLoading ? 'Validating...' : 'Validate First'}
+                </button>
+                <button class="btn-primary" on:click={handleImport} disabled={!importJson.trim() || importLoading}>
+                  {importLoading ? 'Importing...' : 'Import Config'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation Result -->
+        {#if validationResult}
+          <div class="validation-result" class:valid={validationResult.valid} class:invalid={!validationResult.valid}>
+            <h3>Validation Result</h3>
+            <div class="validation-summary">
+              <span class="status-badge" class:badge-ok={validationResult.valid} class:badge-error={!validationResult.valid}>
+                {validationResult.valid ? 'Valid' : 'Invalid'}
+              </span>
+              <span>Sections found: {validationResult.sections_found.length}</span>
+              <span>Estimated changes: {validationResult.import_summary.estimated_changes}</span>
+            </div>
+            {#if validationResult.errors.length > 0}
+              <div class="validation-errors">
+                <h4>Errors</h4>
+                {#each validationResult.errors as err}
+                  <div class="validation-item error">
+                    <span class="item-section">[{err.section}]</span>
+                    <span class="item-field">{err.field}</span>
+                    <span class="item-message">{err.message}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            {#if validationResult.warnings.length > 0}
+              <div class="validation-warnings">
+                <h4>Warnings</h4>
+                {#each validationResult.warnings as warn}
+                  <div class="validation-item warning">
+                    <span class="item-section">[{warn.section}]</span>
+                    <span class="item-message">{warn.message}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Import Result -->
+        {#if importResult}
+          <div class="import-result" class:result-ok={importResult.status === 'ok'} class:result-partial={importResult.status === 'partial'}>
+            <h3>Import Result</h3>
+            <div class="result-summary">
+              <span class="status-badge" class:badge-ok={importResult.status === 'ok'} class:badge-warning={importResult.status === 'partial'}>
+                {importResult.status}
+              </span>
+              <span>Sections imported: {importResult.sections_imported?.length || 0}</span>
+            </div>
+            {#if importResult.errors?.length > 0}
+              <div class="result-errors">
+                {#each importResult.errors as err}
+                  <div class="validation-item error">
+                    <span class="item-message">{err}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            {#if importResult.sections_imported?.length > 0}
+              <div class="result-success">
+                <p>Successfully imported sections:</p>
+                <div class="imported-sections">
+                  {#each importResult.sections_imported as section}
+                    <span class="section-badge">{section}</span>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Import History -->
+        <div class="import-history-panel">
+          <div class="panel-header">
+            <h2>Import History</h2>
+            <button class="btn-sm" on:click={loadImportHistory}>Refresh</button>
+          </div>
+          {#if importHistory.length === 0}
+            <div class="no-data">No import history yet.</div>
+          {:else}
+            <div class="history-list">
+              {#each importHistory as entry}
+                <div class="history-entry">
+                  <div class="history-meta">
+                    <span class="history-time">{entry.imported_at}</span>
+                    <span class="history-version">from: {entry.source_hostname}</span>
+                  </div>
+                  <div class="history-details">
+                    <span class="history-desc">{entry.description || 'Config import'}</span>
+                    <span class="history-sections">Sections: {entry.sections_imported}</span>
+                  </div>
+                  <div class="history-actions">
+                    <span class="status-badge" class:badge-ok={entry.status === 'completed'}>{entry.status}</span>
+                    {#if entry.auto_commit}
+                      <span class="commit-badge">auto-committed</span>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -1268,5 +1652,296 @@
     color: #ff4444;
     cursor: pointer;
     font-size: 1.1rem;
+  }
+
+  /* ── Import/Export Panel ─────────────────────────── */
+
+  .import-export-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .export-panel, .import-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .json-textarea {
+    width: 100%;
+    background: #0a0a1a;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    padding: 0.75rem;
+    border-radius: 0.4rem;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+    min-height: 150px;
+  }
+
+  .json-textarea:focus {
+    outline: none;
+    border-color: #00ff88;
+  }
+
+  .section-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .section-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .section-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+
+  .checkbox-label:hover {
+    color: #e0e0e0;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    accent-color: #00ff88;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  select {
+    background: #0f0f23;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: #00ff88;
+  }
+
+  /* ── Validation & Import Results ─────────────────── */
+
+  .validation-result, .import-result {
+    background: #1a1a2e;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border-left: 4px solid #333;
+  }
+
+  .validation-result.valid {
+    border-left-color: #00ff88;
+  }
+
+  .validation-result.invalid {
+    border-left-color: #ff4444;
+  }
+
+  .import-result.result-ok {
+    border-left-color: #00ff88;
+  }
+
+  .import-result.result-partial {
+    border-left-color: #ffaa00;
+  }
+
+  .validation-result h3, .import-result h3 {
+    margin: 0 0 1rem 0;
+    color: #e0e0e0;
+    font-size: 1rem;
+  }
+
+  .validation-summary, .result-summary {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #333;
+    color: #888;
+  }
+
+  .badge-ok {
+    background: #003322;
+    color: #00ff88;
+  }
+
+  .badge-error {
+    background: #331111;
+    color: #ff4444;
+  }
+
+  .badge-warning {
+    background: #332200;
+    color: #ffaa00;
+  }
+
+  .validation-errors, .validation-warnings, .result-errors {
+    margin-top: 1rem;
+  }
+
+  .validation-errors h4, .validation-warnings h4 {
+    margin: 0 0 0.5rem 0;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+  }
+
+  .validation-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #222;
+    font-size: 0.85rem;
+  }
+
+  .validation-item.error {
+    color: #ff6666;
+  }
+
+  .validation-item.warning {
+    color: #ffaa00;
+  }
+
+  .item-section {
+    font-weight: bold;
+    color: #7ec8e3;
+    min-width: 80px;
+  }
+
+  .item-field {
+    color: #888;
+    min-width: 100px;
+  }
+
+  .item-message {
+    flex: 1;
+  }
+
+  .result-success {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+  }
+
+  .result-success p {
+    margin: 0 0 0.5rem 0;
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .imported-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .section-badge {
+    background: #003322;
+    color: #00ff88;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.3rem;
+    font-size: 0.8rem;
+    font-family: monospace;
+  }
+
+  .commit-badge {
+    background: #332200;
+    color: #ffaa00;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+
+  /* ── Import History ─────────────────────────────── */
+
+  .import-history-panel {
+    background: #1a1a2e;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .import-history-panel .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .import-history-panel .history-entry {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #0f0f23;
+    border-radius: 0.5rem;
+    border: 1px solid #333;
+  }
+
+  .import-history-panel .history-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+  }
+
+  .import-history-panel .history-time {
+    color: #888;
+    font-size: 0.8rem;
+  }
+
+  .import-history-panel .history-version {
+    color: #7ec8e3;
+    font-family: monospace;
+    font-size: 0.8rem;
+  }
+
+  .import-history-panel .history-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .import-history-panel .history-desc {
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .import-history-panel .history-sections {
+    color: #666;
+    font-size: 0.8rem;
+    font-family: monospace;
+  }
+
+  .import-history-panel .history-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>

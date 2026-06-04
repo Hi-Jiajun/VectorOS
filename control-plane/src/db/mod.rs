@@ -17,7 +17,7 @@ pub struct ConfigEntry {
 }
 
 pub struct Database {
-    conn: Mutex<Connection>,
+    pub conn: Mutex<Connection>,
 }
 
 impl Database {

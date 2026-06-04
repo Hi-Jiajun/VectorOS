@@ -1,10 +1,36 @@
 <script lang="ts">
   import '../app.css';
+  import { onMount, onDestroy } from 'svelte';
+  import { initWebSocket, wsStatus } from '$lib/stores/websocket';
+  import type { ConnectionStatus } from '$lib/websocket';
+
+  let connStatus: ConnectionStatus = 'disconnected';
+  let unsubStatus: (() => void) | null = null;
+
+  onMount(() => {
+    initWebSocket();
+    unsubStatus = wsStatus.subscribe((val) => { connStatus = val; });
+  });
+
+  onDestroy(() => {
+    unsubStatus?.();
+  });
+
+  function statusColor(status: ConnectionStatus): string {
+    switch (status) {
+      case 'connected': return '#00ff88';
+      case 'connecting': return '#ffaa00';
+      case 'disconnected': return '#666';
+      case 'error': return '#ff4444';
+      default: return '#666';
+    }
+  }
 </script>
 
 <div class="app">
   <nav>
     <a href="/">Dashboard</a>
+    <a href="/services">Services</a>
     <a href="/pppoe">PPPoE</a>
     <a href="/interfaces">Interfaces</a>
     <a href="/frr">FRRouting</a>
@@ -21,6 +47,12 @@
     <a href="/logs">Logs</a>
     <a href="/diag">Diagnostics</a>
     <a href="/settings">Settings</a>
+    <a href="/swagger-ui/" target="_blank" rel="noopener noreferrer">API Docs</a>
+    <div class="nav-spacer"></div>
+    <div class="nav-status">
+      <span class="status-dot" style="background: {statusColor(connStatus)}"></span>
+      <span class="status-text">Real-time: {connStatus}</span>
+    </div>
   </nav>
 
   <main>
@@ -53,6 +85,33 @@
 
   nav a:hover {
     background: #16213e;
+  }
+
+  .nav-spacer {
+    flex: 1;
+  }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: #888;
+    border-top: 1px solid #333;
+    margin-top: 0.5rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .status-text {
+    white-space: nowrap;
   }
 
   main {

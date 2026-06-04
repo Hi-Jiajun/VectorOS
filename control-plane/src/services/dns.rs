@@ -50,7 +50,7 @@ fn default_cache_size() -> u32 {
 }
 
 /// Check if dnsmasq is running.
-fn is_dnsmasq_running() -> bool {
+pub fn is_dnsmasq_running() -> bool {
     Command::new("pgrep")
         .arg("dnsmasq")
         .output()

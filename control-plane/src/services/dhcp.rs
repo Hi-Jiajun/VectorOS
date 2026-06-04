@@ -64,7 +64,7 @@ fn default_lease_time() -> u32 {
 }
 
 /// Check if dnsmasq is running by looking for its process.
-fn is_dnsmasq_running() -> bool {
+pub fn is_dnsmasq_running() -> bool {
     Command::new("pgrep")
         .arg("dnsmasq")
         .output()

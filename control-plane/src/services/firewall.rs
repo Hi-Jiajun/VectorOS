@@ -13,6 +13,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 use tracing::info;
+use utoipa::ToSchema;
 
 const RULES_FILE: &str = "/etc/vectoros/firewall-rules.json";
 const SURICATA_CONF: &str = "/etc/suricata/suricata.yaml";
@@ -153,7 +154,7 @@ pub struct Schedule {
     pub time_ranges: Vec<TimeRange>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TimeRange {
     pub day: u8,       // 0=Sunday .. 6=Saturday
     pub start: String, // "HH:MM"
@@ -492,7 +493,7 @@ fn save_rules(data: &FirewallData) -> Result<()> {
 
 // ── VPP helpers ──────────────────────────────────────────────────────
 
-fn run_vppctl(args: &[&str]) -> Result<String> {
+pub fn run_vppctl(args: &[&str]) -> Result<String> {
     let output = Command::new("vppctl")
         .args(args)
         .output()

@@ -8,12 +8,13 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::time::SystemTime;
+use utoipa::ToSchema;
 
 // ---------------------------------------------------------------------------
 // Request / Response types
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct PingRequest {
     pub host: String,
     #[serde(default = "default_ping_count")]
@@ -52,7 +53,7 @@ pub struct PingReply {
     pub time_ms: f64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct TracerouteRequest {
     pub host: String,
     #[serde(default = "default_max_hops")]
@@ -80,7 +81,7 @@ pub struct TracerouteHop {
     pub timeout: Option<bool>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct DnsRequest {
     pub domain: String,
     pub server: Option<String>,
@@ -97,7 +98,7 @@ pub struct DnsResult {
     pub ns_records: Vec<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct PortScanRequest {
     pub host: String,
     pub ports: String,

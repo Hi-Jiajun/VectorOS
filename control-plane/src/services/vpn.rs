@@ -10,6 +10,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 use tracing::info;
+use utoipa::ToSchema;
 
 const VPN_CONFIG_FILE: &str = "/etc/vectoros/vpn/state.json";
 const VPN_MANAGER: &str = "/root/VectorOS/vpp-tools/vpn_manager.py";
@@ -163,7 +164,7 @@ fn default_ovpn_auth() -> String { "SHA256".to_string() }
 // ---------------------------------------------------------------------------
 
 /// Request to configure a WireGuard tunnel.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct WireGuardConfigRequest {
     pub name: Option<String>,
     pub listen_port: Option<u16>,
@@ -179,7 +180,7 @@ pub struct WireGuardConfigRequest {
 }
 
 /// Request to configure an IPsec tunnel.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct IpsecConfigRequest {
     pub name: Option<String>,
     pub mode: Option<String>,
@@ -199,7 +200,7 @@ pub struct IpsecConfigRequest {
 }
 
 /// Request to configure OpenVPN.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct OpenVpnConfigRequest {
     pub name: Option<String>,
     pub mode: Option<String>,

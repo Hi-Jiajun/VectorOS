@@ -1,10 +1,14 @@
 use axum::Router;
 use axum::routing::{get, post, delete};
 use std::sync::Arc;
-use crate::api::{handlers, AppState};
+use crate::api::{handlers, openapi, websocket, AppState};
+use utoipa::OpenApi;
 
 pub fn api_routes() -> Router<Arc<AppState>> {
     Router::new()
+        // OpenAPI / Swagger UI
+        .route("/api-docs/openapi.json", get(|| async { axum::Json(openapi::ApiDoc::openapi()) }))
+        .merge(openapi::swagger_ui())
         // Public routes (no auth required)
         .route("/api/health", get(handlers::health))
         .route("/api/auth/login", post(handlers::login))
@@ -138,4 +142,18 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/config/template/apply", post(handlers::config_apply_template))
         .route("/api/config/cli/session", post(handlers::config_cli_session))
         .route("/api/config/cli/execute", post(handlers::config_cli_execute))
+        // Config Import/Export
+        .route("/api/config/export", get(handlers::config_export))
+        .route("/api/config/import", post(handlers::config_import))
+        .route("/api/config/validate", post(handlers::config_validate))
+        .route("/api/config/import/history", get(handlers::config_import_history))
+        // Service Manager
+        .route("/api/services", get(handlers::list_services))
+        .route("/api/services/:name/status", get(handlers::get_service_status))
+        .route("/api/services/:name/start", post(handlers::start_service))
+        .route("/api/services/:name/stop", post(handlers::stop_service))
+        .route("/api/services/:name/restart", post(handlers::restart_service))
+        .route("/api/services/:name/reload", post(handlers::reload_service))
+        // WebSocket for real-time updates
+        .route("/ws", get(websocket::ws_handler))
 }
