@@ -37,22 +37,17 @@ def get_system_info():
 def get_vpp_stats():
     """Get VPP statistics"""
     try:
-        # Get VPP memory
-        result = subprocess.run(['vppctl', 'show memory'], capture_output=True, text=True, timeout=5)
-        memory_info = result.stdout.strip() if result.returncode == 0 else 'N/A'
+        # Get VPP version
+        result = subprocess.run(['vppctl', 'show', 'version'], capture_output=True, text=True, timeout=5)
+        version = result.stdout.strip() if result.returncode == 0 else 'N/A'
 
-        # Get VPP threads
-        result = subprocess.run(['vppctl', 'show threads'], capture_output=True, text=True, timeout=5)
-        threads_info = result.stdout.strip() if result.returncode == 0 else 'N/A'
-
-        # Get interface stats
-        result = subprocess.run(['vppctl', 'show interface'], capture_output=True, text=True, timeout=5)
-        interface_info = result.stdout.strip() if result.returncode == 0 else 'N/A'
+        # Get interface count
+        result = subprocess.run(['vppctl', 'show', 'interface'], capture_output=True, text=True, timeout=5)
+        iface_count = len([l for l in result.stdout.split('\n') if l.strip() and not l.startswith(' ') and 'Name' not in l]) if result.returncode == 0 else 0
 
         return {
-            'memory': memory_info,
-            'threads': threads_info,
-            'interfaces': interface_info
+            'version': version,
+            'interface_count': iface_count
         }
     except Exception as e:
         return {'error': str(e)}
