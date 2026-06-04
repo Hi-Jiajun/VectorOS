@@ -20,13 +20,13 @@ def run_cmd(cmd):
     except Exception as e:
         return '', str(e), 1
 
-def dhcp_enable(interface='lan0', start_ip='192.168.1.100', end_ip='192.168.1.200',
+def dhcp_enable(interface='veth-lan0', start_ip='192.168.1.100', end_ip='192.168.1.200',
                 gateway='192.168.1.1', lease_time=86400):
     """Enable DHCP server using dnsmasq"""
-    # Create dnsmasq config
+    # Create dnsmasq config (use bind-dynamic instead of bind-interfaces)
     config = f"""# VectorOS DHCP Configuration
 interface={interface}
-bind-interfaces
+bind-dynamic
 dhcp-range={start_ip},{end_ip},{lease_time}s
 dhcp-option=option:router,{gateway}
 dhcp-option=option:dns-server,8.8.8.8,1.1.1.1
@@ -36,18 +36,16 @@ log-dhcp
     # Write config
     config_path = '/etc/dnsmasq.d/vectoros.conf'
     try:
+        os.makedirs('/etc/dnsmasq.d', exist_ok=True)
         with open(config_path, 'w') as f:
             f.write(config)
     except Exception as e:
         return {'error': f'Failed to write config: {e}'}
 
-    # Start dnsmasq
+    # Restart dnsmasq
     stdout, stderr, rc = run_cmd('systemctl restart dnsmasq')
     if rc != 0:
-        # Try to start dnsmasq directly
-        stdout, stderr, rc = run_cmd('dnsmasq --conf-file=/etc/dnsmasq.d/vectoros.conf')
-        if rc != 0:
-            return {'error': f'Failed to start dnsmasq: {stderr}'}
+        return {'error': f'Failed to start dnsmasq: {stderr}'}
 
     return {'status': 'ok', 'message': 'DHCP server enabled'}
 
@@ -93,7 +91,7 @@ def dhcp_show():
 def main():
     parser = argparse.ArgumentParser(description='VectorOS DHCP Manager')
     parser.add_argument('action', choices=['enable', 'disable', 'show'])
-    parser.add_argument('--interface', default='lan0', help='Interface name')
+    parser.add_argument('--interface', default='veth-lan0', help='Interface name')
     parser.add_argument('--start-ip', default='192.168.1.100', help='DHCP range start')
     parser.add_argument('--end-ip', default='192.168.1.200', help='DHCP range end')
     parser.add_argument('--gateway', default='192.168.1.1', help='Gateway IP')
