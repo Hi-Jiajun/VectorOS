@@ -37,9 +37,9 @@ def dns_enable(upstream='8.8.8.8,1.1.1.1', interface='veth-lan0', cache_size=100
         pass
 
     # Create combined config
-    upstream_servers = ','.join([f'server={s.strip()}' for s in upstream.split(',')])
+    upstream_lines = '\n'.join([f'server={s.strip()}' for s in upstream.split(',')])
     config = f"""# VectorOS DNS Configuration
-{upstream_servers}
+{upstream_lines}
 cache-size={cache_size}
 listen-address=127.0.0.1,192.168.1.1
 interface={interface}
@@ -51,9 +51,11 @@ log-queries
 
     # If DHCP is configured, merge configs
     if 'dhcp-range' in dhcp_config:
-        # Extract DHCP lines
-        dhcp_lines = [l for l in dhcp_config.split('\n') if 'dhcp' in l.lower() or 'interface' in l.lower()]
-        config += '\n'.join(dhcp_lines) + '\n'
+        # Extract DHCP lines (skip interface line, use our own)
+        dhcp_lines = [l for l in dhcp_config.split('\n()
+                      if 'dhcp' in l.lower() and not l.strip().startswith('#')]
+        if dhcp_lines:
+            config += '\n' + '\n'.join(dhcp_lines) + '\n'
 
     try:
         with open(config_path, 'w') as f:
