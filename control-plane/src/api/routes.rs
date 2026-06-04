@@ -23,10 +23,15 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/routes", get(handlers::get_routes))
         .route("/api/system", get(handlers::get_system_status))
         .route("/api/config/status", get(handlers::get_config_status))
+        // FRRouting
         .route("/api/frr/status", get(handlers::get_frr_status))
         .route("/api/frr/routes", get(handlers::get_frr_routes))
         .route("/api/frr/add-route", post(handlers::add_frr_route))
         .route("/api/frr/del-route", post(handlers::del_frr_route))
+        // IPv6
+        .route("/api/ipv6/status", get(handlers::get_ipv6_status))
+        .route("/api/ipv6/neighbors", get(handlers::get_ipv6_neighbors))
+        .route("/api/dhcpv6/status", get(handlers::get_dhcpv6_status))
         // Log management
         .route("/api/logs", post(handlers::get_logs))
         .route("/api/logs/clear", post(handlers::clear_logs))

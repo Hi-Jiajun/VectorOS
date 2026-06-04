@@ -610,3 +610,55 @@ pub async fn disable_firewall() -> Json<Value> {
         Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
     }
 }
+
+// IPv6 handlers
+pub async fn get_ipv6_status() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/ipv6_manager.py");
+    cmd.arg("show");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn get_ipv6_neighbors() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/ipv6_manager.py");
+    cmd.arg("show-ndp");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
+
+pub async fn get_dhcpv6_status() -> Json<Value> {
+    let mut cmd = std::process::Command::new("python3");
+    cmd.arg("/root/VectorOS/vpp-tools/dhcpv6_manager.py");
+    cmd.arg("show");
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            match serde_json::from_str::<Value>(&stdout) {
+                Ok(data) => Json(data),
+                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
+    }
+}
