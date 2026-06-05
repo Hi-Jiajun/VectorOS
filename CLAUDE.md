@@ -1,5 +1,13 @@
 # VectorOS - VPP-based Open Source Router
 
+## Core Philosophy
+
+**VPP 优先原则：非必要不使用外部依赖**
+
+- 优先使用 VPP 自带功能，避免引入未使用 VPP 能力的外部项目
+- VPP 缺少的功能：适合 VPP 开发的提交官方 PR，不适合的作为 VectorOS 专属功能
+- VPP 已有功能必须直接使用（NAT、ACL、隧道、VPN 等）
+
 ## Architecture
 
 ```
@@ -7,14 +15,13 @@
 │     Frontend (Svelte + Tailwind)    │
 ├─────────────────────────────────────┤
 │    Control Plane (Rust + Axum)      │
-│   Config / API / DHCP / DNS         │
+│   Config / API / Auth / Security    │
 ├─────────────────────────────────────┤
-│   FRRouting (BGP/OSPF) via FPM      │
-├─────────────────────────────────────┤
-│    VPP Data Plane (C, DPDK)         │
+│        VPP Data Plane (C)           │
+│  PPPoE / NAT / ACL / VPN / Tunnel   │
 │   Graph-node forwarding engine      │
 ├─────────────────────────────────────┤
-│        Linux + DPDK PMD             │
+│        Linux + DPDK/RDMA            │
 └─────────────────────────────────────┘
 ```
 
@@ -23,7 +30,6 @@
 - **Data Plane**: VPP (C) - High-performance userspace packet processing
 - **Control Plane**: Rust (tokio + axum) - Configuration, API, services
 - **Frontend**: Svelte + Tailwind CSS - Router management UI
-- **Routing**: FRRouting - BGP/OSPF via FPM socket
 
 ## Project Structure
 
@@ -35,18 +41,19 @@ vectoros/
 │   └── src/
 │       ├── main.rs         # Entry point
 │       ├── api/            # REST API handlers
+│       ├── auth/           # JWT authentication
 │       ├── config/         # Configuration management
-│       ├── vpp/            # VPP API client
-│       └── services/       # DHCP, DNS, etc.
+│       ├── db/             # SQLite database
+│       ├── security/       # Security middleware
+│       ├── services/       # Service implementations
+│       └── vpp/            # VPP API client
 ├── frontend/               # Svelte frontend
-│   ├── package.json
-│   ├── src/
-│   │   ├── routes/         # SvelteKit pages
-│   │   ├── lib/            # Shared components
-│   │   └── app.html        # HTML template
-│   └── static/             # Static assets
-├── vpp-plugins/            # VPP C plugins
-│   └── pppoe-client/       # PPPoE client plugin
+│   ├── dist/               # Built frontend
+│   └── src/
+│       └── routes/         # SvelteKit pages
+├── vpp/                    # VPP source (submodule)
+│   └── src/plugins/pppoeclient/  # PPPoE client plugin
+├── vpp-tools/              # Python VPP tools
 └── docs/                   # Documentation
 ```
 
@@ -124,6 +131,19 @@ lease_time = 86400
 upstream = ["8.8.8.8", "1.1.1.1"]
 cache_size = 1000
 ```
+
+## VPP Features (直接使用)
+
+| 功能 | VPP 插件 | 用途 |
+|------|----------|------|
+| PPPoE | pppoeclient | 宽带拨号 |
+| NAT | nat, cnat | 地址转换 |
+| 防火墙 | acl | 访问控制 |
+| 隧道 | gre, vxlan, geneve | Overlay 网络 |
+| VPN | ikev2, wireguard, l2tp | 远程接入 |
+| IPv6 | 内置 | 完整 IPv6 支持 |
+| QoS | 内置 | 流量整形 |
+| 监控 | flowprobe, ipfix | 流量分析 |
 
 ## Contributing
 
