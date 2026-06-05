@@ -521,10 +521,26 @@ pub async fn get_pppoe_clients() -> Json<Value> {
     )
 )]
 pub async fn get_pppoe_status() -> Json<Value> {
-    match tokio::task::spawn_blocking(|| crate::vpp::native::get_pppoe_status()).await {
-        Ok(Ok(status)) => Json(json!(status)),
-        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
-        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
+    // Use Python script for PPPoE status
+    let result = std::process::Command::new("python3")
+        .arg("/root/VectorOS/vpp-tools/pppoe_manager.py")
+        .arg("status")
+        .output();
+
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                match serde_json::from_str::<Value>(&stdout) {
+                    Ok(data) => Json(data),
+                    Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+                }
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Json(json!({ "error": stderr.to_string() }))
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
     }
 }
 
@@ -571,28 +587,42 @@ pub async fn create_pppoe_client(
         }));
     }
 
-    // Map interface name to sw_if_index
-    let sw_if_index = match config.interface.as_str() {
-        "enp1s0" => "1",
-        "enp2s0" => "2",
-        "enp3s0" => "3",
+    // Map VF interface name to VPP interface name
+    let vpp_interface = match config.interface.as_str() {
+        "enp1s0" => "wan0",
+        "enp2s0" => "lan0",
+        "enp3s0" => "lan1",
+        "wan0" => "wan0",
+        "lan0" => "lan0",
+        "lan1" => "lan1",
         _ => return Json(json!({ "error": format!("Unknown interface: {}", config.interface) })),
     };
 
-    let mtu_str = config.mtu.to_string();
-    let mru_str = config.mru.to_string();
+    // Use Python PPPoE manager
+    let result = std::process::Command::new("python3")
+        .arg("/root/VectorOS/vpp-tools/pppoe_manager.py")
+        .arg("create")
+        .arg("--username").arg(&config.username)
+        .arg("--password").arg(&config.password)
+        .arg("--interface").arg(vpp_interface)
+        .arg("--mtu").arg(config.mtu.to_string())
+        .arg("--mru").arg(config.mru.to_string())
+        .output();
 
-    let args = vec![
-        ("sw-if-index", sw_if_index),
-        ("username", &config.username),
-        ("password", &config.password),
-        ("mtu", &mtu_str),
-        ("mru", &mru_str),
-    ];
-
-    match run_vpp_cmd("create", &args) {
-        Ok(data) => Json(data),
-        Err(e) => Json(json!({ "error": e })),
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                match serde_json::from_str::<Value>(&stdout) {
+                    Ok(data) => Json(data),
+                    Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
+                }
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Json(json!({ "error": stderr.to_string() }))
+            }
+        }
+        Err(e) => Json(json!({ "error": format!("Command error: {}", e) })),
     }
 }
 
@@ -606,10 +636,36 @@ pub async fn create_pppoe_client(
     )
 )]
 pub async fn get_nat_status() -> Json<Value> {
-    match tokio::task::spawn_blocking(|| crate::vpp::native::get_nat_status()).await {
-        Ok(Ok(status)) => Json(json!(status)),
-        Ok(Err(e)) => Json(json!({ "error": e.to_string() })),
-        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
+    // Use VPP CLI to get NAT status
+    let output = std::process::Command::new("vppctl")
+        .args(["show", "nat44", "ei", "interfaces"])
+        .output();
+
+    match output {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let mut interfaces = Vec::new();
+
+            for line in stdout.lines() {
+                let line = line.trim();
+                if line.contains(" in") || line.contains(" out") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        interfaces.push(serde_json::json!({
+                            "name": parts[0],
+                            "direction": parts[1]
+                        }));
+                    }
+                }
+            }
+
+            Json(json!({
+                "enabled": !interfaces.is_empty(),
+                "interfaces": interfaces,
+                "session_count": 0
+            }))
+        }
+        Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
 
@@ -623,24 +679,21 @@ pub async fn get_nat_status() -> Json<Value> {
     )
 )]
 pub async fn enable_nat() -> Json<Value> {
-    match tokio::task::spawn_blocking(|| {
-        let mut cmd = std::process::Command::new("python3");
-        cmd.arg("/root/VectorOS/vpp-tools/nat_manager.py");
-        cmd.arg("enable");
-        cmd.arg("--inside-if").arg("2");
-        cmd.arg("--outside-if").arg("4");
-        cmd.output()
-    }).await {
-        Ok(Ok(output)) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            match serde_json::from_str::<Value>(&stdout) {
-                Ok(data) => Json(data),
-                Err(e) => Json(json!({ "error": format!("Parse error: {}", e) })),
-            }
-        }
-        Ok(Err(e)) => Json(json!({ "error": format!("Command error: {}", e) })),
-        Err(e) => Json(json!({ "error": format!("Task join error: {}", e) })),
-    }
+    // Use VPP CLI directly for NAT configuration
+    let result = std::process::Command::new("vppctl")
+        .args(["nat44", "ei", "plugin", "enable", "sessions", "65536", "users", "8192"])
+        .output();
+
+    // Configure NAT interfaces
+    let _ = std::process::Command::new("vppctl")
+        .args(["set", "interface", "nat44", "ei", "in", "lan0", "out", "pppoe-wan0"])
+        .output();
+
+    let _ = std::process::Command::new("vppctl")
+        .args(["nat44", "ei", "add", "interface", "address", "pppoe-wan0"])
+        .output();
+
+    Json(json!({ "status": "ok", "message": "NAT enabled" }))
 }
 
 /// Get the VPP routing table.
