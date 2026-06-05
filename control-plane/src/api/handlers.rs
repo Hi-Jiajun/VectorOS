@@ -587,14 +587,14 @@ pub async fn create_pppoe_client(
         }));
     }
 
-    // Map VF interface name to VPP interface name
-    let vpp_interface = match config.interface.as_str() {
-        "enp1s0" => "wan0",
-        "enp2s0" => "lan0",
-        "enp3s0" => "lan1",
-        "wan0" => "wan0",
-        "lan0" => "lan0",
-        "lan1" => "lan1",
+    // Map interface name to sw_if_index
+    let sw_if_index = match config.interface.as_str() {
+        "enp1s0" => "1",  // wan0
+        "enp2s0" => "2",  // lan0
+        "enp3s0" => "3",  // lan1
+        "wan0" => "1",
+        "lan0" => "2",
+        "lan1" => "3",
         _ => return Json(json!({ "error": format!("Unknown interface: {}", config.interface) })),
     };
 
@@ -602,9 +602,9 @@ pub async fn create_pppoe_client(
     let result = std::process::Command::new("python3")
         .arg("/root/VectorOS/vpp-tools/pppoe_manager.py")
         .arg("create")
+        .arg("--sw-if-index").arg(sw_if_index)
         .arg("--username").arg(&config.username)
         .arg("--password").arg(&config.password)
-        .arg("--interface").arg(vpp_interface)
         .arg("--mtu").arg(config.mtu.to_string())
         .arg("--mru").arg(config.mru.to_string())
         .output();
