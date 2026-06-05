@@ -4207,3 +4207,37 @@ pub async fn get_ipsec_profiles() -> Json<Value> {
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
+
+/// Show VPP GRE tunnels
+#[utoipa::path(
+    get,
+    path = "/api/vpp/tunnels/gre",
+    tag = "VPP Tunnels",
+    responses(
+        (status = 200, description = "GRE tunnels", body = Value)
+    )
+)]
+pub async fn get_gre_tunnels() -> Json<Value> {
+    let tunnel = crate::services::vpp_tunnel::VppTunnelManager::new();
+    match tunnel.show_gre() {
+        Ok(tunnels) => Json(json!({ "tunnels": tunnels, "count": tunnels.len() })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Show VPP VXLAN tunnels
+#[utoipa::path(
+    get,
+    path = "/api/vpp/tunnels/vxlan",
+    tag = "VPP Tunnels",
+    responses(
+        (status = 200, description = "VXLAN tunnels", body = Value)
+    )
+)]
+pub async fn get_vxlan_tunnels() -> Json<Value> {
+    let tunnel = crate::services::vpp_tunnel::VppTunnelManager::new();
+    match tunnel.show_vxlan() {
+        Ok(tunnels) => Json(json!({ "tunnels": tunnels, "count": tunnels.len() })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}

@@ -188,6 +188,9 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         // VPP IPSec (direct VPP integration)
         .route("/api/vpp/ipsec/sa", get(handlers::get_ipsec_sa))
         .route("/api/vpp/ipsec/profiles", get(handlers::get_ipsec_profiles))
+        // VPP Tunnels (direct VPP integration)
+        .route("/api/vpp/tunnels/gre", get(handlers::get_gre_tunnels))
+        .route("/api/vpp/tunnels/vxlan", get(handlers::get_vxlan_tunnels))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }
