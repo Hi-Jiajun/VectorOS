@@ -4136,3 +4136,40 @@ pub struct VppAclApply {
 fn default_sport() -> String { "0-65535".to_string() }
 fn default_dport() -> String { "0-65535".to_string() }
 fn default_true() -> bool { true }
+
+/// Generate WireGuard keypair
+#[utoipa::path(
+    get,
+    path = "/api/vpp/wireguard/genkey",
+    tag = "VPP WireGuard",
+    responses(
+        (status = 200, description = "Generated keypair", body = Value)
+    )
+)]
+pub async fn generate_wireguard_keypair() -> Json<Value> {
+    let wg = crate::services::vpp_wireguard::VppWireGuardManager::new();
+    match wg.generate_keypair() {
+        Ok((private_key, public_key)) => Json(json!({
+            "private_key": private_key,
+            "public_key": public_key
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Show VPP WireGuard interfaces
+#[utoipa::path(
+    get,
+    path = "/api/vpp/wireguard/interfaces",
+    tag = "VPP WireGuard",
+    responses(
+        (status = 200, description = "WireGuard interfaces", body = Value)
+    )
+)]
+pub async fn list_wireguard_interfaces() -> Json<Value> {
+    let wg = crate::services::vpp_wireguard::VppWireGuardManager::new();
+    match wg.show_interfaces() {
+        Ok(interfaces) => Json(json!({ "interfaces": interfaces })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}

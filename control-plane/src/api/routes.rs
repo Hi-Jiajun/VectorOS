@@ -182,6 +182,9 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/vpp/acl/list", get(handlers::list_vpp_acls))
         .route("/api/vpp/acl/:index", delete(handlers::delete_vpp_acl))
         .route("/api/vpp/acl/apply", post(handlers::apply_vpp_acl))
+        // VPP WireGuard (direct VPP integration)
+        .route("/api/vpp/wireguard/genkey", get(handlers::generate_wireguard_keypair))
+        .route("/api/vpp/wireguard/interfaces", get(handlers::list_wireguard_interfaces))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }

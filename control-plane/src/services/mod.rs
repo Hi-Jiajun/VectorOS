@@ -17,6 +17,7 @@ pub mod pppoe_auto;
 pub mod qos;
 pub mod traffic;
 pub mod vpp_acl;
+pub mod vpp_wireguard;
 pub mod vpn;
 
 // Re-export the vppctl helper so service implementations can use it
