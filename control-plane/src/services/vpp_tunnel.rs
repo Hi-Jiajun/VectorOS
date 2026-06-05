@@ -99,6 +99,32 @@ impl VppTunnelManager {
         Ok(tunnels)
     }
 
+    /// Delete a tunnel by interface name
+    pub fn delete_tunnel(&self, name: &str) -> Result<String> {
+        let output = Command::new("python3")
+            .arg(&self.script_path)
+            .arg("delete")
+            .arg("--name").arg(name)
+            .output()?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            anyhow::bail!("Failed to delete tunnel: {}", stderr);
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let result: serde_json::Value = serde_json::from_str(&stdout)?;
+
+        if let Some(error) = result.get("error") {
+            anyhow::bail!("Delete error: {}", error);
+        }
+
+        Ok(result.get("message")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Tunnel deleted")
+            .to_string())
+    }
+
     /// Show VXLAN tunnels
     pub fn show_vxlan(&self) -> Result<Vec<VxlanTunnel>> {
         let output = Command::new("python3")

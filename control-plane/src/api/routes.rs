@@ -191,6 +191,9 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         // VPP Tunnels (direct VPP integration)
         .route("/api/vpp/tunnels/gre", get(handlers::get_gre_tunnels))
         .route("/api/vpp/tunnels/vxlan", get(handlers::get_vxlan_tunnels))
+        .route("/api/vpp/tunnels/gre/create", post(handlers::create_gre_tunnel))
+        .route("/api/vpp/tunnels/vxlan/create", post(handlers::create_vxlan_tunnel))
+        .route("/api/vpp/tunnels/delete", post(handlers::delete_tunnel))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }

@@ -267,6 +267,11 @@
           <a class="nav-item" data-page="nat" onclick="nav('nat')"><span class="nav-icon">🔄</span><span>NAT</span></a>
         </div>
         <div class="nav-group">
+          <div class="nav-label">安全</div>
+          <a class="nav-item" data-page="vpn" onclick="nav('vpn')"><span class="nav-icon">🔒</span><span>VPN</span><span class="nav-badge" id="nb-vpn">--</span></a>
+          <a class="nav-item" data-page="tunnels" onclick="nav('tunnels')"><span class="nav-icon">🚇</span><span>隧道</span></a>
+        </div>
+        <div class="nav-group">
           <div class="nav-label">系统</div>
           <a class="nav-item" data-page="system" onclick="nav('system')"><span class="nav-icon">⚙️</span><span>系统</span></a>
         </div>
@@ -553,6 +558,270 @@
           </div>
         </div>
 
+        <!-- VPN -->
+        <div id="p-vpn" class="page">
+          <!-- VPN Stats Row -->
+          <div class="stats" style="grid-template-columns: repeat(3, 1fr); margin-bottom:16px">
+            <div class="stat"><div class="stat-head"><div class="stat-ico i1">🔑</div></div><div class="stat-val" id="sv-wg-status">未启用</div><div class="stat-desc">WireGuard</div></div>
+            <div class="stat"><div class="stat-head"><div class="stat-ico i2">🛡️</div></div><div class="stat-val" id="sv-ipsec-status">未启用</div><div class="stat-desc">IPSec</div></div>
+            <div class="stat"><div class="stat-head"><div class="stat-ico i3">🔗</div></div><div class="stat-val" id="sv-vpn-conns">0</div><div class="stat-desc">活跃连接</div></div>
+          </div>
+
+          <div class="grid-2">
+            <!-- WireGuard Configuration -->
+            <div class="card">
+              <div class="card-head">
+                <h3>🔑 WireGuard 配置</h3>
+                <label class="form-check" style="margin:0;gap:6px">
+                  <input type="checkbox" id="wg-enabled" onchange="toggleWireGuard()">
+                  <span style="font-size:12px;font-weight:600" id="wg-toggle-label">已禁用</span>
+                </label>
+              </div>
+              <div class="card-body" id="wg-form-body">
+                <form onsubmit="saveWireGuard(event)">
+                  <div class="form-group">
+                    <label class="form-label">接口名称</label>
+                    <input type="text" class="form-input" id="wg-ifname" placeholder="wg0" value="wg0" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">监听端口</label>
+                    <input type="number" class="form-input" id="wg-listen-port" placeholder="51820" value="51820" min="1" max="65535" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">私钥</label>
+                    <div style="display:flex;gap:8px">
+                      <input type="text" class="form-input" id="wg-private-key" placeholder="点击生成密钥" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px">
+                      <button type="button" class="btn btn-primary" style="height:40px;white-space:nowrap" onclick="generateWireGuardKey()">生成密钥</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">公钥</label>
+                    <input type="text" class="form-input" id="wg-public-key" placeholder="自动生成" readonly style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,0.3)">
+                  </div>
+
+                  <div style="border-top:1px solid var(--border);margin:16px 0;padding-top:16px">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+                      <span>对端配置 (Peer)</span>
+                      <button type="button" class="btn btn-ghost" style="font-size:11px;height:24px" onclick="addWireGuardPeer()">+ 添加</button>
+                    </div>
+                    <div id="wg-peers-container">
+                      <div class="wg-peer-entry" style="background:rgba(0,0,0,0.15);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+                        <div class="form-group" style="margin-bottom:10px">
+                          <label class="form-label">对端公钥</label>
+                          <input type="text" class="form-input wg-peer-pubkey" placeholder="对端 WireGuard 公钥" style="font-family:'JetBrains Mono',monospace;font-size:12px">
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px">
+                          <label class="form-label">对端地址</label>
+                          <input type="text" class="form-input wg-peer-endpoint" placeholder="例如: 203.0.113.1:51820">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                          <label class="form-label">允许 IP 段</label>
+                          <input type="text" class="form-input wg-peer-allowed-ips" placeholder="例如: 10.0.0.0/24, 192.168.1.0/24" value="0.0.0.0/0, ::/0">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="wg-save-btn">💾 保存 WireGuard 配置</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- IPSec Configuration -->
+            <div class="card">
+              <div class="card-head">
+                <h3>🛡️ IPSec 配置</h3>
+                <label class="form-check" style="margin:0;gap:6px">
+                  <input type="checkbox" id="ipsec-enabled" onchange="toggleIPSec()">
+                  <span style="font-size:12px;font-weight:600" id="ipsec-toggle-label">已禁用</span>
+                </label>
+              </div>
+              <div class="card-body" id="ipsec-form-body">
+                <form onsubmit="saveIPSec(event)">
+                  <div class="form-group">
+                    <label class="form-label">Profile 名称</label>
+                    <input type="text" class="form-input" id="ipsec-profile" placeholder="例如: site-to-site" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">认证方式</label>
+                    <select class="form-select" id="ipsec-auth-method">
+                      <option value="psk">预共享密钥 (PSK)</option>
+                      <option value="certificate">证书认证</option>
+                    </select>
+                  </div>
+
+                  <!-- PSK fields -->
+                  <div id="ipsec-psk-fields">
+                    <div class="form-group">
+                      <label class="form-label">预共享密钥</label>
+                      <input type="password" class="form-input" id="ipsec-psk" placeholder="输入预共享密钥">
+                    </div>
+                  </div>
+
+                  <!-- Certificate fields -->
+                  <div id="ipsec-cert-fields" style="display:none">
+                    <div class="form-group">
+                      <label class="form-label">本地证书路径</label>
+                      <input type="text" class="form-input" id="ipsec-local-cert" placeholder="/etc/vectoros/certs/local.pem">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">私钥路径</label>
+                      <input type="text" class="form-input" id="ipsec-key-path" placeholder="/etc/vectoros/certs/local.key">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">对端证书路径</label>
+                      <input type="text" class="form-input" id="ipsec-remote-cert" placeholder="/etc/vectoros/certs/remote.pem">
+                    </div>
+                  </div>
+
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                      <label class="form-label">本地端点</label>
+                      <input type="text" class="form-input" id="ipsec-local-endpoint" placeholder="本机 IP 或域名">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">远端端点</label>
+                      <input type="text" class="form-input" id="ipsec-remote-endpoint" placeholder="远端 IP 或域名" required>
+                    </div>
+                  </div>
+
+                  <div style="font-size:12px;font-weight:700;color:var(--text-2);margin:12px 0 8px">加密设置</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                      <label class="form-label">IKE 算法</label>
+                      <select class="form-select" id="ipsec-ike-algo">
+                        <option value="aes256-sha256-modp2048">AES-256-SHA256-DH14</option>
+                        <option value="aes256-sha512-modp2048">AES-256-SHA512-DH14</option>
+                        <option value="aes128-sha256-modp2048">AES-128-SHA256-DH14</option>
+                        <option value="aes256-sha256-modp4096">AES-256-SHA256-DH16</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">ESP 算法</label>
+                      <select class="form-select" id="ipsec-esp-algo">
+                        <option value="aes256-sha256">AES-256-SHA256</option>
+                        <option value="aes256-sha512">AES-256-SHA512</option>
+                        <option value="aes128-sha256">AES-128-SHA256</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                      <label class="form-label">IKE 版本</label>
+                      <select class="form-select" id="ipsec-ike-version">
+                        <option value="2">IKEv2</option>
+                        <option value="1">IKEv1</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">SA 生命周期 (秒)</label>
+                      <input type="number" class="form-input" id="ipsec-sa-lifetime" value="3600" min="300" max="86400">
+                    </div>
+                  </div>
+
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                      <label class="form-label">本地子网</label>
+                      <input type="text" class="form-input" id="ipsec-local-subnet" placeholder="例如: 192.168.1.0/24">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">远端子网</label>
+                      <input type="text" class="form-input" id="ipsec-remote-subnet" placeholder="例如: 10.0.0.0/24">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-check"><input type="checkbox" id="ipsec-nat-traversal" checked><span>NAT 穿越 (NAT-T)</span></label>
+                    <label class="form-check"><input type="checkbox" id="ipsec-dpd" checked><span>DPD 检测 (Dead Peer Detection)</span></label>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="ipsec-save-btn">💾 保存 IPSec 配置</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active VPN Connections -->
+          <div class="card" style="margin-top:12px">
+            <div class="card-head">
+              <h3>🔗 活跃 VPN 连接</h3>
+              <button class="btn btn-ghost" onclick="loadVpnConnections()">刷新</button>
+            </div>
+            <div class="card-body" id="vpn-connections-el">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tunnels -->
+        <div id="p-tunnels" class="page">
+          <!-- Stats Row -->
+          <div class="stats" style="grid-template-columns: repeat(3, 1fr); margin-bottom:16px">
+            <div class="stat"><div class="stat-head"><div class="stat-ico i1">🚇</div></div><div class="stat-val" id="sv-gre-count">0</div><div class="stat-desc">GRE 隧道</div></div>
+            <div class="stat"><div class="stat-head"><div class="stat-ico i2">🌐</div></div><div class="stat-val" id="sv-vxlan-count">0</div><div class="stat-desc">VXLAN 隧道</div></div>
+            <div class="stat"><div class="stat-head"><div class="stat-ico i3">📊</div></div><div class="stat-val" id="sv-total-tunnels">0</div><div class="stat-desc">总隧道数</div></div>
+          </div>
+
+          <div class="grid-2">
+            <!-- GRE Tunnel Configuration -->
+            <div class="card">
+              <div class="card-head">
+                <h3>🚇 GRE 隧道配置</h3>
+                <button class="btn btn-ghost" onclick="loadTunnels()">刷新</button>
+              </div>
+              <div class="card-body">
+                <form onsubmit="createGreTunnel(event)">
+                  <div class="form-group">
+                    <label class="form-label">源 IP 地址 (本端)</label>
+                    <input type="text" class="form-input" id="gre-src" placeholder="例如: 192.168.1.1" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">目标 IP 地址 (远端)</label>
+                    <input type="text" class="form-input" id="gre-dst" placeholder="例如: 10.0.0.1" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="gre-create-btn">🚀 创建 GRE 隧道</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- VXLAN Tunnel Configuration -->
+            <div class="card">
+              <div class="card-head">
+                <h3>🌐 VXLAN 隧道配置</h3>
+                <button class="btn btn-ghost" onclick="loadTunnels()">刷新</button>
+              </div>
+              <div class="card-body">
+                <form onsubmit="createVxlanTunnel(event)">
+                  <div class="form-group">
+                    <label class="form-label">源 IP 地址 (本地 VTEP)</label>
+                    <input type="text" class="form-input" id="vxlan-src" placeholder="例如: 192.168.1.1" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">目标 IP 地址 (远端 VTEP)</label>
+                    <input type="text" class="form-input" id="vxlan-dst" placeholder="例如: 10.0.0.1" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">VNI (VXLAN 网络标识)</label>
+                    <input type="number" class="form-input" id="vxlan-vni" placeholder="例如: 100" min="0" max="16777215" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width:100%" id="vxlan-create-btn">🚀 创建 VXLAN 隧道</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tunnel List -->
+          <div class="card" style="margin-top:12px">
+            <div class="card-head">
+              <h3>📋 隧道列表</h3>
+              <button class="btn btn-ghost" onclick="loadTunnels()">刷新</button>
+            </div>
+            <div class="card-body" id="tunnels-list-el">
+              <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
+          </div>
+        </div>
+
         <!-- System -->
         <div id="p-system" class="page">
           <div class="grid-2">
@@ -640,7 +909,7 @@
       document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
       document.getElementById('p-' + p).classList.add('active');
       document.querySelector('[data-page="' + p + '"]').classList.add('active');
-      document.getElementById('h-title').textContent = {dashboard:'仪表盘',pppoe:'PPPoE 拨号',interfaces:'网络接口',routes:'路由表',dhcp:'DHCP',dns:'DNS',nat:'NAT',system:'系统'}[p] || p;
+      document.getElementById('h-title').textContent = {dashboard:'仪表盘',pppoe:'PPPoE 拨号',interfaces:'网络接口',routes:'路由表',dhcp:'DHCP',dns:'DNS',nat:'NAT',vpn:'VPN',tunnels:'隧道管理',system:'系统'}[p] || p;
       dashboardActive = (p === 'dashboard');
       load(p);
     }
@@ -1071,6 +1340,8 @@
       else if (p === 'dhcp') loadDhcp();
       else if (p === 'dns') loadDns();
       else if (p === 'nat') loadNat();
+      else if (p === 'vpn') loadVpn();
+      else if (p === 'tunnels') loadTunnels();
       else if (p === 'system') loadSystem();
     }
 
@@ -1218,6 +1489,468 @@
       const d = await api('/api/pppoe/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
       if (d.error) { toast('错误: ' + d.error, false); addEvent('error', 'PPPoE 配置失败', d.error); }
       else { toast('PPPoE 已配置'); addEvent('success', 'PPPoE 配置已保存', '用户名: ' + config.username); setTimeout(loadPppoe, 2000); }
+    }
+
+    // --- Tunnels ---
+    async function loadTunnels() {
+      const el = document.getElementById('tunnels-list-el');
+      el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+
+      try {
+        const [greRes, vxlanRes] = await Promise.all([
+          api('/api/vpp/tunnels/gre'),
+          api('/api/vpp/tunnels/vxlan')
+        ]);
+
+        const greTunnels = greRes.tunnels || [];
+        const vxlanTunnels = vxlanRes.tunnels || [];
+
+        document.getElementById('sv-gre-count').textContent = greTunnels.length;
+        document.getElementById('sv-vxlan-count').textContent = vxlanTunnels.length;
+        document.getElementById('sv-total-tunnels').textContent = greTunnels.length + vxlanTunnels.length;
+
+        if (greTunnels.length === 0 && vxlanTunnels.length === 0) {
+          el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-3)"><p style="font-size:24px;margin-bottom:8px">🚇</p><p>暂无隧道</p><p style="font-size:12px;margin-top:4px">使用上方表单创建 GRE 或 VXLAN 隧道</p></div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>类型</th><th>名称</th><th>源 IP</th><th>目标 IP</th><th>VNI</th><th>操作</th></tr></thead><tbody>';
+
+        for (const t of greTunnels) {
+          html += '<tr>' +
+            '<td><span class="badge b-accent">GRE</span></td>' +
+            '<td class="mono">' + (t.name || '-') + '</td>' +
+            '<td class="mono">' + (t.src || '-') + '</td>' +
+            '<td class="mono">' + (t.dst || '-') + '</td>' +
+            '<td>-</td>' +
+            '<td><button class="btn btn-ghost" style="color:var(--red);font-size:11px;height:24px" onclick="deleteTunnel(\'' + t.name + '\')">删除</button></td>' +
+            '</tr>';
+        }
+
+        for (const t of vxlanTunnels) {
+          html += '<tr>' +
+            '<td><span class="badge b-green">VXLAN</span></td>' +
+            '<td class="mono">' + (t.name || '-') + '</td>' +
+            '<td class="mono">' + (t.src || '-') + '</td>' +
+            '<td class="mono">' + (t.dst || '-') + '</td>' +
+            '<td class="mono">' + (t.vni || '-') + '</td>' +
+            '<td><button class="btn btn-ghost" style="color:var(--red);font-size:11px;height:24px" onclick="deleteTunnel(\'' + t.name + '\')">删除</button></td>' +
+            '</tr>';
+        }
+
+        html += '</tbody></table>';
+        el.innerHTML = html;
+      } catch(e) {
+        el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px">无法加载隧道列表: ' + e.message + '</div>';
+      }
+    }
+
+    async function createGreTunnel(e) {
+      e.preventDefault();
+      const src = document.getElementById('gre-src').value.trim();
+      const dst = document.getElementById('gre-dst').value.trim();
+      const btn = document.getElementById('gre-create-btn');
+
+      if (!src || !dst) { toast('请填写源 IP 和目标 IP', false); return; }
+      if (!validateIp(src)) { toast('源 IP 地址格式无效', false); return; }
+      if (!validateIp(dst)) { toast('目标 IP 地址格式无效', false); return; }
+
+      btn.textContent = '创建中...';
+      btn.disabled = true;
+      try {
+        const d = await api('/api/vpp/tunnels/gre/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ src, dst })
+        });
+        if (d.error) {
+          toast('GRE 隧道创建失败: ' + d.error, false);
+          addEvent('error', 'GRE 隧道创建失败', d.error);
+        } else {
+          toast('GRE 隧道已创建: ' + (d.interface || ''));
+          addEvent('success', 'GRE 隧道创建成功', '接口: ' + (d.interface || '') + ', ' + src + ' -> ' + dst);
+          document.getElementById('gre-src').value = '';
+          document.getElementById('gre-dst').value = '';
+          loadTunnels();
+        }
+      } catch(err) {
+        toast('GRE 隧道创建失败: ' + err.message, false);
+      } finally {
+        btn.textContent = '🚀 创建 GRE 隧道';
+        btn.disabled = false;
+      }
+    }
+
+    async function createVxlanTunnel(e) {
+      e.preventDefault();
+      const src = document.getElementById('vxlan-src').value.trim();
+      const dst = document.getElementById('vxlan-dst').value.trim();
+      const vni = parseInt(document.getElementById('vxlan-vni').value);
+      const btn = document.getElementById('vxlan-create-btn');
+
+      if (!src || !dst) { toast('请填写源 IP 和目标 IP', false); return; }
+      if (!validateIp(src)) { toast('源 IP 地址格式无效', false); return; }
+      if (!validateIp(dst)) { toast('目标 IP 地址格式无效', false); return; }
+      if (isNaN(vni) || vni < 0 || vni > 16777215) { toast('VNI 必须在 0-16777215 之间', false); return; }
+
+      btn.textContent = '创建中...';
+      btn.disabled = true;
+      try {
+        const d = await api('/api/vpp/tunnels/vxlan/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ src, dst, vni })
+        });
+        if (d.error) {
+          toast('VXLAN 隧道创建失败: ' + d.error, false);
+          addEvent('error', 'VXLAN 隧道创建失败', d.error);
+        } else {
+          toast('VXLAN 隧道已创建: ' + (d.interface || ''));
+          addEvent('success', 'VXLAN 隧道创建成功', '接口: ' + (d.interface || '') + ', ' + src + ' -> ' + dst + ', VNI: ' + vni);
+          document.getElementById('vxlan-src').value = '';
+          document.getElementById('vxlan-dst').value = '';
+          document.getElementById('vxlan-vni').value = '';
+          loadTunnels();
+        }
+      } catch(err) {
+        toast('VXLAN 隧道创建失败: ' + err.message, false);
+      } finally {
+        btn.textContent = '🚀 创建 VXLAN 隧道';
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteTunnel(name) {
+      if (!confirm('确定要删除隧道 "' + name + '" 吗？')) return;
+      try {
+        const d = await api('/api/vpp/tunnels/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (d.error) {
+          toast('隧道删除失败: ' + d.error, false);
+          addEvent('error', '隧道删除失败', d.error);
+        } else {
+          toast('隧道已删除: ' + name);
+          addEvent('success', '隧道删除', '接口 ' + name + ' 已删除');
+          loadTunnels();
+        }
+      } catch(e) {
+        toast('隧道删除失败: ' + e.message, false);
+      }
+    }
+
+    function validateIp(ip) {
+      if (!ip) return false;
+      // Basic IPv4 validation
+      const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+      const m = ip.match(ipv4);
+      if (m) {
+        return m.slice(1).every(octet => parseInt(octet) >= 0 && parseInt(octet) <= 255);
+      }
+      // Basic IPv6 validation (simplified)
+      const ipv6 = /^([0-9a-fA-F:]+)$/;
+      return ipv6.test(ip);
+    }
+
+    // --- VPN: WireGuard ---
+    let wgEnabled = false;
+
+    async function generateWireGuardKey() {
+      try {
+        const d = await api('/api/vpp/wireguard/keygen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (d.error) { toast('密钥生成失败: ' + d.error, false); return; }
+        const keys = d.keys || d;
+        if (keys.private_key) document.getElementById('wg-private-key').value = keys.private_key;
+        if (keys.public_key) document.getElementById('wg-public-key').value = keys.public_key;
+        toast('密钥已生成');
+      } catch(e) {
+        toast('密钥生成失败: ' + e.message, false);
+      }
+    }
+
+    // Generate public key from private key input
+    document.addEventListener('DOMContentLoaded', function() {
+      const pkInput = document.getElementById('wg-private-key');
+      if (pkInput) {
+        pkInput.addEventListener('blur', async function() {
+          const pk = this.value.trim();
+          if (pk && !document.getElementById('wg-public-key').value) {
+            try {
+              const d = await api('/api/vpp/wireguard/keygen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ private_key: pk }) });
+              if (!d.error && d.keys && d.keys.public_key) {
+                document.getElementById('wg-public-key').value = d.keys.public_key;
+              }
+            } catch(e) {}
+          }
+        });
+      }
+    });
+
+    let wgPeerCount = 1;
+    function addWireGuardPeer() {
+      wgPeerCount++;
+      const container = document.getElementById('wg-peers-container');
+      const entry = document.createElement('div');
+      entry.className = 'wg-peer-entry';
+      entry.style.cssText = 'background:rgba(0,0,0,0.15);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;position:relative';
+      entry.innerHTML =
+        '<button type="button" class="btn btn-ghost" style="position:absolute;top:8px;right:8px;height:22px;font-size:11px;color:var(--red)" onclick="this.closest(\'.wg-peer-entry\').remove()">✕ 移除</button>' +
+        '<div class="form-group" style="margin-bottom:10px"><label class="form-label">对端公钥</label><input type="text" class="form-input wg-peer-pubkey" placeholder="对端 WireGuard 公钥" style="font-family:\'JetBrains Mono\',monospace;font-size:12px"></div>' +
+        '<div class="form-group" style="margin-bottom:10px"><label class="form-label">对端地址</label><input type="text" class="form-input wg-peer-endpoint" placeholder="例如: 203.0.113.1:51820"></div>' +
+        '<div class="form-group" style="margin-bottom:0"><label class="form-label">允许 IP 段</label><input type="text" class="form-input wg-peer-allowed-ips" placeholder="例如: 10.0.0.0/24" value="0.0.0.0/0, ::/0"></div>';
+      container.appendChild(entry);
+    }
+
+    function toggleWireGuard() {
+      const cb = document.getElementById('wg-enabled');
+      wgEnabled = cb.checked;
+      document.getElementById('wg-toggle-label').textContent = wgEnabled ? '已启用' : '已禁用';
+      const body = document.getElementById('wg-form-body');
+      body.style.opacity = wgEnabled ? '1' : '0.5';
+      body.style.pointerEvents = wgEnabled ? 'auto' : 'none';
+    }
+
+    async function saveWireGuard(e) {
+      e.preventDefault();
+      const peers = [];
+      document.querySelectorAll('.wg-peer-entry').forEach(entry => {
+        const pubkey = entry.querySelector('.wg-peer-pubkey').value.trim();
+        const endpoint = entry.querySelector('.wg-peer-endpoint').value.trim();
+        const allowedIps = entry.querySelector('.wg-peer-allowed-ips').value.trim();
+        if (pubkey) {
+          peers.push({ public_key: pubkey, endpoint: endpoint, allowed_ips: allowedIps });
+        }
+      });
+
+      const config = {
+        interface: {
+          name: document.getElementById('wg-ifname').value.trim(),
+          listen_port: parseInt(document.getElementById('wg-listen-port').value),
+          private_key: document.getElementById('wg-private-key').value.trim(),
+          public_key: document.getElementById('wg-public-key').value.trim(),
+          enabled: wgEnabled
+        },
+        peers: peers
+      };
+
+      const btn = document.getElementById('wg-save-btn');
+      btn.textContent = '保存中...';
+      btn.disabled = true;
+
+      try {
+        const d = await api('/api/vpp/wireguard/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        if (d.error) { toast('WireGuard 保存失败: ' + d.error, false); addEvent('error', 'WireGuard 配置失败', d.error); }
+        else { toast('WireGuard 配置已保存'); addEvent('success', 'WireGuard 配置', '配置已更新: ' + config.interface.name); loadVpn(); }
+      } catch(err) {
+        toast('WireGuard 保存失败: ' + err.message, false);
+      } finally {
+        btn.textContent = '💾 保存 WireGuard 配置';
+        btn.disabled = false;
+      }
+    }
+
+    // --- VPN: IPSec ---
+    let ipsecEnabled = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const authSelect = document.getElementById('ipsec-auth-method');
+      if (authSelect) {
+        authSelect.addEventListener('change', function() {
+          const isPsk = this.value === 'psk';
+          document.getElementById('ipsec-psk-fields').style.display = isPsk ? '' : 'none';
+          document.getElementById('ipsec-cert-fields').style.display = isPsk ? 'none' : '';
+        });
+      }
+    });
+
+    function toggleIPSec() {
+      const cb = document.getElementById('ipsec-enabled');
+      ipsecEnabled = cb.checked;
+      document.getElementById('ipsec-toggle-label').textContent = ipsecEnabled ? '已启用' : '已禁用';
+      const body = document.getElementById('ipsec-form-body');
+      body.style.opacity = ipsecEnabled ? '1' : '0.5';
+      body.style.pointerEvents = ipsecEnabled ? 'auto' : 'none';
+    }
+
+    async function saveIPSec(e) {
+      e.preventDefault();
+      const authMethod = document.getElementById('ipsec-auth-method').value;
+      const config = {
+        profile_name: document.getElementById('ipsec-profile').value.trim(),
+        auth_method: authMethod,
+        local_endpoint: document.getElementById('ipsec-local-endpoint').value.trim(),
+        remote_endpoint: document.getElementById('ipsec-remote-endpoint').value.trim(),
+        ike_algorithm: document.getElementById('ipsec-ike-algo').value,
+        esp_algorithm: document.getElementById('ipsec-esp-algo').value,
+        ike_version: parseInt(document.getElementById('ipsec-ike-version').value),
+        sa_lifetime: parseInt(document.getElementById('ipsec-sa-lifetime').value),
+        local_subnet: document.getElementById('ipsec-local-subnet').value.trim(),
+        remote_subnet: document.getElementById('ipsec-remote-subnet').value.trim(),
+        nat_traversal: document.getElementById('ipsec-nat-traversal').checked,
+        dpd: document.getElementById('ipsec-dpd').checked,
+        enabled: ipsecEnabled
+      };
+
+      if (authMethod === 'psk') {
+        config.psk = document.getElementById('ipsec-psk').value;
+      } else {
+        config.local_cert = document.getElementById('ipsec-local-cert').value.trim();
+        config.key_path = document.getElementById('ipsec-key-path').value.trim();
+        config.remote_cert = document.getElementById('ipsec-remote-cert').value.trim();
+      }
+
+      const btn = document.getElementById('ipsec-save-btn');
+      btn.textContent = '保存中...';
+      btn.disabled = true;
+
+      try {
+        const d = await api('/api/vpp/ipsec/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        if (d.error) { toast('IPSec 保存失败: ' + d.error, false); addEvent('error', 'IPSec 配置失败', d.error); }
+        else { toast('IPSec 配置已保存'); addEvent('success', 'IPSec 配置', 'Profile: ' + config.profile_name); loadVpn(); }
+      } catch(err) {
+        toast('IPSec 保存失败: ' + err.message, false);
+      } finally {
+        btn.textContent = '💾 保存 IPSec 配置';
+        btn.disabled = false;
+      }
+    }
+
+    // --- VPN: Connections & Status ---
+    async function loadVpn() {
+      await Promise.all([loadWireGuardStatus(), loadIPSecStatus(), loadVpnConnections()]);
+    }
+
+    async function loadWireGuardStatus() {
+      try {
+        const d = await api('/api/vpp/wireguard/status');
+        if (d.error) {
+          document.getElementById('sv-wg-status').textContent = '查询失败';
+          return;
+        }
+        const interfaces = d.interfaces || d.wireguard_interfaces || [];
+        const enabled = interfaces.some(i => i.enabled);
+        wgEnabled = enabled;
+        document.getElementById('wg-enabled').checked = enabled;
+        document.getElementById('wg-toggle-label').textContent = enabled ? '已启用' : '已禁用';
+        document.getElementById('sv-wg-status').textContent = enabled ? '已启用' : '未启用';
+        document.getElementById('sv-wg-status').style.color = enabled ? 'var(--green)' : 'var(--text-2)';
+
+        if (interfaces.length > 0) {
+          const iface = interfaces[0];
+          if (iface.name) document.getElementById('wg-ifname').value = iface.name;
+          if (iface.listen_port) document.getElementById('wg-listen-port').value = iface.listen_port;
+          if (iface.private_key) document.getElementById('wg-private-key').value = iface.private_key;
+          if (iface.public_key) document.getElementById('wg-public-key').value = iface.public_key;
+        }
+
+        const body = document.getElementById('wg-form-body');
+        body.style.opacity = enabled ? '1' : '0.5';
+        body.style.pointerEvents = enabled ? 'auto' : 'none';
+      } catch(e) {
+        console.error('WireGuard status error:', e);
+      }
+    }
+
+    async function loadIPSecStatus() {
+      try {
+        const d = await api('/api/vpp/ipsec/status');
+        if (d.error) {
+          document.getElementById('sv-ipsec-status').textContent = '查询失败';
+          return;
+        }
+        const profiles = d.profiles || d.ipsec_profiles || [];
+        const enabled = profiles.some(p => p.enabled);
+        ipsecEnabled = enabled;
+        document.getElementById('ipsec-enabled').checked = enabled;
+        document.getElementById('ipsec-toggle-label').textContent = enabled ? '已启用' : '已禁用';
+        document.getElementById('sv-ipsec-status').textContent = enabled ? '已启用' : '未启用';
+        document.getElementById('sv-ipsec-status').style.color = enabled ? 'var(--green)' : 'var(--text-2)';
+
+        if (profiles.length > 0) {
+          const p = profiles[0];
+          if (p.profile_name) document.getElementById('ipsec-profile').value = p.profile_name;
+          if (p.auth_method) document.getElementById('ipsec-auth-method').value = p.auth_method;
+          if (p.remote_endpoint) document.getElementById('ipsec-remote-endpoint').value = p.remote_endpoint;
+          if (p.local_endpoint) document.getElementById('ipsec-local-endpoint').value = p.local_endpoint;
+          if (p.ike_algorithm) document.getElementById('ipsec-ike-algo').value = p.ike_algorithm;
+          if (p.esp_algorithm) document.getElementById('ipsec-esp-algo').value = p.esp_algorithm;
+          if (p.ike_version) document.getElementById('ipsec-ike-version').value = p.ike_version;
+          if (p.sa_lifetime) document.getElementById('ipsec-sa-lifetime').value = p.sa_lifetime;
+          if (p.local_subnet) document.getElementById('ipsec-local-subnet').value = p.local_subnet;
+          if (p.remote_subnet) document.getElementById('ipsec-remote-subnet').value = p.remote_subnet;
+        }
+
+        const body = document.getElementById('ipsec-form-body');
+        body.style.opacity = enabled ? '1' : '0.5';
+        body.style.pointerEvents = enabled ? 'auto' : 'none';
+      } catch(e) {
+        console.error('IPSec status error:', e);
+      }
+    }
+
+    async function loadVpnConnections() {
+      const el = document.getElementById('vpn-connections-el');
+      try {
+        const [wgRes, ipsecRes] = await Promise.all([
+          api('/api/vpp/wireguard/peers'),
+          api('/api/vpp/ipsec/sas')
+        ]);
+
+        let connections = [];
+
+        // WireGuard peers
+        const wgPeers = wgRes.peers || wgRes.wireguard_peers || [];
+        wgPeers.forEach(peer => {
+          connections.push({
+            type: 'WireGuard',
+            name: peer.interface || 'wg0',
+            remote: peer.endpoint || peer.public_key || '--',
+            status: peer.connected ? 'active' : 'inactive',
+            statusText: peer.connected ? '活跃' : '未连接',
+            rx: peer.rx_bytes || 0,
+            tx: peer.tx_bytes || 0,
+            lastHandshake: peer.last_handshake || '--'
+          });
+        });
+
+        // IPSec SAs
+        const saList = ipsecRes.sas || ipsecRes.security_associations || [];
+        saList.forEach(sa => {
+          connections.push({
+            type: 'IPSec',
+            name: sa.profile || sa.name || '--',
+            remote: sa.remote_address || sa.remote_id || '--',
+            status: sa.state === 'established' ? 'active' : 'inactive',
+            statusText: sa.state === 'established' ? '已建立' : (sa.state || '未知'),
+            rx: sa.rx_bytes || 0,
+            tx: sa.tx_bytes || 0,
+            lastHandshake: sa.established_time || '--'
+          });
+        });
+
+        document.getElementById('sv-vpn-conns').textContent = connections.filter(c => c.status === 'active').length;
+
+        if (connections.length === 0) {
+          el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-3)"><p style="font-size:24px;margin-bottom:8px">🔗</p><p>暂无活跃 VPN 连接</p><p style="font-size:12px;margin-top:4px">配置 WireGuard 或 IPSec 后连接将显示在此处</p></div>';
+          return;
+        }
+
+        el.innerHTML = '<table><thead><tr><th>类型</th><th>名称</th><th>远端</th><th>状态</th><th>接收</th><th>发送</th></tr></thead><tbody>' +
+          connections.map(c =>
+            '<tr><td><span class="badge ' + (c.type === 'WireGuard' ? 'b-accent' : 'b-green') + '">' + c.type + '</span></td>' +
+            '<td class="mono">' + c.name + '</td>' +
+            '<td class="mono" style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">' + c.remote + '</td>' +
+            '<td><span class="badge ' + (c.status === 'active' ? 'b-green' : 'b-yellow') + '"><span class="dot"></span> ' + c.statusText + '</span></td>' +
+            '<td class="mono">' + fmtBytes(c.rx) + '</td>' +
+            '<td class="mono">' + fmtBytes(c.tx) + '</td></tr>'
+          ).join('') + '</tbody></table>';
+
+      } catch(e) {
+        el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px">无法加载 VPN 连接状态</div>';
+        console.error('VPN connections error:', e);
+      }
     }
 
     // --- Initialize ---

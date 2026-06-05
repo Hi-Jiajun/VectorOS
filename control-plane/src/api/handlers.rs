@@ -4294,3 +4294,96 @@ pub async fn get_vxlan_tunnels() -> Json<Value> {
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
+
+/// Request body for creating a GRE tunnel
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateGreTunnelRequest {
+    pub src: String,
+    pub dst: String,
+}
+
+/// Create a GRE tunnel
+#[utoipa::path(
+    post,
+    path = "/api/vpp/tunnels/gre/create",
+    tag = "VPP Tunnels",
+    request_body = CreateGreTunnelRequest,
+    responses(
+        (status = 200, description = "GRE tunnel created", body = Value),
+        (status = 400, description = "Invalid request", body = Value)
+    )
+)]
+pub async fn create_gre_tunnel(
+    Json(req): Json<CreateGreTunnelRequest>,
+) -> Json<Value> {
+    if req.src.is_empty() || req.dst.is_empty() {
+        return Json(json!({ "error": "Source and destination IPs are required" }));
+    }
+    let tunnel = crate::services::vpp_tunnel::VppTunnelManager::new();
+    match tunnel.create_gre(&req.src, &req.dst) {
+        Ok(iface) => Json(json!({ "status": "ok", "interface": iface, "message": format!("GRE tunnel {} created", iface) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Request body for creating a VXLAN tunnel
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateVxlanTunnelRequest {
+    pub src: String,
+    pub dst: String,
+    pub vni: u32,
+}
+
+/// Create a VXLAN tunnel
+#[utoipa::path(
+    post,
+    path = "/api/vpp/tunnels/vxlan/create",
+    tag = "VPP Tunnels",
+    request_body = CreateVxlanTunnelRequest,
+    responses(
+        (status = 200, description = "VXLAN tunnel created", body = Value),
+        (status = 400, description = "Invalid request", body = Value)
+    )
+)]
+pub async fn create_vxlan_tunnel(
+    Json(req): Json<CreateVxlanTunnelRequest>,
+) -> Json<Value> {
+    if req.src.is_empty() || req.dst.is_empty() {
+        return Json(json!({ "error": "Source and destination IPs are required" }));
+    }
+    let tunnel = crate::services::vpp_tunnel::VppTunnelManager::new();
+    match tunnel.create_vxlan(&req.src, &req.dst, req.vni) {
+        Ok(iface) => Json(json!({ "status": "ok", "interface": iface, "message": format!("VXLAN tunnel {} created", iface) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Request body for deleting a tunnel
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DeleteTunnelRequest {
+    pub name: String,
+}
+
+/// Delete a tunnel by interface name
+#[utoipa::path(
+    delete,
+    path = "/api/vpp/tunnels/delete",
+    tag = "VPP Tunnels",
+    request_body = DeleteTunnelRequest,
+    responses(
+        (status = 200, description = "Tunnel deleted", body = Value),
+        (status = 400, description = "Invalid request", body = Value)
+    )
+)]
+pub async fn delete_tunnel(
+    Json(req): Json<DeleteTunnelRequest>,
+) -> Json<Value> {
+    if req.name.is_empty() {
+        return Json(json!({ "error": "Tunnel name is required" }));
+    }
+    let tunnel = crate::services::vpp_tunnel::VppTunnelManager::new();
+    match tunnel.delete_tunnel(&req.name) {
+        Ok(msg) => Json(json!({ "status": "ok", "message": msg })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
