@@ -67,14 +67,15 @@ pub async fn start_server(listen: &str, config: Config, service_manager: Arc<Ser
     let app = Router::new()
         .merge(routes::api_routes())
         .nest_service("/", ServeDir::new("frontend/dist"))
-        // Security layers applied in order (first layer = outermost)
-        .layer(axum::middleware::from_fn(crate::auth::auth_middleware))
-        .layer(security::rate_limit::RateLimitLayer::new(state.rate_limiter.clone()))
-        .layer(security::csrf::CsrfLayer::new(state.csrf_state.clone()))
+        // Security layers applied in reverse order (last layer = outermost)
+        // Order: cors -> headers -> rate_limit -> auth -> csrf
+        .layer(CorsLayer::permissive())
         .layer(axum::middleware::from_fn(
             security::headers::security_headers_middleware,
         ))
-        .layer(CorsLayer::permissive())
+        .layer(security::rate_limit::RateLimitLayer::new(state.rate_limiter.clone()))
+        .layer(axum::middleware::from_fn(crate::auth::auth_middleware))
+        .layer(security::csrf::CsrfLayer::new(state.csrf_state.clone()))
         .with_state(state);
 
     info!("API server listening on {} (security: rate-limiting, CSRF, headers, auth)", listen);
