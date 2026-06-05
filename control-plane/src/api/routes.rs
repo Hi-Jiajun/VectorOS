@@ -185,6 +185,9 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         // VPP WireGuard (direct VPP integration)
         .route("/api/vpp/wireguard/genkey", get(handlers::generate_wireguard_keypair))
         .route("/api/vpp/wireguard/interfaces", get(handlers::list_wireguard_interfaces))
+        // VPP IPSec (direct VPP integration)
+        .route("/api/vpp/ipsec/sa", get(handlers::get_ipsec_sa))
+        .route("/api/vpp/ipsec/profiles", get(handlers::get_ipsec_profiles))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }

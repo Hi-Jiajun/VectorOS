@@ -4173,3 +4173,37 @@ pub async fn list_wireguard_interfaces() -> Json<Value> {
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }
+
+/// Show VPP IPSec SAs
+#[utoipa::path(
+    get,
+    path = "/api/vpp/ipsec/sa",
+    tag = "VPP IPSec",
+    responses(
+        (status = 200, description = "IPSec Security Associations", body = Value)
+    )
+)]
+pub async fn get_ipsec_sa() -> Json<Value> {
+    let ipsec = crate::services::vpp_ipsec::VppIpSecManager::new();
+    match ipsec.show_sa() {
+        Ok(sas) => Json(json!({ "sas": sas, "count": sas.len() })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Show VPP IPSec profiles
+#[utoipa::path(
+    get,
+    path = "/api/vpp/ipsec/profiles",
+    tag = "VPP IPSec",
+    responses(
+        (status = 200, description = "IPSec profiles", body = Value)
+    )
+)]
+pub async fn get_ipsec_profiles() -> Json<Value> {
+    let ipsec = crate::services::vpp_ipsec::VppIpSecManager::new();
+    match ipsec.show_profiles() {
+        Ok(profiles) => Json(json!({ "profiles": profiles, "count": profiles.len() })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
