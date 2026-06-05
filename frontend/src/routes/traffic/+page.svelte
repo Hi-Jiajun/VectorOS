@@ -1,973 +1,748 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
 
-  let trafficStatus: any = null;
-  let trafficStats: any = null;
+  // ── Types ──────────────────────────────────────────────────────────
+
+  interface InterfaceInfo {
+    name: string;
+    sw_if_index: number;
+    state: string;
+    mtu: number;
+    mac_address?: string;
+    ip_addresses?: string[];
+    interface_type?: string;
+  }
+
+  interface InterfaceStats {
+    name: string;
+    rx_packets: number;
+    tx_packets: number;
+    rx_bytes: number;
+    tx_bytes: number;
+    rx_errors: number;
+    tx_errors: number;
+    rx_drops: number;
+    tx_drops: number;
+  }
+
+  interface RateData {
+    rxBytesPerSec: number;
+    txBytesPerSec: number;
+    rxPacketsPerSec: number;
+    txPacketsPerSec: number;
+  }
+
+  interface TrafficSnapshot {
+    rx_bytes: number;
+    tx_bytes: number;
+    rx_packets: number;
+    tx_packets: number;
+    ts: number;
+  }
+
+  interface IfaceTrafficData {
+    stats: InterfaceStats;
+    rates: RateData;
+    prevSnapshot: TrafficSnapshot | null;
+    rxRateHistory: number[];
+    txRateHistory: number[];
+    // Bandwidth monitor
+    peakRxRate: number;
+    peakTxRate: number;
+    totalRxBytes: number;
+    totalTxBytes: number;
+    sampleCount: number;
+    sumRxRate: number;
+    sumTxRate: number;
+  }
+
+  // ── State ──────────────────────────────────────────────────────────
+
+  let interfaces: InterfaceInfo[] = [];
   let loading = true;
   let error = '';
-  let success = '';
   let autoRefresh = true;
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
+  let miniStatsInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Interface limit form
-  let ifaceForm = {
-    interface: '',
-    rate: '',
-    burst: '150000',
-    direction: 'both'
-  };
+  // Per-interface traffic data
+  let trafficMap: Map<string, IfaceTrafficData> = new Map();
 
-  // IP limit form
-  let ipForm = {
-    ip: '',
-    rate: '',
-    burst: '75000'
-  };
+  // Selected interface for detail view
+  let selectedIface = '';
 
-  // Priority form
-  let priorityForm = {
-    name: '',
-    queue: 'medium'
-  };
+  // Canvas graph references
+  let overviewGraphCanvas: HTMLCanvasElement;
+  let overviewGraphCtx: CanvasRenderingContext2D | null = null;
+  let detailGraphCanvas: HTMLCanvasElement;
+  let detailGraphCtx: CanvasRenderingContext2D | null = null;
 
-  // App class form
-  let appClassForm = {
-    name: '',
-    ports: '',
-    protocol: 'tcp',
-    priority: 'medium',
-    description: ''
-  };
+  const GRAPH_POINTS = 60;
+  const POLL_INTERVAL_MS = 2000;
 
-  // Traffic history for sparkline
-  let trafficHistory: { time: string; interfaces: number; ips: number; apps: number }[] = [];
-  const MAX_HISTORY = 30;
+  // Global totals for dashboard widget
+  let totalRxRate = 0;
+  let totalTxRate = 0;
 
-  const priorityLevels = [
-    { value: 'high', label: 'High', color: '#00ff88', weight: 40 },
-    { value: 'medium', label: 'Medium', color: '#ffd93d', weight: 35 },
-    { value: 'low', label: 'Low', color: '#ff6b6b', weight: 25 },
-  ];
-
-  const directions = [
-    { value: 'both', label: 'Both (In + Out)' },
-    { value: 'input', label: 'Input Only' },
-    { value: 'output', label: 'Output Only' },
-  ];
-
-  const protocols = [
-    { value: 'tcp', label: 'TCP' },
-    { value: 'udp', label: 'UDP' },
-    { value: '', label: 'Any' },
-  ];
+  // ── Lifecycle ──────────────────────────────────────────────────────
 
   onMount(async () => {
-    await fetchAll();
-    startAutoRefresh();
+    await fetchInterfaces();
+    refreshInterval = setInterval(async () => {
+      if (autoRefresh) {
+        await pollAllStats();
+      }
+    }, POLL_INTERVAL_MS);
   });
 
   onDestroy(() => {
-    stopAutoRefresh();
+    if (refreshInterval) clearInterval(refreshInterval);
+    if (miniStatsInterval) clearInterval(miniStatsInterval);
   });
 
-  function startAutoRefresh() {
-    stopAutoRefresh();
-    refreshInterval = setInterval(async () => {
-      if (autoRefresh) {
-        await fetchStats();
-      }
-    }, 5000);
+  // ── Canvas graph setup ─────────────────────────────────────────────
+
+  $: if (overviewGraphCanvas && !overviewGraphCtx) {
+    overviewGraphCtx = overviewGraphCanvas.getContext('2d');
   }
 
-  function stopAutoRefresh() {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
+  $: if (detailGraphCanvas && !detailGraphCtx) {
+    detailGraphCtx = detailGraphCanvas.getContext('2d');
+  }
+
+  // Redraw overview graph when data changes
+  $: if (overviewGraphCtx) {
+    drawOverviewGraph();
+  }
+
+  // Redraw detail graph when selected interface data changes
+  $: if (detailGraphCtx && selectedIface) {
+    const data = trafficMap.get(selectedIface);
+    if (data && (data.rxRateHistory.length > 0 || data.txRateHistory.length > 0)) {
+      drawDetailGraph(data);
     }
   }
 
-  async function fetchAll() {
+  // ── API helpers ────────────────────────────────────────────────────
+
+  async function fetchInterfaces() {
     try {
       loading = true;
       error = '';
-      const [statusRes, statsRes] = await Promise.all([
-        fetch('/api/traffic/status').then(r => r.json()),
-        fetch('/api/traffic/stats').then(r => r.json()),
-      ]);
-
-      if (statusRes.error) {
-        error = statusRes.error;
+      const res = await fetch('/api/interfaces');
+      const data = await res.json();
+      if (data.error) {
+        error = data.error;
       } else {
-        trafficStatus = statusRes;
-      }
-
-      if (statsRes.error) {
-        error = error ? error + '; ' + statsRes.error : statsRes.error;
-      } else {
-        trafficStats = statsRes;
-        // Update history
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        trafficHistory = [
-          ...trafficHistory.slice(-(MAX_HISTORY - 1)),
-          {
-            time: timeStr,
-            interfaces: statsRes.total_interface_limits || 0,
-            ips: statsRes.total_ip_limits || 0,
-            apps: statsRes.total_app_classes || 0,
+        interfaces = data.interfaces || [];
+        // Initialize traffic data for new interfaces
+        for (const iface of interfaces) {
+          if (!trafficMap.has(iface.name)) {
+            trafficMap.set(iface.name, {
+              stats: {
+                name: iface.name,
+                rx_packets: 0, tx_packets: 0,
+                rx_bytes: 0, tx_bytes: 0,
+                rx_errors: 0, tx_errors: 0,
+                rx_drops: 0, tx_drops: 0,
+              },
+              rates: { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 },
+              prevSnapshot: null,
+              rxRateHistory: [],
+              txRateHistory: [],
+              peakRxRate: 0,
+              peakTxRate: 0,
+              totalRxBytes: 0,
+              totalTxBytes: 0,
+              sampleCount: 0,
+              sumRxRate: 0,
+              sumTxRate: 0,
+            });
           }
-        ];
+        }
+        // Auto-select first interface if none selected
+        if (!selectedIface && interfaces.length > 0) {
+          selectedIface = interfaces[0].name;
+        }
+        // Fetch stats for all interfaces
+        await pollAllStats();
       }
-    } catch (e) {
-      error = 'Failed to fetch traffic control data';
+    } catch {
+      error = 'Failed to fetch interfaces';
     } finally {
       loading = false;
     }
   }
 
-  async function fetchStats() {
+  async function fetchIfaceStats(name: string) {
     try {
-      error = '';
-      const res = await fetch('/api/traffic/stats');
+      const res = await fetch(`/api/interfaces/${encodeURIComponent(name)}/stats`);
       const data = await res.json();
-      if (!data.error) {
-        trafficStats = data;
-        trafficStatus = data;
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        trafficHistory = [
-          ...trafficHistory.slice(-(MAX_HISTORY - 1)),
-          {
-            time: timeStr,
-            interfaces: data.total_interface_limits || 0,
-            ips: data.total_ip_limits || 0,
-            apps: data.total_app_classes || 0,
+      if (data.stats) {
+        const s: InterfaceStats = data.stats;
+        const existing = trafficMap.get(name);
+        if (existing) {
+          const now = Date.now();
+          let rates: RateData = existing.rates;
+
+          if (existing.prevSnapshot) {
+            const dt = (now - existing.prevSnapshot.ts) / 1000;
+            if (dt > 0.3) {
+              rates = {
+                rxBytesPerSec: Math.max(0, (s.rx_bytes - existing.prevSnapshot.rx_bytes) / dt),
+                txBytesPerSec: Math.max(0, (s.tx_bytes - existing.prevSnapshot.tx_bytes) / dt),
+                rxPacketsPerSec: Math.max(0, (s.rx_packets - existing.prevSnapshot.rx_packets) / dt),
+                txPacketsPerSec: Math.max(0, (s.tx_packets - existing.prevSnapshot.tx_packets) / dt),
+              };
+            }
           }
-        ];
+
+          // Update rate histories
+          const rxHistory = [...existing.rxRateHistory.slice(-(GRAPH_POINTS - 1)), rates.rxBytesPerSec];
+          const txHistory = [...existing.txRateHistory.slice(-(GRAPH_POINTS - 1)), rates.txBytesPerSec];
+
+          // Update bandwidth monitor stats
+          const peakRx = Math.max(existing.peakRxRate, rates.rxBytesPerSec);
+          const peakTx = Math.max(existing.peakTxRate, rates.txBytesPerSec);
+          const newSampleCount = existing.sampleCount + 1;
+          const sumRx = existing.sumRxRate + rates.rxBytesPerSec;
+          const sumTx = existing.sumTxRate + rates.txBytesPerSec;
+
+          trafficMap.set(name, {
+            stats: s,
+            rates,
+            prevSnapshot: { rx_bytes: s.rx_bytes, tx_bytes: s.tx_bytes, rx_packets: s.rx_packets, tx_packets: s.tx_packets, ts: now },
+            rxRateHistory: rxHistory,
+            txRateHistory: txHistory,
+            peakRxRate: peakRx,
+            peakTxRate: peakTx,
+            totalRxBytes: s.rx_bytes,
+            totalTxBytes: s.tx_bytes,
+            sampleCount: newSampleCount,
+            sumRxRate: sumRx,
+            sumTxRate: sumTx,
+          });
+        } else {
+          // First time - create entry
+          const now = Date.now();
+          trafficMap.set(name, {
+            stats: s,
+            rates: { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 },
+            prevSnapshot: { rx_bytes: s.rx_bytes, tx_bytes: s.tx_bytes, rx_packets: s.rx_packets, tx_packets: s.tx_packets, ts: now },
+            rxRateHistory: [],
+            txRateHistory: [],
+            peakRxRate: 0,
+            peakTxRate: 0,
+            totalRxBytes: s.rx_bytes,
+            totalTxBytes: s.tx_bytes,
+            sampleCount: 0,
+            sumRxRate: 0,
+            sumTxRate: 0,
+          });
+        }
+        trafficMap = trafficMap; // trigger reactivity
       }
-    } catch (e) {
-      // silently ignore
+    } catch {
+      // Silent
     }
   }
 
-  async function setInterfaceLimit() {
-    try {
-      error = '';
-      success = '';
-      if (!ifaceForm.interface || !ifaceForm.rate) {
-        error = 'Interface and rate are required';
-        return;
+  async function pollAllStats() {
+    totalRxRate = 0;
+    totalTxRate = 0;
+    for (const iface of interfaces) {
+      await fetchIfaceStats(iface.name);
+      const data = trafficMap.get(iface.name);
+      if (data) {
+        totalRxRate += data.rates.rxBytesPerSec;
+        totalTxRate += data.rates.txBytesPerSec;
       }
-
-      const res = await fetch('/api/traffic/limit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'interface',
-          target: ifaceForm.interface,
-          rate: parseInt(ifaceForm.rate),
-          burst: parseInt(ifaceForm.burst) || 150000,
-          direction: ifaceForm.direction,
-        })
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'Interface limit set';
-        ifaceForm = { interface: '', rate: '', burst: '150000', direction: 'both' };
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to set interface limit';
     }
   }
 
-  async function removeInterfaceLimit(iface: string) {
-    if (!confirm(`Remove bandwidth limit from ${iface}?`)) return;
-    try {
-      error = '';
-      success = '';
-      const res = await fetch(`/api/traffic/limit/interface/${encodeURIComponent(iface)}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'Limit removed';
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to remove interface limit';
+  function selectInterface(name: string) {
+    selectedIface = name;
+  }
+
+  // ── Formatting ─────────────────────────────────────────────────────
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+  }
+
+  function formatBytesRate(bytesPerSec: number): string {
+    if (bytesPerSec === 0) return '0 B/s';
+    if (bytesPerSec >= 1024 * 1024 * 1024) return (bytesPerSec / (1024 * 1024 * 1024)).toFixed(2) + ' GB/s';
+    if (bytesPerSec >= 1024 * 1024) return (bytesPerSec / (1024 * 1024)).toFixed(2) + ' MB/s';
+    if (bytesPerSec >= 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+    return bytesPerSec.toFixed(0) + ' B/s';
+  }
+
+  function formatBitsRate(bytesPerSec: number): string {
+    const bitsPerSec = bytesPerSec * 8;
+    if (bitsPerSec >= 1_000_000_000) return (bitsPerSec / 1_000_000_000).toFixed(1) + ' Gbps';
+    if (bitsPerSec >= 1_000_000) return (bitsPerSec / 1_000_000).toFixed(1) + ' Mbps';
+    if (bitsPerSec >= 1_000) return (bitsPerSec / 1_000).toFixed(1) + ' Kbps';
+    return bitsPerSec.toFixed(0) + ' bps';
+  }
+
+  function formatPps(packetsPerSec: number): string {
+    if (packetsPerSec >= 1_000_000) return (packetsPerSec / 1_000_000).toFixed(2) + ' Mpps';
+    if (packetsPerSec >= 1_000) return (packetsPerSec / 1_000).toFixed(1) + ' Kpps';
+    return packetsPerSec.toFixed(0) + ' pps';
+  }
+
+  function formatCount(n: number): string {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+    return n.toString();
+  }
+
+  function avgRate(data: IfaceTrafficData): { rx: number; tx: number } {
+    if (data.sampleCount === 0) return { rx: 0, tx: 0 };
+    return {
+      rx: data.sumRxRate / data.sampleCount,
+      tx: data.sumTxRate / data.sampleCount,
+    };
+  }
+
+  function trafficBarWidth(rate: number, maxRate: number): number {
+    if (maxRate === 0) return 0;
+    return Math.max((rate / maxRate) * 100, 1);
+  }
+
+  // ── Canvas graph drawing ───────────────────────────────────────────
+
+  function drawOverviewGraph() {
+    if (!overviewGraphCtx || !overviewGraphCanvas) return;
+    const ctx = overviewGraphCtx;
+    const w = overviewGraphCanvas.width;
+    const h = overviewGraphCanvas.height;
+
+    // Background
+    ctx.fillStyle = '#0f0f23';
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+      const y = (h / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
-  }
 
-  async function setIpLimit() {
-    try {
-      error = '';
-      success = '';
-      if (!ipForm.ip || !ipForm.rate) {
-        error = 'IP and rate are required';
-        return;
-      }
+    // Aggregate all interface histories into total RX/TX
+    const totalRxHistory: number[] = [];
+    const totalTxHistory: number[] = [];
 
-      const res = await fetch('/api/traffic/limit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'ip',
-          ip: ipForm.ip,
-          rate: parseInt(ipForm.rate),
-          burst: parseInt(ipForm.burst) || 75000,
-        })
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'IP limit set';
-        ipForm = { ip: '', rate: '', burst: '75000' };
-        await fetchAll();
+    for (const iface of interfaces) {
+      const data = trafficMap.get(iface.name);
+      if (data) {
+        for (let i = 0; i < GRAPH_POINTS; i++) {
+          const rx = data.rxRateHistory[i] || 0;
+          const tx = data.txRateHistory[i] || 0;
+          totalRxHistory[i] = (totalRxHistory[i] || 0) + rx;
+          totalTxHistory[i] = (totalTxHistory[i] || 0) + tx;
+        }
       }
-    } catch (e) {
-      error = 'Failed to set IP limit';
     }
-  }
 
-  async function removeIpLimit(ip: string) {
-    if (!confirm(`Remove bandwidth limit from ${ip}?`)) return;
-    try {
-      error = '';
-      success = '';
-      const res = await fetch(`/api/traffic/limit/ip/${encodeURIComponent(ip)}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'IP limit removed';
-        await fetchAll();
+    const allValues = [...totalRxHistory, ...totalTxHistory];
+    const maxVal = Math.max(1, ...allValues) * 1.15;
+
+    function drawLine(data: number[], color: string) {
+      if (data.length < 2) return;
+      const step = w / (GRAPH_POINTS - 1);
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      for (let i = 0; i < data.length; i++) {
+        const x = i * step;
+        const y = h - (data[i] / maxVal) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
-    } catch (e) {
-      error = 'Failed to remove IP limit';
+      ctx.stroke();
+
+      // Area fill
+      const lastX = (data.length - 1) * step;
+      ctx.lineTo(lastX, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fillStyle = color.replace('1)', '0.12)');
+      ctx.fill();
     }
+
+    drawLine(totalRxHistory, 'rgba(77, 171, 247, 1)');
+    drawLine(totalTxHistory, 'rgba(81, 207, 102, 1)');
+
+    // Legend
+    ctx.font = '11px sans-serif';
+    const legendY = 14;
+    ctx.fillStyle = '#4dabf7';
+    ctx.fillRect(8, legendY - 8, 12, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('RX', 24, legendY);
+    ctx.fillStyle = '#51cf66';
+    ctx.fillRect(56, legendY - 8, 12, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('TX', 72, legendY);
+
+    // Scale label
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatBytesRate(maxVal), w - 8, legendY);
+    ctx.textAlign = 'left';
   }
 
-  async function setPriority() {
-    try {
-      error = '';
-      success = '';
-      if (!priorityForm.name || !priorityForm.queue) {
-        error = 'Name and queue are required';
-        return;
-      }
+  function drawDetailGraph(data: IfaceTrafficData) {
+    if (!detailGraphCtx || !detailGraphCanvas) return;
+    const ctx = detailGraphCtx;
+    const w = detailGraphCanvas.width;
+    const h = detailGraphCanvas.height;
 
-      const res = await fetch('/api/traffic/priority', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: priorityForm.name,
-          queue: priorityForm.queue,
-        })
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'Priority set';
-        priorityForm = { name: '', queue: 'medium' };
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to set priority';
+    // Background
+    ctx.fillStyle = '#0f0f23';
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+      const y = (h / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
-  }
 
-  async function setAppClass() {
-    try {
-      error = '';
-      success = '';
-      if (!appClassForm.name) {
-        error = 'App class name is required';
-        return;
-      }
+    const allValues = [...data.rxRateHistory, ...data.txRateHistory];
+    const maxVal = Math.max(1, ...allValues) * 1.15;
 
-      const res = await fetch('/api/traffic/app-class', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: appClassForm.name,
-          ports: appClassForm.ports,
-          protocol: appClassForm.protocol,
-          priority: appClassForm.priority,
-          description: appClassForm.description || undefined,
-        })
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'App class set';
-        appClassForm = { name: '', ports: '', protocol: 'tcp', priority: 'medium', description: '' };
-        await fetchAll();
+    function drawLine(series: number[], color: string) {
+      if (series.length < 2) return;
+      const step = w / (GRAPH_POINTS - 1);
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      for (let i = 0; i < series.length; i++) {
+        const x = i * step;
+        const y = h - (series[i] / maxVal) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
-    } catch (e) {
-      error = 'Failed to set app class';
+      ctx.stroke();
+
+      const lastX = (series.length - 1) * step;
+      ctx.lineTo(lastX, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fillStyle = color.replace('1)', '0.12)');
+      ctx.fill();
     }
+
+    drawLine(data.rxRateHistory, 'rgba(77, 171, 247, 1)');
+    drawLine(data.txRateHistory, 'rgba(81, 207, 102, 1)');
+
+    // Legend
+    ctx.font = '11px sans-serif';
+    const legendY = 14;
+    ctx.fillStyle = '#4dabf7';
+    ctx.fillRect(8, legendY - 8, 12, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('RX', 24, legendY);
+    ctx.fillStyle = '#51cf66';
+    ctx.fillRect(56, legendY - 8, 12, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('TX', 72, legendY);
+
+    // Scale label
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatBytesRate(maxVal), w - 8, legendY);
+    ctx.textAlign = 'left';
   }
 
-  async function removeAppClass(name: string) {
-    if (!confirm(`Remove app class '${name}'?`)) return;
-    try {
-      error = '';
-      success = '';
-      const res = await fetch(`/api/traffic/app-class/${encodeURIComponent(name)}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'App class removed';
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to remove app class';
-    }
-  }
+  // ── Derived ────────────────────────────────────────────────────────
 
-  async function loadDefaults() {
-    if (!confirm('Load default app QoS classes (gaming, video, voip, download)?')) return;
-    try {
-      error = '';
-      success = '';
-      const res = await fetch('/api/traffic/defaults', { method: 'POST' });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'Defaults loaded';
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to load defaults';
-    }
-  }
-
-  async function resetAll() {
-    if (!confirm('Remove ALL traffic control rules? This cannot be undone.')) return;
-    try {
-      error = '';
-      success = '';
-      const res = await fetch('/api/traffic/reset', { method: 'POST' });
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
-      } else {
-        success = data.message || 'All rules reset';
-        await fetchAll();
-      }
-    } catch (e) {
-      error = 'Failed to reset traffic control';
-    }
-  }
-
-  function formatRate(bitsPerSec: number): string {
-    if (bitsPerSec >= 1_000_000_000) return `${(bitsPerSec / 1_000_000_000).toFixed(1)} Gbps`;
-    if (bitsPerSec >= 1_000_000) return `${(bitsPerSec / 1_000_000).toFixed(1)} Mbps`;
-    if (bitsPerSec >= 1_000) return `${(bitsPerSec / 1_000).toFixed(1)} Kbps`;
-    return `${bitsPerSec} bps`;
-  }
-
-  function priorityColor(p: string): string {
-    if (p === 'high') return '#00ff88';
-    if (p === 'medium') return '#ffd93d';
-    return '#ff6b6b';
-  }
-
-  function getBarWidth(val: number, max: number): number {
-    if (max === 0) return 0;
-    return Math.max((val / max) * 100, 2);
-  }
+  $: selectedData = selectedIface ? trafficMap.get(selectedIface) || null : null;
+  $: maxInterfaceRate = Math.max(
+    ...interfaces.map((iface) => {
+      const d = trafficMap.get(iface.name);
+      return d ? Math.max(d.rates.rxBytesPerSec, d.rates.txBytesPerSec) : 0;
+    }),
+    1
+  );
 </script>
 
 <svelte:head>
-  <title>VectorOS - Traffic Control</title>
+  <title>VectorOS - Traffic Monitor</title>
 </svelte:head>
 
-<div class="traffic-page">
-  <h1>Traffic Control</h1>
-  <p class="subtitle">Advanced bandwidth shaping, per-IP limits, priority queues, and application QoS</p>
-
-  <!-- Status Card -->
-  <div class="status-card">
-    <div class="status-header">
-      <h2>Overview</h2>
-      <div class="button-row">
-        <button class="btn-sm" class:btn-active={autoRefresh} on:click={() => { autoRefresh = !autoRefresh; if (autoRefresh) startAutoRefresh(); else stopAutoRefresh(); }}>
-          {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-        </button>
-        <button class="btn-sm btn-secondary" on:click={fetchAll}>Refresh</button>
-      </div>
+<div class="traffic-monitor">
+  <div class="header-row">
+    <h1>Traffic Monitor</h1>
+    <div class="header-controls">
+      <button class="btn-sm" class:btn-active={autoRefresh} on:click={() => { autoRefresh = !autoRefresh; }}>
+        {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+      </button>
+      <button class="btn-sm btn-secondary" on:click={pollAllStats}>Refresh</button>
     </div>
-
-    {#if loading}
-      <p>Loading...</p>
-    {:else if trafficStatus}
-      <div class="stat-grid">
-        <div class="stat-item">
-          <span class="stat-label">Interface Limits</span>
-          <span class="stat-value">{trafficStatus.total_interface_limits || 0}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">IP Limits</span>
-          <span class="stat-value">{trafficStatus.total_ip_limits || 0}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">App Classes</span>
-          <span class="stat-value">{trafficStatus.total_app_classes || 0}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Global Status</span>
-          <span class="status-badge" class:enabled={trafficStatus.global_enabled} class:disabled={!trafficStatus.global_enabled}>
-            {trafficStatus.global_enabled ? 'ENABLED' : 'DISABLED'}
-          </span>
-        </div>
-      </div>
-    {/if}
   </div>
 
   {#if error}
     <div class="error-card">{error}</div>
   {/if}
-  {#if success}
-    <div class="success-card">{success}</div>
-  {/if}
 
-  <!-- Traffic Activity Over Time -->
-  {#if trafficHistory.length > 1}
-    <div class="chart-card">
-      <h2>Active Rules Over Time</h2>
-      <div class="sparkline-container">
-        {@const maxVal = Math.max(...trafficHistory.map(h => h.interfaces + h.ips + h.apps), 1)}
-        <div class="sparkline">
-          {#each trafficHistory as point, i}
-            {@const h = ((point.interfaces + point.ips + point.apps) / maxVal) * 100}
-            <div
-              class="spark-bar"
-              style="height: {Math.max(h, 2)}%"
-              title="{point.time}: {point.interfaces} iface, {point.ips} IPs, {point.apps} apps"
-            ></div>
-          {/each}
+  {#if loading && interfaces.length === 0}
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <span>Loading interfaces...</span>
+    </div>
+  {:else}
+    <!-- ═══ 1. Traffic Dashboard Widget ═══ -->
+    <div class="dashboard-widget">
+      <h2>Total Traffic</h2>
+      <div class="total-rate-grid">
+        <div class="total-rate-box rx">
+          <span class="total-rate-label">Total RX Rate</span>
+          <span class="total-rate-value">{formatBytesRate(totalRxRate)}</span>
+          <span class="total-rate-bits">{formatBitsRate(totalRxRate)}</span>
         </div>
-        <div class="sparkline-labels">
-          <span>{trafficHistory[0]?.time || ''}</span>
-          <span>{trafficHistory[Math.floor(trafficHistory.length / 2)]?.time || ''}</span>
-          <span>{trafficHistory[trafficHistory.length - 1]?.time || ''}</span>
+        <div class="total-rate-box tx">
+          <span class="total-rate-label">Total TX Rate</span>
+          <span class="total-rate-value">{formatBytesRate(totalTxRate)}</span>
+          <span class="total-rate-bits">{formatBitsRate(totalTxRate)}</span>
         </div>
       </div>
-    </div>
-  {/if}
 
-  <!-- Bandwidth Allocation Visualization -->
-  {#if trafficStatus && trafficStatus.interface_limits && Object.keys(trafficStatus.interface_limits).length > 0}
-    <div class="chart-card">
-      <h2>Bandwidth Allocation</h2>
-      <div class="bandwidth-bars">
-        {@const maxRate = Math.max(...Object.values(trafficStatus.interface_limits).map((l: any) => l.rate || 0), 1)}
-        {#each Object.entries(trafficStatus.interface_limits) as [iface, limit]}
-          <div class="bw-row">
-            <span class="bw-label">{iface}</span>
-            <div class="bw-track">
-              <div class="bw-fill" style="width: {getBarWidth((limit as any).rate, maxRate)}%"></div>
-            </div>
-            <span class="bw-rate">{formatRate((limit as any).rate)}</span>
-            <span class="bw-dir">{(limit as any).direction}</span>
-          </div>
+      <!-- Per-interface traffic bars -->
+      <div class="iface-bars">
+        {#each interfaces as iface}
+          {@const data = trafficMap.get(iface.name)}
+          {#if data && (data.rates.rxBytesPerSec > 0 || data.rates.txBytesPerSec > 0)}
+            <button class="iface-bar-row" class:selected={selectedIface === iface.name} on:click={() => selectInterface(iface.name)}>
+              <span class="bar-label">{iface.name}</span>
+              <div class="bar-tracks">
+                <div class="bar-track">
+                  <div class="bar-fill rx" style="width: {trafficBarWidth(data.rates.rxBytesPerSec, maxInterfaceRate)}%"></div>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill tx" style="width: {trafficBarWidth(data.rates.txBytesPerSec, maxInterfaceRate)}%"></div>
+                </div>
+              </div>
+              <div class="bar-rates">
+                <span class="bar-rate rx">{formatBytesRate(data.rates.rxBytesPerSec)}</span>
+                <span class="bar-rate tx">{formatBytesRate(data.rates.txBytesPerSec)}</span>
+              </div>
+            </button>
+          {/if}
         {/each}
       </div>
-    </div>
-  {/if}
 
-  <!-- Per-Device Bandwidth Usage -->
-  {#if trafficStatus && trafficStatus.ip_limits && Object.keys(trafficStatus.ip_limits).length > 0}
-    <div class="chart-card">
-      <h2>Per-Device Bandwidth Limits</h2>
-      <div class="bandwidth-bars">
-        {@const maxRate = Math.max(...Object.values(trafficStatus.ip_limits).map((l: any) => l.rate || 0), 1)}
-        {#each Object.entries(trafficStatus.ip_limits) as [ip, limit]}
-          <div class="bw-row">
-            <span class="bw-label">{ip}</span>
-            <div class="bw-track">
-              <div class="bw-fill bw-fill-ip" style="width: {getBarWidth((limit as any).rate, maxRate)}%"></div>
+      <!-- Overview graph -->
+      <div class="graph-wrapper">
+        <div class="graph-label">Aggregate Traffic Over Time</div>
+        <canvas bind:this={overviewGraphCanvas} width={720} height={140} class="traffic-graph"></canvas>
+      </div>
+    </div>
+
+    <!-- ═══ 2. Interface Traffic Cards ═══ -->
+    <div class="iface-cards-section">
+      <h2>Interface Traffic</h2>
+      <div class="iface-cards-grid">
+        {#each interfaces as iface}
+          {@const data = trafficMap.get(iface.name)}
+          <button class="iface-card" class:selected={selectedIface === iface.name} on:click={() => selectInterface(iface.name)}>
+            <div class="iface-card-header">
+              <span class="iface-card-name">{iface.name}</span>
+              <span class="state-dot" class:up={iface.state === 'up'} class:down={iface.state !== 'up'}></span>
             </div>
-            <span class="bw-rate">{formatRate((limit as any).rate)}</span>
-            <button class="btn-x" on:click={() => removeIpLimit(ip)} title="Remove limit">x</button>
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-  <!-- Priority Queue Visualization -->
-  <div class="chart-card">
-    <h2>Priority Queues</h2>
-    <div class="priority-bars">
-      {#each priorityLevels as p}
-        <div class="priority-row">
-          <span class="priority-label" style="color: {p.color}">{p.label}</span>
-          <div class="priority-track">
-            <div class="priority-fill" style="width: {p.weight}%; background: {p.color}"></div>
-          </div>
-          <span class="priority-weight">{p.weight}%</span>
-        </div>
-      {/each}
-    </div>
-  </div>
-
-  <div class="grid-2col">
-    <!-- Set Interface Limit -->
-    <div class="config-card">
-      <h2>Set Interface Bandwidth Limit</h2>
-      <form on:submit|preventDefault={setInterfaceLimit}>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="iface-name">Interface</label>
-            <input type="text" id="iface-name" bind:value={ifaceForm.interface} placeholder="e.g. GigabitEthernet0/0/0" />
-          </div>
-          <div class="form-group">
-            <label for="iface-dir">Direction</label>
-            <select id="iface-dir" bind:value={ifaceForm.direction}>
-              {#each directions as d}
-                <option value={d.value}>{d.label}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="iface-rate">Rate (bits/sec)</label>
-            <input type="number" id="iface-rate" bind:value={ifaceForm.rate} placeholder="e.g. 100000000" min="1" />
-          </div>
-          <div class="form-group">
-            <label for="iface-burst">Burst (bytes)</label>
-            <input type="number" id="iface-burst" bind:value={ifaceForm.burst} placeholder="e.g. 150000" min="1" />
-          </div>
-        </div>
-        <button type="submit" class="btn-primary">Apply Interface Limit</button>
-      </form>
-    </div>
-
-    <!-- Set IP Limit -->
-    <div class="config-card">
-      <h2>Set Per-IP Bandwidth Limit</h2>
-      <form on:submit|preventDefault={setIpLimit}>
-        <div class="form-group">
-          <label for="ip-addr">IP Address</label>
-          <input type="text" id="ip-addr" bind:value={ipForm.ip} placeholder="e.g. 192.168.1.100" />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="ip-rate">Rate (bits/sec)</label>
-            <input type="number" id="ip-rate" bind:value={ipForm.rate} placeholder="e.g. 50000000" min="1" />
-          </div>
-          <div class="form-group">
-            <label for="ip-burst">Burst (bytes)</label>
-            <input type="number" id="ip-burst" bind:value={ipForm.burst} placeholder="e.g. 75000" min="1" />
-          </div>
-        </div>
-        <button type="submit" class="btn-primary">Apply IP Limit</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="grid-2col">
-    <!-- Set Priority -->
-    <div class="config-card">
-      <h2>Set Priority Queue</h2>
-      <form on:submit|preventDefault={setPriority}>
-        <div class="form-group">
-          <label for="prio-name">Traffic Class Name</label>
-          <input type="text" id="prio-name" bind:value={priorityForm.name} placeholder="e.g. gaming" />
-        </div>
-        <div class="form-group">
-          <label for="prio-level">Priority Level</label>
-          <select id="prio-level" bind:value={priorityForm.queue}>
-            {#each priorityLevels as p}
-              <option value={p.value}>{p.label} (weight {p.weight}%)</option>
-            {/each}
-          </select>
-        </div>
-        <button type="submit" class="btn-primary">Set Priority</button>
-      </form>
-    </div>
-
-    <!-- Set App Class -->
-    <div class="config-card">
-      <h2>Set Application QoS Class</h2>
-      <form on:submit|preventDefault={setAppClass}>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="app-name">App Name</label>
-            <input type="text" id="app-name" bind:value={appClassForm.name} placeholder="e.g. gaming" />
-          </div>
-          <div class="form-group">
-            <label for="app-priority">Priority</label>
-            <select id="app-priority" bind:value={appClassForm.priority}>
-              {#each priorityLevels as p}
-                <option value={p.value}>{p.label}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="app-ports">Ports (comma-separated)</label>
-            <input type="text" id="app-ports" bind:value={appClassForm.ports} placeholder="e.g. 443,80 or 3074,27015-27030" />
-          </div>
-          <div class="form-group">
-            <label for="app-proto">Protocol</label>
-            <select id="app-proto" bind:value={appClassForm.protocol}>
-              {#each protocols as p}
-                <option value={p.value}>{p.label}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="app-desc">Description</label>
-          <input type="text" id="app-desc" bind:value={appClassForm.description} placeholder="Optional description" />
-        </div>
-        <button type="submit" class="btn-primary">Set App Class</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Active Interface Limits -->
-  {#if trafficStatus && trafficStatus.interface_limits && Object.keys(trafficStatus.interface_limits).length > 0}
-    <div class="config-card">
-      <h2>Active Interface Limits</h2>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Interface</th>
-              <th>Rate</th>
-              <th>Burst</th>
-              <th>Direction</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each Object.entries(trafficStatus.interface_limits) as [iface, limit]}
-              <tr>
-                <td class="name-cell">{iface}</td>
-                <td>{formatRate((limit as any).rate)}</td>
-                <td>{(limit as any).burst} bytes</td>
-                <td><span class="dir-badge">{(limit as any).direction}</span></td>
-                <td>
-                  <button class="btn-delete" on:click={() => removeInterfaceLimit(iface)}>Remove</button>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Active App Classes -->
-  {#if trafficStatus && trafficStatus.app_classes && Object.keys(trafficStatus.app_classes).length > 0}
-    <div class="config-card">
-      <h2>Application QoS Classes</h2>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>App</th>
-              <th>Priority</th>
-              <th>DSCP</th>
-              <th>Protocol</th>
-              <th>Ports</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each Object.entries(trafficStatus.app_classes) as [name, cls]}
-              <tr>
-                <td class="name-cell">{name}</td>
-                <td>
-                  <span class="priority-badge" style="background: {(cls as any).priority === 'high' ? '#003322' : (cls as any).priority === 'low' ? '#331111' : '#332200'}; color: {priorityColor((cls as any).priority)}">
-                    {(cls as any).priority}
+            {#if data}
+              <div class="iface-card-stats">
+                <div class="card-stat-row">
+                  <span class="card-stat-label">RX Bytes</span>
+                  <span class="card-stat-value rx">{formatBytes(data.stats.rx_bytes)}</span>
+                </div>
+                <div class="card-stat-row">
+                  <span class="card-stat-label">TX Bytes</span>
+                  <span class="card-stat-value tx">{formatBytes(data.stats.tx_bytes)}</span>
+                </div>
+                <div class="card-stat-row">
+                  <span class="card-stat-label">RX Pkts</span>
+                  <span class="card-stat-value">{formatCount(data.stats.rx_packets)}</span>
+                </div>
+                <div class="card-stat-row">
+                  <span class="card-stat-label">TX Pkts</span>
+                  <span class="card-stat-value">{formatCount(data.stats.tx_packets)}</span>
+                </div>
+                <div class="card-stat-row">
+                  <span class="card-stat-label">Errors</span>
+                  <span class="card-stat-value" class:err-warn={data.stats.rx_errors + data.stats.tx_errors > 0}>
+                    {formatCount(data.stats.rx_errors + data.stats.tx_errors)}
                   </span>
-                </td>
-                <td>{(cls as any).dscp}</td>
-                <td>{(cls as any).protocol || 'any'}</td>
-                <td class="ports-cell">{(cls as any).ports || 'all'}</td>
-                <td>
-                  <button class="btn-delete" on:click={() => removeAppClass(name)}>Remove</button>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+                </div>
+                <div class="card-stat-row">
+                  <span class="card-stat-label">Drops</span>
+                  <span class="card-stat-value" class:err-warn={data.stats.rx_drops + data.stats.tx_drops > 0}>
+                    {formatCount(data.stats.rx_drops + data.stats.tx_drops)}
+                  </span>
+                </div>
+                <div class="card-stat-row rate">
+                  <span class="card-stat-label">Rate</span>
+                  <span class="card-stat-value">{formatBytesRate(data.rates.rxBytesPerSec + data.rates.txBytesPerSec)}</span>
+                </div>
+              </div>
+            {:else}
+              <div class="card-stat-empty">No data</div>
+            {/if}
+          </button>
+        {/each}
       </div>
     </div>
-  {/if}
 
-  <!-- VPP Output -->
-  {#if trafficStats && trafficStats.vpp_policers && trafficStats.vpp_policers !== 'N/A'}
-    <div class="config-card">
-      <h2>VPP Policer Output</h2>
-      <pre class="vpp-output">{trafficStats.vpp_policers}</pre>
-    </div>
-  {/if}
+    <!-- ═══ 3. Traffic Graph + 4. Bandwidth Monitor (Detail) ═══ -->
+    {#if selectedIface && selectedData}
+      <div class="detail-section">
+        <h2>{selectedIface} &mdash; Traffic Detail</h2>
 
-  <!-- Reset -->
-  <div class="config-card reset-card">
-    <h2>Reset All Traffic Control</h2>
-    <p class="reset-desc">Remove all interface limits, IP limits, and app classes. This cannot be undone.</p>
-    <button class="btn-danger" on:click={resetAll}>Reset All Rules</button>
-  </div>
+        <!-- Traffic Graph -->
+        <div class="graph-wrapper">
+          <div class="graph-header">
+            <div class="graph-label">RX/TX Rate Over Time (60 samples)</div>
+            <div class="graph-legend">
+              <span class="legend-item rx"><span class="legend-dot"></span> RX</span>
+              <span class="legend-item tx"><span class="legend-dot"></span> TX</span>
+            </div>
+          </div>
+          <canvas bind:this={detailGraphCanvas} width={720} height={180} class="traffic-graph detail-graph"></canvas>
+        </div>
+
+        <!-- Bandwidth Monitor -->
+        {@const avg = avgRate(selectedData)}
+        <div class="bandwidth-monitor">
+          <h3>Bandwidth Monitor</h3>
+          <div class="bw-grid">
+            <div class="bw-card">
+              <span class="bw-label">Current RX</span>
+              <span class="bw-value rx">{formatBytesRate(selectedData.rates.rxBytesPerSec)}</span>
+              <span class="bw-bits">{formatBitsRate(selectedData.rates.rxBytesPerSec)}</span>
+            </div>
+            <div class="bw-card">
+              <span class="bw-label">Current TX</span>
+              <span class="bw-value tx">{formatBytesRate(selectedData.rates.txBytesPerSec)}</span>
+              <span class="bw-bits">{formatBitsRate(selectedData.rates.txBytesPerSec)}</span>
+            </div>
+            <div class="bw-card">
+              <span class="bw-label">Peak RX</span>
+              <span class="bw-value rx peak">{formatBytesRate(selectedData.peakRxRate)}</span>
+              <span class="bw-bits">{formatBitsRate(selectedData.peakRxRate)}</span>
+            </div>
+            <div class="bw-card">
+              <span class="bw-label">Peak TX</span>
+              <span class="bw-value tx peak">{formatBytesRate(selectedData.peakTxRate)}</span>
+              <span class="bw-bits">{formatBitsRate(selectedData.peakTxRate)}</span>
+            </div>
+            <div class="bw-card">
+              <span class="bw-label">Average RX</span>
+              <span class="bw-value rx">{formatBytesRate(avg.rx)}</span>
+              <span class="bw-bits">{formatBitsRate(avg.rx)}</span>
+            </div>
+            <div class="bw-card">
+              <span class="bw-label">Average TX</span>
+              <span class="bw-value tx">{formatBytesRate(avg.tx)}</span>
+              <span class="bw-bits">{formatBitsRate(avg.tx)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed counters -->
+        <div class="detail-counters">
+          <h3>Counters</h3>
+          <div class="counters-grid">
+            <div class="counter-cell">
+              <span class="counter-label">RX Bytes</span>
+              <span class="counter-value rx">{formatBytes(selectedData.stats.rx_bytes)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">TX Bytes</span>
+              <span class="counter-value tx">{formatBytes(selectedData.stats.tx_bytes)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">RX Packets</span>
+              <span class="counter-value">{formatCount(selectedData.stats.rx_packets)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">TX Packets</span>
+              <span class="counter-value">{formatCount(selectedData.stats.tx_packets)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">RX Errors</span>
+              <span class="counter-value" class:err-warn={selectedData.stats.rx_errors > 0}>{formatCount(selectedData.stats.rx_errors)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">TX Errors</span>
+              <span class="counter-value" class:err-warn={selectedData.stats.tx_errors > 0}>{formatCount(selectedData.stats.tx_errors)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">RX Drops</span>
+              <span class="counter-value" class:err-warn={selectedData.stats.rx_drops > 0}>{formatCount(selectedData.stats.rx_drops)}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">TX Drops</span>
+              <span class="counter-value" class:err-warn={selectedData.stats.tx_drops > 0}>{formatCount(selectedData.stats.tx_drops)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    {:else}
+      <div class="empty-card">
+        <p>Select an interface to view detailed traffic data</p>
+      </div>
+    {/if}
+  {/if}
 </div>
 
 <style>
-  .traffic-page {
+  /* ── Page layout ──────────────────────────────────────── */
+  .traffic-monitor {
     max-width: 1400px;
   }
 
-  .subtitle {
-    color: #888;
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 1.5rem;
-    font-size: 0.95rem;
   }
 
   h1 {
-    margin-bottom: 0.5rem;
     color: #00ff88;
+    margin: 0;
   }
 
   h2 {
-    margin-bottom: 1rem;
-    color: #e0e0e0;
     font-size: 1.1rem;
-  }
-
-  .status-card {
-    background: #1a1a2e;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-    color: #888;
-    text-transform: uppercase;
-  }
-
-  .stat-value {
-    font-size: 1.4rem;
-    font-weight: 600;
     color: #e0e0e0;
+    margin-bottom: 1rem;
   }
 
-  .status-badge {
-    padding: 0.2rem 0.8rem;
-    border-radius: 0.3rem;
-    font-weight: bold;
-    font-size: 0.85rem;
-    display: inline-block;
-    margin-top: 0.3rem;
-  }
-
-  .status-badge.enabled { background: #003322; color: #00ff88; }
-  .status-badge.disabled { background: #331111; color: #ff4444; }
-
-  .chart-card {
-    background: #1a1a2e;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .sparkline-container { padding: 0.5rem 0; }
-
-  .sparkline {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    height: 60px;
-    background: #0f0f23;
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-  }
-
-  .spark-bar {
-    flex: 1;
-    background: linear-gradient(to top, #00ff88, #00cc66);
-    border-radius: 2px 2px 0 0;
-    min-width: 4px;
-    transition: height 0.3s ease;
-  }
-
-  .sparkline-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: #888;
-    margin-top: 0.3rem;
-    padding: 0 0.5rem;
-  }
-
-  /* Bandwidth bars */
-  .bandwidth-bars { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  .bw-row {
-    display: grid;
-    grid-template-columns: 140px 1fr 100px 70px 30px;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .bw-label {
-    font-size: 0.85rem;
+  h3 {
+    font-size: 0.95rem;
     color: #e0e0e0;
-    font-family: monospace;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .bw-track {
-    height: 16px;
-    background: #0f0f23;
-    border-radius: 0.25rem;
-    overflow: hidden;
-  }
-
-  .bw-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #00ff88, #00cc66);
-    border-radius: 0.25rem;
-    transition: width 0.3s ease;
-  }
-
-  .bw-fill-ip {
-    background: linear-gradient(90deg, #6bcbff, #3399ff);
-  }
-
-  .bw-rate {
-    font-size: 0.8rem;
-    color: #e0e0e0;
-    text-align: right;
-    font-family: monospace;
-  }
-
-  .bw-dir {
-    font-size: 0.75rem;
-    color: #888;
-  }
-
-  /* Priority bars */
-  .priority-bars { display: flex; flex-direction: column; gap: 0.75rem; }
-
-  .priority-row {
-    display: grid;
-    grid-template-columns: 80px 1fr 60px;
-    gap: 0.75rem;
-    align-items: center;
-  }
-
-  .priority-label { font-size: 0.9rem; font-weight: 600; }
-
-  .priority-track {
-    height: 20px;
-    background: #0f0f23;
-    border-radius: 0.25rem;
-    overflow: hidden;
-  }
-
-  .priority-fill {
-    height: 100%;
-    border-radius: 0.25rem;
-    transition: width 0.3s ease;
-  }
-
-  .priority-weight {
-    font-size: 0.85rem;
-    color: #888;
-    text-align: right;
-  }
-
-  .grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .config-card {
-    background: #1a1a2e;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
     margin-bottom: 0.75rem;
   }
 
-  label {
-    font-size: 0.85rem;
-    color: #888;
-  }
-
-  input, select {
-    background: #0f0f23;
-    color: #e0e0e0;
-    border: 1px solid #333;
-    padding: 0.6rem;
-    border-radius: 0.5rem;
-    font-size: 0.95rem;
-  }
-
-  input:focus, select:focus {
-    outline: none;
-    border-color: #00ff88;
-  }
-
-  .button-row {
+  .header-controls {
     display: flex;
     gap: 0.5rem;
   }
@@ -988,64 +763,36 @@
     color: #00ff88;
   }
 
-  .btn-primary {
-    background: #00ff88;
-    color: #0f0f23;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .btn-primary:hover { opacity: 0.9; }
-
   .btn-secondary {
     background: #333;
     color: #e0e0e0;
     border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    cursor: pointer;
   }
 
-  .btn-secondary:hover { opacity: 0.9; }
-
-  .btn-danger {
-    background: #ff4444;
-    color: #ffffff;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    cursor: pointer;
+  /* ── Loading & Error ──────────────────────────────────── */
+  .loading-card {
+    background: #1a1a2e;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #888;
   }
 
-  .btn-danger:hover { opacity: 0.9; }
-
-  .btn-delete {
-    background: none;
-    border: 1px solid #ff4444;
-    color: #ff4444;
-    padding: 0.3rem 0.6rem;
-    border-radius: 0.3rem;
-    font-size: 0.8rem;
-    cursor: pointer;
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #333;
+    border-top-color: #00ff88;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
-  .btn-delete:hover { background: #ff4444; color: #fff; }
-
-  .btn-x {
-    background: none;
-    border: none;
-    color: #ff4444;
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 0 0.3rem;
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
-
-  .btn-x:hover { color: #ff6666; }
 
   .error-card {
     background: #2e1a1a;
@@ -1056,89 +803,369 @@
     color: #ff4444;
   }
 
-  .success-card {
-    background: #1a2e1a;
-    border: 1px solid #00ff88;
-    padding: 1rem;
+  /* ── 1. Dashboard Widget ──────────────────────────────── */
+  .dashboard-widget {
+    background: #1a1a2e;
+    padding: 1.5rem;
     border-radius: 0.75rem;
     margin-bottom: 1.5rem;
-    color: #00ff88;
   }
 
-  .table-wrapper { overflow-x: auto; }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
+  .total-rate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
   }
 
-  th {
-    text-align: left;
-    padding: 0.75rem 0.5rem;
-    border-bottom: 2px solid #444;
-    color: #888;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-  }
-
-  td {
-    padding: 0.75rem 0.5rem;
-    border-bottom: 1px solid #333;
-    color: #e0e0e0;
-  }
-
-  .name-cell { font-weight: 600; color: #00ff88; }
-
-  .dir-badge {
-    background: #1a1a2e;
-    padding: 0.15rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.8rem;
-    color: #ffaa00;
-  }
-
-  .priority-badge {
-    padding: 0.15rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
-
-  .ports-cell {
-    font-family: monospace;
-    font-size: 0.8rem;
-    color: #88aaff;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .vpp-output {
+  .total-rate-box {
     background: #0f0f23;
     padding: 1rem;
     border-radius: 0.5rem;
-    font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
-    color: #aaa;
-    overflow-x: auto;
-    white-space: pre-wrap;
+    text-align: center;
+    border-left: 3px solid transparent;
   }
+  .total-rate-box.rx { border-left-color: #4dabf7; }
+  .total-rate-box.tx { border-left-color: #51cf66; }
 
-  .reset-card {
-    border: 1px solid #331111;
-  }
-
-  .reset-desc {
+  .total-rate-label {
+    display: block;
+    font-size: 0.75rem;
     color: #888;
-    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .total-rate-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+  .rx .total-rate-value { color: #4dabf7; }
+  .tx .total-rate-value { color: #51cf66; }
+
+  .total-rate-bits {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.15rem;
+  }
+
+  /* Per-interface traffic bars */
+  .iface-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .iface-bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 160px;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .iface-bar-row:hover { background: #16213e44; }
+  .iface-bar-row.selected { background: #0d1a14; border-color: #00ff8844; }
+
+  .bar-label {
+    font-family: monospace;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .bar-track {
+    height: 10px;
+    background: #0f0f23;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .bar-fill.rx { background: linear-gradient(90deg, #4dabf7, #3399ff); }
+  .bar-fill.tx { background: linear-gradient(90deg, #51cf66, #33cc66); }
+
+  .bar-rates {
+    display: flex;
+    gap: 0.75rem;
+    font-family: monospace;
+    font-size: 0.8rem;
+  }
+
+  .bar-rate.rx { color: #4dabf7; }
+  .bar-rate.tx { color: #51cf66; }
+
+  /* ── Graph ────────────────────────────────────────────── */
+  .graph-wrapper {
+    background: #0f0f23;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    overflow: hidden;
+  }
+
+  .graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .graph-label {
+    font-size: 0.75rem;
+    color: #888;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .graph-legend {
+    display: flex;
+    gap: 1rem;
+    padding-right: 0.5rem;
+  }
+
+  .legend-item {
+    font-size: 0.75rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 3px;
+    border-radius: 1px;
+    display: inline-block;
+  }
+  .legend-item.rx .legend-dot { background: #4dabf7; }
+  .legend-item.tx .legend-dot { background: #51cf66; }
+
+  .traffic-graph {
+    width: 100%;
+    height: 140px;
+    display: block;
+  }
+
+  .detail-graph {
+    height: 180px;
+  }
+
+  /* ── 2. Interface Traffic Cards ───────────────────────── */
+  .iface-cards-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .iface-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .iface-card {
+    background: #1a1a2e;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-align: left;
+    color: #e0e0e0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .iface-card:hover { background: #16213e44; }
+  .iface-card.selected { border-color: #00ff8844; background: #0d1a14; }
+
+  .iface-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .iface-card-name {
+    font-weight: 600;
+    font-family: monospace;
     font-size: 0.9rem;
   }
 
+  .state-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .state-dot.up { background: #00ff88; box-shadow: 0 0 6px #00ff8844; }
+  .state-dot.down { background: #ff4444; }
+
+  .iface-card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .card-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+
+  .card-stat-row.rate {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid #333;
+  }
+
+  .card-stat-label {
+    color: #888;
+  }
+
+  .card-stat-value {
+    font-family: monospace;
+    font-weight: 600;
+    color: #e0e0e0;
+  }
+  .card-stat-value.rx { color: #4dabf7; }
+  .card-stat-value.tx { color: #51cf66; }
+
+  .card-stat-empty {
+    color: #555;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.5rem 0;
+  }
+
+  .err-warn { color: #ff6666; }
+
+  /* ── Detail Section ───────────────────────────────────── */
+  .detail-section {
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── 4. Bandwidth Monitor ─────────────────────────────── */
+  .bandwidth-monitor {
+    background: #1a1a2e;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .bw-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .bw-card {
+    background: #0f0f23;
+    padding: 0.85rem;
+    border-radius: 0.5rem;
+    text-align: center;
+  }
+
+  .bw-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+  }
+
+  .bw-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: monospace;
+  }
+  .bw-value.rx { color: #4dabf7; }
+  .bw-value.tx { color: #51cf66; }
+  .bw-value.peak { font-size: 1.1rem; }
+
+  .bw-bits {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 0.15rem;
+  }
+
+  /* ── Detail Counters ──────────────────────────────────── */
+  .detail-counters {
+    background: #1a1a2e;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+  }
+
+  .counters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .counter-cell {
+    background: #0f0f23;
+    padding: 0.65rem;
+    border-radius: 0.4rem;
+    text-align: center;
+  }
+
+  .counter-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .counter-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: monospace;
+    color: #e0e0e0;
+  }
+  .counter-value.rx { color: #4dabf7; }
+  .counter-value.tx { color: #51cf66; }
+
+  /* ── Empty ────────────────────────────────────────────── */
+  .empty-card {
+    background: #1a1a2e;
+    padding: 3rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    color: #555;
+  }
+
+  /* ── Responsive ───────────────────────────────────────── */
   @media (max-width: 900px) {
-    .grid-2col { grid-template-columns: 1fr; }
-    .bw-row { grid-template-columns: 100px 1fr 80px; }
-    .bw-dir, .bw-row .btn-x { display: none; }
+    .total-rate-grid { grid-template-columns: 1fr; }
+    .iface-bar-row { grid-template-columns: 100px 1fr 120px; }
+    .counters-grid { grid-template-columns: repeat(2, 1fr); }
+    .bw-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .iface-cards-grid { grid-template-columns: 1fr; }
+    .iface-bar-row { grid-template-columns: 80px 1fr; }
+    .bar-rates { display: none; }
   }
 </style>

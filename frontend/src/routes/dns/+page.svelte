@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   // ── State ───────────────────────────────────────────────────────
-  let activeTab = 'config';
+  let activeTab = 'status';
   let dnsStatus: any = null;
   let loading = true;
   let error = '';
@@ -20,21 +20,9 @@
     interface: 'lan0',
   };
 
-  // Advanced: Custom DNS records
-  let customRecords: { type: string; name: string; value: string; ttl: number }[] = [];
-  let newRecord = { type: 'A', name: '', value: '', ttl: 3600 };
-  let editingRecordIndex: number | null = null;
-
-  // Advanced: DNS blocking
-  let blockingEnabled = false;
-  let blocklists = [
-    { name: 'Steven Black\'s Unified Hosts', url: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', enabled: true },
-    { name: 'AdGuard DNS Filter', url: 'https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt', enabled: false },
-  ];
-  let newBlocklist = { name: '', url: '' };
-
-  // Cache stats (simulated for frontend)
+  // Cache stats
   let cacheStats = {
+    running: false,
     hits: 0,
     misses: 0,
     size: 0,
@@ -42,9 +30,26 @@
     evictions: 0,
   };
 
+  // Cache entries (populated from status/log)
+  let cacheEntries: { name: string; type: string; value: string; ttl: number; source: string }[] = [];
+
+  // Custom DNS records
+  let customRecords: { type: string; name: string; value: string; ttl: number }[] = [];
+  let newRecord = { type: 'A', name: '', value: '', ttl: 3600 };
+  let editingRecordIndex: number | null = null;
+
+  // DNS blocking
+  let blockingEnabled = false;
+  let blocklists = [
+    { name: 'Steven Black\'s Unified Hosts', url: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', enabled: true },
+    { name: 'AdGuard DNS Filter', url: 'https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt', enabled: false },
+  ];
+  let newBlocklist = { name: '', url: '' };
+
   // ── Lifecycle ──────────────────────────────────────────────────
   onMount(async () => {
     await fetchStatus();
+    await fetchCacheStats();
   });
 
   // ── Data fetching ──────────────────────────────────────────────
@@ -87,7 +92,48 @@
     }
   }
 
-  // ── Enable / Save ─────────────────────────────────────────────
+  async function fetchCacheStats() {
+    try {
+      const res = await fetch('/api/dns/cache/stats');
+      const data = await res.json();
+      if (!data.error) {
+        cacheStats = { ...cacheStats, ...data };
+      }
+    } catch (e) {
+      // Cache stats endpoint may not be available yet
+    }
+  }
+
+  // ── Enable / Disable ──────────────────────────────────────────
+  async function toggleDns() {
+    if (config.enabled) {
+      await disableDns();
+    } else {
+      await saveConfig();
+    }
+  }
+
+  async function disableDns() {
+    try {
+      saving = true;
+      error = '';
+      success = '';
+      const res = await fetch('/api/dns/disable', { method: 'POST' });
+      const data = await res.json();
+      if (data.error) {
+        error = data.error;
+      } else {
+        success = data.message || 'DNS service disabled';
+        config.enabled = false;
+        await fetchStatus();
+      }
+    } catch (e) {
+      error = 'Failed to disable DNS service';
+    } finally {
+      saving = false;
+    }
+  }
+
   async function saveConfig() {
     try {
       saving = true;
@@ -121,11 +167,34 @@
         success = data.message || 'DNS configuration saved successfully';
         config.enabled = true;
         await fetchStatus();
+        await fetchCacheStats();
       }
     } catch (e) {
       error = 'Failed to save DNS configuration';
     } finally {
       saving = false;
+    }
+  }
+
+  // ── Cache Management ──────────────────────────────────────────
+  async function clearCache() {
+    try {
+      error = '';
+      success = '';
+      const res = await fetch('/api/dns/cache/clear', { method: 'POST' });
+      const data = await res.json();
+      if (data.error) {
+        error = data.error;
+      } else {
+        success = data.message || 'DNS cache cleared';
+        cacheStats.hits = 0;
+        cacheStats.misses = 0;
+        cacheStats.insertions = 0;
+        cacheStats.evictions = 0;
+        cacheEntries = [];
+      }
+    } catch (e) {
+      error = 'Failed to clear DNS cache';
     }
   }
 
@@ -189,17 +258,17 @@
 </script>
 
 <svelte:head>
-  <title>VectorOS - DNS Configuration</title>
+  <title>VectorOS - DNS Management</title>
 </svelte:head>
 
 <div class="dns-page">
   <div class="header-row">
-    <h1>DNS Configuration</h1>
+    <h1>DNS Management</h1>
     <div class="header-actions">
       <span class="status-badge" class:active={config.enabled} class:inactive={!config.enabled}>
-        {config.enabled ? 'Enabled' : 'Disabled'}
+        {config.enabled ? 'Running' : 'Stopped'}
       </span>
-      <button class="btn btn-refresh" on:click={fetchStatus} disabled={loading}>
+      <button class="btn btn-refresh" on:click={() => { fetchStatus(); fetchCacheStats(); }} disabled={loading}>
         {loading ? 'Refreshing...' : 'Refresh'}
       </button>
     </div>
@@ -221,22 +290,130 @@
 
   <!-- Tabs -->
   <div class="tabs">
+    <button class="tab" class:active={activeTab === 'status'} on:click={() => activeTab = 'status'}>
+      Status
+    </button>
     <button class="tab" class:active={activeTab === 'config'} on:click={() => activeTab = 'config'}>
       Configuration
     </button>
-    <button class="tab" class:active={activeTab === 'status'} on:click={() => activeTab = 'status'}>
-      Status & Cache
+    <button class="tab" class:active={activeTab === 'cache'} on:click={() => activeTab = 'cache'}>
+      Cache
+    </button>
+    <button class="tab" class:active={activeTab === 'records'} on:click={() => activeTab = 'records'}>
+      Records
     </button>
     <button class="tab" class:active={activeTab === 'advanced'} on:click={() => activeTab = 'advanced'}>
       Advanced
     </button>
   </div>
 
-  <!-- Configuration Tab -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Status Tab                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'status'}
+    <!-- Server Status -->
+    <div class="card">
+      <h2>DNS Server Status</h2>
+      {#if loading}
+        <p class="loading-text">Loading status...</p>
+      {:else if dnsStatus}
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Service Status</span>
+            <span class="status-val" class:text-green={dnsStatus.status === 'active'} class:text-muted={dnsStatus.status !== 'active'}>
+              {dnsStatus.status === 'active' ? 'Running' : 'Stopped'}
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Listen Interface</span>
+            <span class="status-val">{dnsStatus.interface || 'N/A'}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Cache Size</span>
+            <span class="status-val">{dnsStatus.cache_size || 0} entries</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">DNS Port</span>
+            <span class="status-val">53 (UDP/TCP)</span>
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Upstream Servers -->
+    <div class="card">
+      <h2>Upstream DNS Servers</h2>
+      <p class="card-desc">Configured upstream forwarders for external DNS resolution.</p>
+      <div class="upstream-list">
+        {#each (dnsStatus?.upstream || []) as server}
+          <div class="upstream-item">
+            <span class="upstream-icon text-green">&#9679;</span>
+            <span class="mono">{server}</span>
+            <span class="upstream-tag">IPv4</span>
+          </div>
+        {/each}
+        {#each (dnsStatus?.upstream_v6 || []) as server}
+          <div class="upstream-item">
+            <span class="upstream-icon text-green">&#9679;</span>
+            <span class="mono">{server}</span>
+            <span class="upstream-tag">IPv6</span>
+          </div>
+        {/each}
+        {#if (!dnsStatus?.upstream || dnsStatus.upstream.length === 0) && (!dnsStatus?.upstream_v6 || dnsStatus.upstream_v6.length === 0)}
+          <p class="empty-hint">No upstream servers configured.</p>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Cache Statistics Summary -->
+    <div class="card">
+      <h2>Cache Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Cache Size</span>
+          <span class="stat-value">{cacheStats.size}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Hit Rate</span>
+          <span class="stat-value">{cacheHitRate()}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Cache Hits</span>
+          <span class="stat-value text-green">{cacheStats.hits}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Cache Misses</span>
+          <span class="stat-value text-muted">{cacheStats.misses}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Insertions</span>
+          <span class="stat-value">{cacheStats.insertions}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Evictions</span>
+          <span class="stat-value text-muted">{cacheStats.evictions}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Configuration Tab                                           -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
   {#if activeTab === 'config'}
     <div class="card">
-      <h2>DNS Forwarder Settings</h2>
-      <form on:submit|preventDefault={saveConfig}>
+      <h2>DNS Service</h2>
+      <form on:submit|preventDefault={toggleDns}>
+        <div class="form-group">
+          <label class="toggle-label">
+            <span class="toggle-switch" class:enabled={config.enabled}>
+              <input type="checkbox" bind:checked={config.enabled} />
+              <span class="toggle-slider"></span>
+            </span>
+            <span>DNS Service {config.enabled ? 'Enabled' : 'Disabled'}</span>
+          </label>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="dns-interface">Listen Interface</label>
@@ -277,49 +454,24 @@
         </div>
 
         <button type="submit" class="btn btn-save" disabled={saving}>
-          {saving ? 'Saving...' : 'Save & Apply'}
+          {saving ? 'Applying...' : (config.enabled ? 'Apply Configuration' : 'Enable DNS Service')}
         </button>
       </form>
     </div>
   {/if}
 
-  <!-- Status Tab -->
-  {#if activeTab === 'status'}
-    <div class="card">
-      <h2>DNS Resolver Status</h2>
-      {#if loading}
-        <p class="loading-text">Loading status...</p>
-      {:else if dnsStatus}
-        <div class="status-grid">
-          <div class="status-item">
-            <span class="status-label">Service Status</span>
-            <span class="status-val" class:text-green={dnsStatus.status === 'active'} class:text-muted={dnsStatus.status !== 'active'}>
-              {dnsStatus.status}
-            </span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Listen Interface</span>
-            <span class="status-val">{dnsStatus.interface || 'N/A'}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Cache Size</span>
-            <span class="status-val">{dnsStatus.cache_size || 0}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">IPv4 Upstream</span>
-            <span class="status-val mono">{(dnsStatus.upstream || []).join(', ') || 'N/A'}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">IPv6 Upstream</span>
-            <span class="status-val mono">{(dnsStatus.upstream_v6 || []).join(', ') || 'N/A'}</span>
-          </div>
-        </div>
-      {/if}
-    </div>
-
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Cache Tab                                                   -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'cache'}
     <!-- Cache Statistics -->
     <div class="card">
-      <h2>Cache Statistics</h2>
+      <div class="card-header">
+        <h2>Cache Statistics</h2>
+        <button class="btn btn-danger" on:click={clearCache} disabled={!config.enabled}>
+          Clear Cache
+        </button>
+      </div>
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-label">Cache Size</span>
@@ -348,38 +500,62 @@
       </div>
     </div>
 
-    <!-- Upstream Test -->
+    <!-- Cache Entries -->
     <div class="card">
-      <h2>Upstream Connectivity</h2>
-      <p class="card-desc">Test DNS resolution through configured upstream servers.</p>
-      <div class="upstream-list">
-        {#each (dnsStatus?.upstream || []) as server}
-          <div class="upstream-item">
-            <span class="upstream-icon text-green">&#9679;</span>
-            <span class="mono">{server}</span>
-            <span class="upstream-tag">IPv4</span>
-          </div>
-        {/each}
-        {#each (dnsStatus?.upstream_v6 || []) as server}
-          <div class="upstream-item">
-            <span class="upstream-icon text-green">&#9679;</span>
-            <span class="mono">{server}</span>
-            <span class="upstream-tag">IPv6</span>
-          </div>
-        {/each}
-        {#if (!dnsStatus?.upstream || dnsStatus.upstream.length === 0) && (!dnsStatus?.upstream_v6 || dnsStatus.upstream_v6.length === 0)}
-          <p class="empty-hint">No upstream servers configured.</p>
-        {/if}
-      </div>
+      <h2>Cache Entries</h2>
+      <p class="card-desc">Currently cached DNS resolution results.</p>
+
+      {#if cacheEntries.length > 0}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Domain Name</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>TTL</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each cacheEntries as entry}
+                <tr>
+                  <td class="mono">{entry.name}</td>
+                  <td><span class="type-badge">{entry.type}</span></td>
+                  <td class="mono">{entry.value}</td>
+                  <td>{entry.ttl}s</td>
+                  <td>
+                    <span class="source-badge" class:text-green={entry.source === 'cache'} class:text-muted={entry.source !== 'cache'}>
+                      {entry.source}
+                    </span>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <div class="empty-state">
+          <p>No cached DNS entries.</p>
+          <p class="hint">
+            {#if config.enabled}
+              Cache entries will appear here as DNS queries are resolved.
+            {:else}
+              Start the DNS service to begin caching queries.
+            {/if}
+          </p>
+        </div>
+      {/if}
     </div>
   {/if}
 
-  <!-- Advanced Tab -->
-  {#if activeTab === 'advanced'}
-    <!-- Custom DNS Records -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Records Tab                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'records'}
     <div class="card">
       <h2>Custom DNS Records</h2>
-      <p class="card-desc">Add static DNS entries for local resolution.</p>
+      <p class="card-desc">Add static DNS entries for local resolution. These take priority over upstream lookups.</p>
 
       <form class="inline-form" on:submit|preventDefault={addRecord}>
         <div class="form-row form-row-4">
@@ -446,7 +622,12 @@
         <p class="empty-hint">No custom DNS records configured.</p>
       {/if}
     </div>
+  {/if}
 
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Advanced Tab                                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'advanced'}
     <!-- DNS Blocking -->
     <div class="card">
       <h2>DNS Blocking (Ad Blocking)</h2>
@@ -589,6 +770,13 @@
     padding: 1.5rem;
     border-radius: 0.75rem;
     margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
   }
 
   h2 {
@@ -775,6 +963,17 @@
 
   .btn-save:hover:not(:disabled) {
     opacity: 0.9;
+  }
+
+  .btn-danger {
+    background: #ff444422;
+    color: #ff8888;
+    border-color: #ff444444;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: #ff444444;
+    color: #ff4444;
   }
 
   .btn-sm {
@@ -966,6 +1165,13 @@
     font-weight: 600;
   }
 
+  .source-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+  }
+
   .actions-cell {
     display: flex;
     gap: 0.25rem;
@@ -1039,6 +1245,21 @@
   }
 
   /* Empty states */
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+  }
+
+  .empty-state p {
+    margin: 0.25rem 0;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    color: #555;
+  }
+
   .empty-hint {
     color: #555;
     font-size: 0.85rem;

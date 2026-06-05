@@ -173,6 +173,102 @@ pub fn disable() -> Result<serde_json::Value> {
     }))
 }
 
+/// Clear the DNS cache by sending SIGHUP to dnsmasq (causes cache flush).
+pub fn clear_cache() -> Result<serde_json::Value> {
+    if !is_dnsmasq_running() {
+        return Ok(serde_json::json!({
+            "error": "DNS service is not running"
+        }));
+    }
+
+    // SIGHUP causes dnsmasq to reload config and flush cache
+    let output = Command::new("kill")
+        .arg("-HUP")
+        .arg(
+            Command::new("pgrep")
+                .arg("dnsmasq")
+                .output()
+                .context("Failed to get dnsmasq PID")?
+                .stdout
+                .to_vec()
+                .iter()
+                .filter(|b| b.is_ascii_digit())
+                .map(|b| *b as char)
+                .collect::<String>(),
+        )
+        .output()
+        .context("Failed to send SIGHUP to dnsmasq")?;
+
+    if output.status.success() {
+        info!("DNS cache cleared");
+        Ok(serde_json::json!({
+            "status": "ok",
+            "message": "DNS cache cleared"
+        }))
+    } else {
+        Ok(serde_json::json!({
+            "error": "Failed to clear DNS cache"
+        }))
+    }
+}
+
+/// Get DNS cache statistics by querying dnsmasq via its statistics.
+pub fn get_cache_stats() -> Result<serde_json::Value> {
+    let running = is_dnsmasq_running();
+
+    // Try to read dnsmasq stats from the config or generate basic stats
+    let mut stats = serde_json::json!({
+        "running": running,
+        "hits": 0,
+        "misses": 0,
+        "insertions": 0,
+        "evictions": 0,
+        "size": 0,
+    });
+
+    // If dnsmasq is running, try to get cache stats via --bind-interfaces stats
+    // dnsmasq doesn't expose stats over a socket by default, so we parse the log
+    // or use the cache-size from config as the max
+    if running {
+        let path = Path::new(CONFIG_PATH);
+        if path.exists() {
+            if let Ok(content) = fs::read_to_string(path) {
+                for line in content.lines() {
+                    if let Some(val) = line.strip_prefix("cache-size=") {
+                        if let Ok(size) = val.trim().parse::<u32>() {
+                            stats["size"] = serde_json::json!(size);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Try to read dnsmasq log for cache statistics
+        let log_paths = ["/var/log/dnsmasq.log", "/tmp/dnsmasq.log"];
+        for log_path in &log_paths {
+            let log_file = Path::new(log_path);
+            if log_file.exists() {
+                if let Ok(content) = fs::read_to_string(log_file) {
+                    for line in content.lines() {
+                        if line.contains("cached") {
+                            if let Some(val) = stats["hits"].as_u64() {
+                                stats["hits"] = serde_json::json!(val + 1);
+                            }
+                        } else if line.contains("uncached") || line.contains("forwarded") {
+                            if let Some(val) = stats["misses"].as_u64() {
+                                stats["misses"] = serde_json::json!(val + 1);
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    Ok(stats)
+}
+
 /// Show DNS forwarding status and configuration.
 pub fn show() -> Result<serde_json::Value> {
     let status = if is_dnsmasq_running() {

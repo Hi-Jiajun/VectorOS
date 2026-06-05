@@ -881,6 +881,54 @@ pub async fn enable_dns(Json(req): Json<DnsEnableRequest>) -> Json<Value> {
     }
 }
 
+/// Disable the DNS resolver.
+#[utoipa::path(
+    post,
+    path = "/api/dns/disable",
+    tag = "DNS",
+    responses(
+        (status = 200, description = "DNS disabled", body = Value)
+    )
+)]
+pub async fn disable_dns() -> Json<Value> {
+    match crate::services::dns::disable() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Clear the DNS cache.
+#[utoipa::path(
+    post,
+    path = "/api/dns/cache/clear",
+    tag = "DNS",
+    responses(
+        (status = 200, description = "Cache cleared", body = Value)
+    )
+)]
+pub async fn clear_dns_cache() -> Json<Value> {
+    match crate::services::dns::clear_cache() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Get DNS cache statistics.
+#[utoipa::path(
+    get,
+    path = "/api/dns/cache/stats",
+    tag = "DNS",
+    responses(
+        (status = 200, description = "Cache statistics", body = Value)
+    )
+)]
+pub async fn get_dns_cache_stats() -> Json<Value> {
+    match crate::services::dns::get_cache_stats() {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
 // ── FRRouting handlers (native Rust) ───────────────────────────────
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -1058,6 +1106,22 @@ pub async fn enable_dhcp(Json(req): Json<DhcpEnableRequest>) -> Json<Value> {
         dns_servers: req.dns_servers,
     };
     match crate::services::dhcp::enable(config) {
+        Ok(data) => Json(data),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Disable the DHCP server.
+#[utoipa::path(
+    post,
+    path = "/api/dhcp/disable",
+    tag = "DHCP",
+    responses(
+        (status = 200, description = "DHCP disabled", body = Value)
+    )
+)]
+pub async fn disable_dhcp() -> Json<Value> {
+    match crate::services::dhcp::disable() {
         Ok(data) => Json(data),
         Err(e) => Json(json!({ "error": e.to_string() })),
     }

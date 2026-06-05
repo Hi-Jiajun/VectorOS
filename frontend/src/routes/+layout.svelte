@@ -48,7 +48,7 @@
     <a href="/conntrack">ConnTrack</a>
     <a href="/flow">Flow Monitor</a>
     <a href="/qos">QoS</a>
-    <a href="/traffic">Traffic Control</a>
+    <a href="/traffic">Traffic Monitor</a>
     <a href="/config">Configuration</a>
     <a href="/logs">Logs</a>
     <a href="/diag">Diagnostics</a>

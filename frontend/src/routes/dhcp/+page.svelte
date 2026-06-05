@@ -1,14 +1,34 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
-  // ── State ───────────────────────────────────────────────────────
-  let activeTab = 'config';
-  let dhcpStatus: any = null;
-  let leases: any[] = [];
+  // ── Types ──────────────────────────────────────────────────────────
+  interface DhcpLease {
+    mac: string;
+    ip: string;
+    hostname: string;
+    expires: string;
+  }
+
+  interface DhcpStatusData {
+    status: string;
+    leases: DhcpLease[];
+  }
+
+  interface StaticLease {
+    mac: string;
+    ip: string;
+    hostname: string;
+  }
+
+  // ── State ──────────────────────────────────────────────────────────
+  let activeTab: 'status' | 'config' | 'leases' | 'statistics' | 'advanced' = 'status';
+  let dhcpStatus: DhcpStatusData | null = null;
+  let leases: DhcpLease[] = [];
   let loading = true;
   let error = '';
   let success = '';
   let saving = false;
+  let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
   // Configuration form
   let config = {
@@ -22,12 +42,12 @@
     dns_servers: '8.8.8.8,1.1.1.1',
   };
 
-  // Advanced: Static leases
-  let staticLeases: { mac: string; ip: string; hostname: string }[] = [];
-  let newStaticLease = { mac: '', ip: '', hostname: '' };
+  // Static leases
+  let staticLeases: StaticLease[] = [];
+  let newStaticLease: StaticLease = { mac: '', ip: '', hostname: '' };
   let editingStaticIndex: number | null = null;
 
-  // Advanced: DHCP options
+  // DHCP options
   let dhcpOptions = {
     ntp_servers: '',
     domain_name: '',
@@ -36,24 +56,28 @@
     wins_server: '',
   };
 
-  // ── Lifecycle ──────────────────────────────────────────────────
+  // ── Lifecycle ──────────────────────────────────────────────────────
   onMount(async () => {
     await fetchStatus();
+    refreshInterval = setInterval(fetchStatus, 5000);
   });
 
-  // ── Data fetching ──────────────────────────────────────────────
+  onDestroy(() => {
+    if (refreshInterval) clearInterval(refreshInterval);
+  });
+
+  // ── Data fetching ──────────────────────────────────────────────────
   async function fetchStatus() {
     try {
-      loading = true;
+      if (!dhcpStatus) loading = true;
       error = '';
       const res = await fetch('/api/dhcp/status');
-      const data = await res.json();
-      if (data.error) {
-        error = data.error;
+      const data: DhcpStatusData = await res.json();
+      if ((data as any).error) {
+        error = (data as any).error;
       } else {
         dhcpStatus = data;
         leases = data.leases || [];
-        // Update config from status if available
         config.enabled = data.status === 'active';
       }
     } catch (e) {
@@ -63,14 +87,15 @@
     }
   }
 
-  // ── Enable / Disable ──────────────────────────────────────────
-  async function saveConfig() {
+  // ── Enable / Disable ──────────────────────────────────────────────
+  async function toggleDhcp() {
     try {
       saving = true;
       error = '';
       success = '';
 
       if (config.enabled) {
+        // Enable the server
         const payload: any = {
           interface: config.interface,
           start_ip: config.start_ip,
@@ -78,7 +103,6 @@
           gateway: config.gateway,
           lease_time: config.lease_time,
         };
-
         if (config.dns_mode === 'custom') {
           payload.dns_servers = config.dns_servers;
         }
@@ -91,14 +115,62 @@
         const data = await res.json();
         if (data.error) {
           error = data.error;
+          config.enabled = false;
         } else {
           success = data.message || 'DHCP server enabled successfully';
-          await fetchStatus();
         }
       } else {
-        // Disable: we can call enable with config that essentially disables by not starting
-        // But the backend doesn't have a disable endpoint in the routes, so we just update local state
-        success = 'DHCP configuration saved (server disabled)';
+        // Disable the server
+        const res = await fetch('/api/dhcp/disable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.error) {
+          error = data.error;
+          config.enabled = true;
+        } else {
+          success = data.message || 'DHCP server disabled successfully';
+        }
+      }
+
+      await fetchStatus();
+    } catch (e) {
+      error = 'Failed to toggle DHCP server';
+    } finally {
+      saving = false;
+    }
+  }
+
+  async function saveConfig() {
+    try {
+      saving = true;
+      error = '';
+      success = '';
+
+      const payload: any = {
+        interface: config.interface,
+        start_ip: config.start_ip,
+        end_ip: config.end_ip,
+        gateway: config.gateway,
+        lease_time: config.lease_time,
+      };
+      if (config.dns_mode === 'custom') {
+        payload.dns_servers = config.dns_servers;
+      }
+
+      const res = await fetch('/api/dhcp/enable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.error) {
+        error = data.error;
+      } else {
+        success = data.message || 'DHCP configuration saved successfully';
+        config.enabled = true;
+        await fetchStatus();
       }
     } catch (e) {
       error = 'Failed to save DHCP configuration';
@@ -107,7 +179,7 @@
     }
   }
 
-  // ── Static Leases ─────────────────────────────────────────────
+  // ── Static Leases ─────────────────────────────────────────────────
   function addStaticLease() {
     if (!newStaticLease.mac || !newStaticLease.ip) return;
     if (editingStaticIndex !== null) {
@@ -137,7 +209,7 @@
     newStaticLease = { mac: '', ip: '', hostname: '' };
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────
   function formatLeaseExpiry(expires: string): string {
     if (!expires || expires === '0') return 'Permanent';
     const ts = parseInt(expires, 10);
@@ -154,10 +226,50 @@
     return `${hours}h ${mins}m remaining`;
   }
 
+  function leaseIsExpired(expires: string): boolean {
+    if (!expires || expires === '0') return false;
+    const ts = parseInt(expires, 10);
+    if (isNaN(ts)) return false;
+    return ts <= Math.floor(Date.now() / 1000);
+  }
+
   function leaseTimeDisplay(seconds: number): string {
     if (seconds >= 86400) return `${seconds / 86400} day(s)`;
     if (seconds >= 3600) return `${seconds / 3600} hour(s)`;
     return `${seconds / 60} minute(s)`;
+  }
+
+  function ipToInt(ip: string): number {
+    const parts = ip.split('.').map(Number);
+    return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+  }
+
+  function getPoolSize(): number {
+    const start = ipToInt(config.start_ip);
+    const end = ipToInt(config.end_ip);
+    if (end >= start) return end - start + 1;
+    return 0;
+  }
+
+  function getActiveLeasesCount(): number {
+    return leases.filter(l => !leaseIsExpired(l.expires)).length;
+  }
+
+  function getExpiredLeasesCount(): number {
+    return leases.filter(l => leaseIsExpired(l.expires)).length;
+  }
+
+  function getPoolUtilization(): number {
+    const poolSize = getPoolSize();
+    if (poolSize <= 0) return 0;
+    return Math.min(100, (getActiveLeasesCount() / poolSize) * 100);
+  }
+
+  function barColor(percent: number): string {
+    if (percent > 90) return '#ff4444';
+    if (percent > 75) return '#ff8800';
+    if (percent > 50) return '#ffaa00';
+    return '#00ff88';
   }
 
   function clearMessages() {
@@ -167,15 +279,16 @@
 </script>
 
 <svelte:head>
-  <title>VectorOS - DHCP Configuration</title>
+  <title>VectorOS - DHCP Management</title>
 </svelte:head>
 
 <div class="dhcp-page">
+  <!-- Header -->
   <div class="header-row">
-    <h1>DHCP Configuration</h1>
+    <h1>DHCP Management</h1>
     <div class="header-actions">
       <span class="status-badge" class:active={config.enabled} class:inactive={!config.enabled}>
-        {config.enabled ? 'Enabled' : 'Disabled'}
+        {config.enabled ? 'Server Running' : 'Server Stopped'}
       </span>
       <button class="btn btn-refresh" on:click={fetchStatus} disabled={loading}>
         {loading ? 'Refreshing...' : 'Refresh'}
@@ -183,13 +296,13 @@
     </div>
   </div>
 
+  <!-- Banners -->
   {#if error}
     <div class="error-banner">
       <span>{error}</span>
       <button class="btn-close" on:click={clearMessages}>&times;</button>
     </div>
   {/if}
-
   {#if success}
     <div class="success-banner">
       <span>{success}</span>
@@ -199,32 +312,124 @@
 
   <!-- Tabs -->
   <div class="tabs">
+    <button class="tab" class:active={activeTab === 'status'} on:click={() => activeTab = 'status'}>
+      Status
+    </button>
     <button class="tab" class:active={activeTab === 'config'} on:click={() => activeTab = 'config'}>
       Configuration
     </button>
     <button class="tab" class:active={activeTab === 'leases'} on:click={() => activeTab = 'leases'}>
-      Active Leases {leases.length > 0 ? `(${leases.length})` : ''}
+      Leases {leases.length > 0 ? `(${leases.length})` : ''}
+    </button>
+    <button class="tab" class:active={activeTab === 'statistics'} on:click={() => activeTab = 'statistics'}>
+      Statistics
     </button>
     <button class="tab" class:active={activeTab === 'advanced'} on:click={() => activeTab = 'advanced'}>
       Advanced
     </button>
   </div>
 
-  <!-- Configuration Tab -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- STATUS TAB                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'status'}
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Server Status</span>
+        <span class="stat-value" class:text-green={config.enabled} class:text-red={!config.enabled}>
+          {config.enabled ? 'Running' : 'Stopped'}
+        </span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Active Leases</span>
+        <span class="stat-value">{getActiveLeasesCount()}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Pool Size</span>
+        <span class="stat-value">{getPoolSize()}</span>
+        <span class="stat-sub">{config.start_ip} - {config.end_ip}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Pool Utilization</span>
+        <span class="stat-value" style="color: {barColor(getPoolUtilization())}">
+          {getPoolUtilization().toFixed(1)}%
+        </span>
+        <div class="mini-progress">
+          <div class="mini-progress-fill" style="width: {getPoolUtilization()}%; background: {barColor(getPoolUtilization())}"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Control -->
+    <div class="card">
+      <h2>Server Control</h2>
+      <div class="control-row">
+        <div class="control-info">
+          <p class="control-desc">
+            {#if config.enabled}
+              The DHCP server is currently running on <strong>{config.interface}</strong>, serving addresses in the range <strong>{config.start_ip} - {config.end_ip}</strong>.
+            {:else}
+              The DHCP server is currently stopped. Enable it to start assigning IP addresses to clients.
+            {/if}
+          </p>
+        </div>
+        <label class="toggle-label">
+          <span class="toggle-switch" class:enabled={config.enabled}>
+            <input type="checkbox" checked={config.enabled} on:change={toggleDhcp} disabled={saving} />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-text">{config.enabled ? 'ON' : 'OFF'}</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Recent Leases Preview -->
+    {#if leases.length > 0}
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Leases</h2>
+          <button class="btn btn-sm btn-secondary" on:click={() => activeTab = 'leases'}>View All</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>MAC Address</th>
+                <th>IP Address</th>
+                <th>Hostname</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each leases.slice(0, 5) as lease}
+                <tr>
+                  <td class="mono">{lease.mac}</td>
+                  <td class="mono">{lease.ip}</td>
+                  <td>{lease.hostname || '-'}</td>
+                  <td>
+                    {#if leaseIsExpired(lease.expires)}
+                      <span class="lease-status expired">Expired</span>
+                    {:else}
+                      <span class="lease-status active">Active</span>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {/if}
+  {/if}
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- CONFIGURATION TAB                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
   {#if activeTab === 'config'}
     <div class="card">
       <h2>DHCP Server Settings</h2>
       <form on:submit|preventDefault={saveConfig}>
-        <div class="form-group">
-          <label class="toggle-label">
-            <span class="toggle-switch" class:enabled={config.enabled}>
-              <input type="checkbox" bind:checked={config.enabled} />
-              <span class="toggle-slider"></span>
-            </span>
-            <span>DHCP Server {config.enabled ? 'Enabled' : 'Disabled'}</span>
-          </label>
-        </div>
-
         <div class="form-row">
           <div class="form-group">
             <label for="dhcp-interface">Interface</label>
@@ -282,26 +487,34 @@
           </div>
         {/if}
 
-        <button type="submit" class="btn btn-save" disabled={saving}>
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </button>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-save" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Configuration'}
+          </button>
+        </div>
       </form>
     </div>
   {/if}
 
-  <!-- Leases Tab -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- LEASES TAB                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
   {#if activeTab === 'leases'}
+    <!-- Lease Filters -->
     <div class="card">
       <div class="card-header">
         <h2>Active Leases</h2>
-        <span class="count-badge">{leases.length}</span>
+        <div class="card-actions">
+          <span class="count-badge">{getActiveLeasesCount()} active</span>
+          <button class="btn btn-sm btn-secondary" on:click={fetchStatus}>Refresh</button>
+        </div>
       </div>
 
       {#if loading}
         <p class="loading-text">Loading leases...</p>
       {:else if leases.length === 0}
         <div class="empty-state">
-          <p>No active DHCP leases.</p>
+          <p>No DHCP leases found.</p>
           <p class="hint">Leases will appear here when clients connect to the DHCP server.</p>
         </div>
       {:else}
@@ -313,15 +526,23 @@
                 <th>IP Address</th>
                 <th>Hostname</th>
                 <th>Expires</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {#each leases as lease}
-                <tr>
+                <tr class:row-expired={leaseIsExpired(lease.expires)}>
                   <td class="mono">{lease.mac}</td>
                   <td class="mono">{lease.ip}</td>
                   <td>{lease.hostname || '-'}</td>
                   <td>{formatLeaseExpiry(lease.expires)}</td>
+                  <td>
+                    {#if leaseIsExpired(lease.expires)}
+                      <span class="lease-status expired">Expired</span>
+                    {:else}
+                      <span class="lease-status active">Active</span>
+                    {/if}
+                  </td>
                 </tr>
               {/each}
             </tbody>
@@ -330,32 +551,132 @@
       {/if}
     </div>
 
-    <!-- Lease Stats -->
-    {#if dhcpStatus}
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">Status</span>
-          <span class="stat-value" class:text-green={dhcpStatus.status === 'active'} class:text-muted={dhcpStatus.status !== 'active'}>
-            {dhcpStatus.status}
-          </span>
+    <!-- Expired Leases -->
+    {#if getExpiredLeasesCount() > 0}
+      <div class="card">
+        <div class="card-header">
+          <h2>Expired Leases</h2>
+          <span class="count-badge expired-badge">{getExpiredLeasesCount()} expired</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Active Leases</span>
-          <span class="stat-value">{leases.length}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">IP Range</span>
-          <span class="stat-value text-sm">{config.start_ip} - {config.end_ip}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Lease Time</span>
-          <span class="stat-value text-sm">{leaseTimeDisplay(config.lease_time)}</span>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>MAC Address</th>
+                <th>IP Address</th>
+                <th>Hostname</th>
+                <th>Expired</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each leases.filter(l => leaseIsExpired(l.expires)) as lease}
+                <tr class="row-expired">
+                  <td class="mono">{lease.mac}</td>
+                  <td class="mono">{lease.ip}</td>
+                  <td>{lease.hostname || '-'}</td>
+                  <td class="text-muted">{formatLeaseExpiry(lease.expires)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       </div>
     {/if}
   {/if}
 
-  <!-- Advanced Tab -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- STATISTICS TAB                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  {#if activeTab === 'statistics'}
+    <div class="stats-grid">
+      <div class="stat-card large">
+        <span class="stat-label">Total Leases</span>
+        <span class="stat-value">{leases.length}</span>
+      </div>
+      <div class="stat-card large">
+        <span class="stat-label">Active Leases</span>
+        <span class="stat-value text-green">{getActiveLeasesCount()}</span>
+      </div>
+      <div class="stat-card large">
+        <span class="stat-label">Expired Leases</span>
+        <span class="stat-value text-red">{getExpiredLeasesCount()}</span>
+      </div>
+      <div class="stat-card large">
+        <span class="stat-label">Available Addresses</span>
+        <span class="stat-value">{Math.max(0, getPoolSize() - getActiveLeasesCount())}</span>
+      </div>
+    </div>
+
+    <!-- Pool Utilization -->
+    <div class="card">
+      <h2>Address Pool Utilization</h2>
+      <div class="pool-visualization">
+        <div class="pool-bar-container">
+          <div class="pool-bar">
+            <div
+              class="pool-bar-fill"
+              style="width: {getPoolUtilization()}%; background: {barColor(getPoolUtilization())}"
+            ></div>
+          </div>
+        </div>
+        <div class="pool-details">
+          <div class="pool-detail">
+            <span class="pool-detail-label">Pool Range</span>
+            <span class="pool-detail-value">{config.start_ip} - {config.end_ip}</span>
+          </div>
+          <div class="pool-detail">
+            <span class="pool-detail-label">Total Addresses</span>
+            <span class="pool-detail-value">{getPoolSize()}</span>
+          </div>
+          <div class="pool-detail">
+            <span class="pool-detail-label">Used</span>
+            <span class="pool-detail-value" style="color: {barColor(getPoolUtilization())}">{getActiveLeasesCount()}</span>
+          </div>
+          <div class="pool-detail">
+            <span class="pool-detail-label">Available</span>
+            <span class="pool-detail-value">{Math.max(0, getPoolSize() - getActiveLeasesCount())}</span>
+          </div>
+          <div class="pool-detail">
+            <span class="pool-detail-label">Utilization</span>
+            <span class="pool-detail-value" style="color: {barColor(getPoolUtilization())}">{getPoolUtilization().toFixed(1)}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Info -->
+    <div class="card">
+      <h2>Server Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Status</span>
+          <span class="info-value" class:text-green={config.enabled} class:text-red={!config.enabled}>
+            {config.enabled ? 'Running' : 'Stopped'}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Interface</span>
+          <span class="info-value">{config.interface}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Gateway</span>
+          <span class="info-value mono">{config.gateway}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Lease Time</span>
+          <span class="info-value">{leaseTimeDisplay(config.lease_time)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">DNS Servers</span>
+          <span class="info-value mono">{config.dns_mode === 'auto' ? 'System default' : config.dns_servers}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- ADVANCED TAB                                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
   {#if activeTab === 'advanced'}
     <!-- Static Leases -->
     <div class="card">
@@ -455,7 +776,7 @@
 
 <style>
   .dhcp-page {
-    max-width: 900px;
+    max-width: 1000px;
   }
 
   .header-row {
@@ -503,6 +824,7 @@
     gap: 0;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid #333;
+    overflow-x: auto;
   }
 
   .tab {
@@ -516,6 +838,7 @@
     font-weight: 500;
     transition: all 0.2s;
     border-radius: 0;
+    white-space: nowrap;
   }
 
   .tab:hover {
@@ -544,6 +867,12 @@
     margin-bottom: 1rem;
   }
 
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   h2 {
     margin-bottom: 1rem;
     color: #e0e0e0;
@@ -563,6 +892,170 @@
     padding: 0.2rem 0.6rem;
     border-radius: 1rem;
     font-weight: 600;
+  }
+
+  .count-badge.expired-badge {
+    background: #ff444420;
+    color: #ff8888;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: #1a1a2e;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-card.large {
+    padding: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #00ff88;
+  }
+
+  .stat-card.large .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .stat-sub {
+    font-size: 0.8rem;
+    color: #666;
+  }
+
+  .mini-progress {
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .mini-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .text-green {
+    color: #00ff88;
+  }
+
+  .text-red {
+    color: #ff4444;
+  }
+
+  .text-muted {
+    color: #888;
+  }
+
+  /* Server Control */
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .control-info {
+    flex: 1;
+  }
+
+  .control-desc {
+    color: #aaa;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .control-desc strong {
+    color: #e0e0e0;
+  }
+
+  /* Toggle Switch */
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e0e0e0;
+    min-width: 2rem;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #444;
+    border-radius: 14px;
+    transition: background 0.3s;
+    cursor: pointer;
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 3px;
+    top: 3px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+
+  .toggle-switch.enabled .toggle-slider {
+    background: #00ff88;
+  }
+
+  .toggle-switch.enabled .toggle-slider::before {
+    transform: translateX(24px);
+  }
+
+  .toggle-switch input:disabled ~ .toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Forms */
@@ -597,6 +1090,7 @@
   .form-actions {
     display: flex;
     gap: 0.5rem;
+    margin-top: 0.5rem;
   }
 
   .inline-form {
@@ -622,63 +1116,6 @@
   input:focus, select:focus {
     outline: none;
     border-color: #00ff88;
-  }
-
-  /* Toggle Switch */
-  .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    font-size: 0.95rem;
-    color: #e0e0e0;
-  }
-
-  .toggle-switch {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    flex-shrink: 0;
-  }
-
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    padding: 0;
-    border: none;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #444;
-    border-radius: 12px;
-    transition: background 0.3s;
-    cursor: pointer;
-  }
-
-  .toggle-slider::before {
-    content: '';
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    left: 3px;
-    top: 3px;
-    background: #e0e0e0;
-    border-radius: 50%;
-    transition: transform 0.3s;
-  }
-
-  .toggle-switch.enabled .toggle-slider {
-    background: #00ff88;
-  }
-
-  .toggle-switch.enabled .toggle-slider::before {
-    transform: translateX(20px);
   }
 
   /* Radio buttons */
@@ -860,46 +1297,104 @@
     color: #ff4444;
   }
 
-  /* Stats Grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+  .row-expired {
+    opacity: 0.5;
   }
 
-  .stat-card {
-    background: #1a1a2e;
-    padding: 1rem;
-    border-radius: 0.5rem;
+  .lease-status {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .lease-status.active {
+    background: #003322;
+    color: #00ff88;
+  }
+
+  .lease-status.expired {
+    background: #330000;
+    color: #ff6666;
+  }
+
+  /* Pool Visualization */
+  .pool-visualization {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .pool-bar-container {
+    width: 100%;
+  }
+
+  .pool-bar {
+    height: 20px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .pool-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .pool-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+
+  .pool-detail {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .stat-label {
+  .pool-detail-label {
     font-size: 0.8rem;
     color: #888;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .stat-value {
-    font-size: 1.25rem;
+  .pool-detail-value {
+    font-size: 1.1rem;
     font-weight: bold;
-    color: #00ff88;
+    color: #e0e0e0;
   }
 
-  .stat-value.text-sm {
-    font-size: 0.9rem;
+  /* Info Grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
   }
 
-  .text-green {
-    color: #00ff88;
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: #16213e;
+    border-radius: 0.5rem;
   }
 
-  .text-muted {
+  .info-label {
+    font-size: 0.8rem;
     color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e0e0e0;
   }
 
   /* Empty states */
