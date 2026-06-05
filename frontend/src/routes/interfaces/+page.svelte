@@ -140,6 +140,17 @@
   let errorRates: ErrorRates = { rxErrorsPerSec: 0, txErrorsPerSec: 0, rxDropsPerSec: 0, txDropsPerSec: 0, rxLossPercent: 0, txLossPercent: 0 };
   let prevErrorSample: { rx_errors: number; tx_errors: number; rx_drops: number; tx_drops: number; rx_packets: number; tx_packets: number; ts: number } | null = null;
 
+  // Per-interface stats for list preview (name -> latest stats + rates)
+  interface IfaceMiniStats {
+    stats: InterfaceStats;
+    rates: RateData;
+    errorRates: ErrorRates;
+    healthScore: number;
+    lastUpdate: number;
+  }
+  let ifaceStatsMap: Map<string, IfaceMiniStats> = new Map();
+  let miniStatsInterval: ReturnType<typeof setInterval>;
+
   // Traffic graph data (ring buffer of ~60 points = 3 min at 3s intervals)
   const GRAPH_POINTS = 60;
   let rxRateHistory: number[] = [];
@@ -180,11 +191,14 @@
     await fetchBindings();
     listInterval = setInterval(fetchInterfaces, 3000);
     statsInterval = setInterval(pollStats, 3000);
+    // Poll mini stats for all interfaces every 2 seconds
+    miniStatsInterval = setInterval(pollAllMiniStats, 2000);
   });
 
   onDestroy(() => {
     if (listInterval) clearInterval(listInterval);
     if (statsInterval) clearInterval(statsInterval);
+    if (miniStatsInterval) clearInterval(miniStatsInterval);
     unsubWsStatus?.();
     unsubWsMessage?.();
   });
@@ -521,6 +535,100 @@
     return !!stats && (stats.rx_errors > 0 || stats.tx_errors > 0 || stats.rx_drops > 0 || stats.tx_drops > 0);
   }
 
+  // ── Health score calculation ────────────────────────────────────────
+  // Returns 0-100 score: 100 = perfect, 0 = critical
+  function computeHealthScore(s: InterfaceStats, er: ErrorRates): number {
+    let score = 100;
+
+    // Penalize for error rates relative to packet rate
+    const totalPackets = s.rx_packets + s.tx_packets;
+    if (totalPackets > 0) {
+      const errorRatio = (s.rx_errors + s.tx_errors) / totalPackets;
+      const dropRatio = (s.rx_drops + s.tx_drops) / totalPackets;
+      score -= Math.min(40, errorRatio * 1000); // up to -40 for errors
+      score -= Math.min(40, dropRatio * 1000);  // up to -40 for drops
+    }
+
+    // Penalize for live loss rates
+    if (er.rxLossPercent > 10) score -= 10;
+    else if (er.rxLossPercent > 1) score -= 5;
+    if (er.txLossPercent > 10) score -= 10;
+    else if (er.txLossPercent > 1) score -= 5;
+
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  function healthColor(score: number): string {
+    if (score >= 90) return '#00ff88';
+    if (score >= 70) return '#51cf66';
+    if (score >= 50) return '#ffaa00';
+    if (score >= 25) return '#ff8844';
+    return '#ff4444';
+  }
+
+  function healthLabel(score: number): string {
+    if (score >= 90) return 'Excellent';
+    if (score >= 70) return 'Good';
+    if (score >= 50) return 'Fair';
+    if (score >= 25) return 'Poor';
+    return 'Critical';
+  }
+
+  // ── Mini stats polling for all interfaces ──────────────────────────
+  async function fetchMiniStats(name: string) {
+    try {
+      const res = await fetch(`/api/interfaces/${encodeURIComponent(name)}/stats`);
+      const data = await res.json();
+      if (data.stats) {
+        const s: InterfaceStats = data.stats;
+        const existing = ifaceStatsMap.get(name);
+        let rates: RateData = { rxBytesPerSec: 0, txBytesPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0 };
+        let er: ErrorRates = { rxErrorsPerSec: 0, txErrorsPerSec: 0, rxDropsPerSec: 0, txDropsPerSec: 0, rxLossPercent: 0, txLossPercent: 0 };
+
+        if (existing) {
+          const dt = (Date.now() - existing.lastUpdate) / 1000;
+          if (dt > 0.5) {
+            rates = {
+              rxBytesPerSec: Math.max(0, (s.rx_bytes - existing.stats.rx_bytes) / dt),
+              txBytesPerSec: Math.max(0, (s.tx_bytes - existing.stats.tx_bytes) / dt),
+              rxPacketsPerSec: Math.max(0, (s.rx_packets - existing.stats.rx_packets) / dt),
+              txPacketsPerSec: Math.max(0, (s.tx_packets - existing.stats.tx_packets) / dt),
+            };
+            const rxDelta = s.rx_packets - existing.stats.rx_packets;
+            const txDelta = s.tx_packets - existing.stats.tx_packets;
+            er = {
+              rxErrorsPerSec: Math.max(0, (s.rx_errors - existing.stats.rx_errors) / dt),
+              txErrorsPerSec: Math.max(0, (s.tx_errors - existing.stats.tx_errors) / dt),
+              rxDropsPerSec: Math.max(0, (s.rx_drops - existing.stats.rx_drops) / dt),
+              txDropsPerSec: Math.max(0, (s.tx_drops - existing.stats.tx_drops) / dt),
+              rxLossPercent: rxDelta > 0 ? ((s.rx_drops - existing.stats.rx_drops) / rxDelta) * 100 : 0,
+              txLossPercent: txDelta > 0 ? ((s.tx_drops - existing.stats.tx_drops) / txDelta) * 100 : 0,
+            };
+          } else {
+            rates = existing.rates;
+            er = existing.errorRates;
+          }
+        }
+
+        const healthScore = computeHealthScore(s, er);
+        ifaceStatsMap.set(name, { stats: s, rates, errorRates: er, healthScore, lastUpdate: Date.now() });
+        ifaceStatsMap = ifaceStatsMap; // trigger reactivity
+      }
+    } catch {
+      // silent
+    }
+  }
+
+  async function pollAllMiniStats() {
+    for (const iface of interfaces) {
+      await fetchMiniStats(iface.name);
+    }
+  }
+
+  function getMiniStats(name: string): IfaceMiniStats | undefined {
+    return ifaceStatsMap.get(name);
+  }
+
   // ── Canvas graph drawing ───────────────────────────────────────────
 
   function drawGraph() {
@@ -611,6 +719,7 @@
 
   $: hasNonEmptyGroups = Object.values(groupedInterfaces).some((g) => g.length > 0);
   $: selectedIfaceData = interfaces.find((i) => i.name === selectedIface) || null;
+  $: selectedHealthScore = stats ? computeHealthScore(stats, errorRates) : -1;
 </script>
 
 <svelte:head>
@@ -787,6 +896,7 @@
                   {categoryLabel(cat)}
                 </div>
                 {#each groupedInterfaces[cat] as iface}
+                  {@const mini = getMiniStats(iface.name)}
                   <button
                     class="iface-row"
                     class:selected={selectedIface === iface.name}
@@ -800,6 +910,11 @@
                           {#if iface.interface_type}
                             <span class="iface-type-badge">{iface.interface_type}</span>
                           {/if}
+                          {#if mini}
+                            <span class="health-pill" style="background: {healthColor(mini.healthScore)}22; color: {healthColor(mini.healthScore)}; border: 1px solid {healthColor(mini.healthScore)}44">
+                              {mini.healthScore}
+                            </span>
+                          {/if}
                         </div>
                         <span class="iface-meta">
                           idx {iface.sw_if_index} &middot; MTU {iface.mtu}
@@ -809,6 +924,17 @@
                         </span>
                         {#if iface.ip_addresses && iface.ip_addresses.length > 0}
                           <span class="iface-ip">{iface.ip_addresses.join(', ')}</span>
+                        {/if}
+                        {#if mini}
+                          <div class="iface-mini-stats">
+                            <span class="mini-rx" title="RX rate">&#x2193; {formatRate(mini.rates.rxBytesPerSec)}</span>
+                            <span class="mini-tx" title="TX rate">&#x2191; {formatRate(mini.rates.txBytesPerSec)}</span>
+                            {#if mini.errorRates.rxLossPercent > 0.1 || mini.errorRates.txLossPercent > 0.1}
+                              <span class="mini-loss" title="Packet loss">
+                                &#x26A0; {Math.max(mini.errorRates.rxLossPercent, mini.errorRates.txLossPercent).toFixed(1)}% loss
+                              </span>
+                            {/if}
+                          </div>
                         {/if}
                       </div>
                     </div>
@@ -901,6 +1027,11 @@
         <div class="card stats-card">
           <div class="card-header">
             <h2>Traffic &mdash; {selectedIface}</h2>
+            {#if selectedHealthScore >= 0}
+              <span class="health-badge" style="background: {healthColor(selectedHealthScore)}22; color: {healthColor(selectedHealthScore)}; border: 1px solid {healthColor(selectedHealthScore)}44">
+                {healthLabel(selectedHealthScore)} ({selectedHealthScore})
+              </span>
+            {/if}
             <span class="category-tag" style="color: {categoryColor(classifyInterface(selectedIface))}; border-color: {categoryColor(classifyInterface(selectedIface))}44">
               {categoryLabel(classifyInterface(selectedIface))}
             </span>
@@ -924,6 +1055,66 @@
           <div class="graph-wrapper">
             <canvas bind:this={graphCanvas} width={520} height={140} class="traffic-graph"></canvas>
           </div>
+
+          <!-- Health Summary -->
+          {#if stats}
+            <div class="health-summary">
+              <div class="health-gauge">
+                <svg viewBox="0 0 36 36" class="health-ring">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#222"
+                    stroke-width="2.5"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="{healthColor(selectedHealthScore)}"
+                    stroke-width="2.5"
+                    stroke-dasharray="{selectedHealthScore}, 100"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <div class="health-gauge-label">
+                  <span class="health-gauge-score" style="color: {healthColor(selectedHealthScore)}">{selectedHealthScore}</span>
+                  <span class="health-gauge-text">{healthLabel(selectedHealthScore)}</span>
+                </div>
+              </div>
+              <div class="health-metrics">
+                <div class="health-metric">
+                  <span class="health-metric-label">Total Packets</span>
+                  <span class="health-metric-value">{formatTotalPackets(stats.rx_packets + stats.tx_packets)}</span>
+                </div>
+                <div class="health-metric">
+                  <span class="health-metric-label">Total Errors</span>
+                  <span class="health-metric-value" class:err-warn={stats.rx_errors + stats.tx_errors > 0}>{formatTotalPackets(stats.rx_errors + stats.tx_errors)}</span>
+                </div>
+                <div class="health-metric">
+                  <span class="health-metric-label">Total Drops</span>
+                  <span class="health-metric-value" class:err-warn={stats.rx_drops + stats.tx_drops > 0}>{formatTotalPackets(stats.rx_drops + stats.tx_drops)}</span>
+                </div>
+                <div class="health-metric">
+                  <span class="health-metric-label">Error Rate</span>
+                  <span class="health-metric-value" class:err-crit={(stats.rx_errors + stats.tx_errors) > 0 && (stats.rx_packets + stats.tx_packets) > 0 && ((stats.rx_errors + stats.tx_errors) / (stats.rx_packets + stats.tx_packets)) > 0.001}>
+                    {(stats.rx_packets + stats.tx_packets) > 0 ? ((stats.rx_errors + stats.tx_errors) / (stats.rx_packets + stats.tx_packets) * 100).toFixed(4) : '0.0000'}%
+                  </span>
+                </div>
+                <div class="health-metric">
+                  <span class="health-metric-label">Drop Rate</span>
+                  <span class="health-metric-value" class:err-crit={(stats.rx_drops + stats.tx_drops) > 0 && (stats.rx_packets + stats.tx_packets) > 0 && ((stats.rx_drops + stats.tx_drops) / (stats.rx_packets + stats.tx_packets)) > 0.001}>
+                    {(stats.rx_packets + stats.tx_packets) > 0 ? ((stats.rx_drops + stats.tx_drops) / (stats.rx_packets + stats.tx_packets) * 100).toFixed(4) : '0.0000'}%
+                  </span>
+                </div>
+                <div class="health-metric">
+                  <span class="health-metric-label">Packet Loss</span>
+                  <span class="health-metric-value" class:err-warn={errorRates.rxLossPercent > 1 || errorRates.txLossPercent > 1} class:err-crit={errorRates.rxLossPercent > 10 || errorRates.txLossPercent > 10}>
+                    RX: {errorRates.rxLossPercent.toFixed(2)}% / TX: {errorRates.txLossPercent.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/if}
 
           <!-- Cumulative counters -->
           {#if stats}
@@ -1622,6 +1813,13 @@
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+    .health-summary {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .health-metrics {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   /* ── Binding Panel ────────────────────────────────────── */
@@ -1947,5 +2145,129 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+
+  /* ── Health pill in interface list ──────────────────────── */
+  .health-pill {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.05rem 0.35rem;
+    border-radius: 0.2rem;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+
+  /* ── Mini stats in interface list ───────────────────────── */
+  .iface-mini-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.2rem;
+    font-size: 0.65rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .mini-rx {
+    color: #4dabf7;
+  }
+
+  .mini-tx {
+    color: #51cf66;
+  }
+
+  .mini-loss {
+    color: #ffaa00;
+    font-weight: 600;
+  }
+
+  /* ── Health badge in stats card header ──────────────────── */
+  .health-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.25rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  /* ── Health summary panel ───────────────────────────────── */
+  .health-summary {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: #0f0f23;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .health-gauge {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+  }
+
+  .health-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .health-gauge-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .health-gauge-score {
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .health-gauge-text {
+    font-size: 0.5rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.1rem;
+  }
+
+  .health-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem 1.5rem;
+    flex: 1;
+  }
+
+  .health-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .health-metric-label {
+    font-size: 0.65rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .health-metric-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e0e0e0;
+  }
+
+  .health-metric-value.err-warn {
+    color: #ffaa00;
+  }
+
+  .health-metric-value.err-crit {
+    color: #ff4444;
   }
 </style>

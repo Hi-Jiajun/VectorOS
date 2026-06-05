@@ -5,11 +5,11 @@
   // Types
   // -----------------------------------------------------------------------
   interface CoreMetric { core: number; percent: number; }
-  interface MemoryMetric { total: number; used: number; free: number; buffers: number; cached: number; available: number; percent: number; }
-  interface DiskMetric { device: string; fstype: string; total: number; used: number; available: number; percent: number; mountpoint: string; }
+  interface MemoryMetric { total: number; used: number; free: number; buffers: number; cached: number; available: number; percent: number; swap_total: number; swap_used: number; swap_free: number; swap_percent: number; }
+  interface DiskMetric { device: string; fstype: string; total: number; used: number; available: number; percent: number; mountpoint: string; health: string; }
   interface DiskIoMetric { total_read_bytes_per_sec: number; total_write_bytes_per_sec: number; devices: { name: string; read_bytes_per_sec: number; write_bytes_per_sec: number }[]; }
   interface NetworkMetric { name: string; state: string; rx_bytes: number; tx_bytes: number; rx_packets: number; tx_packets: number; rx_errors: number; tx_errors: number; rx_drops: number; tx_drops: number; rx_bps: number; tx_bps: number; rx_pps: number; tx_pps: number; }
-  interface VppMetric { available: boolean; version: string; nat_sessions: number; pppoe_active: number; pppoe_discovery: number; pppoe_total: number; memory_total_mb: number; memory_used_mb: number; memory_percent: number; errors_total: number; }
+  interface VppMetric { available: boolean; version: string; nat_sessions: number; pppoe_active: number; pppoe_discovery: number; pppoe_total: number; memory_total_mb: number; memory_used_mb: number; memory_percent: number; errors_total: number; worker_threads: number; packet_rate_rx: number; packet_rate_tx: number; }
   interface ProcessMetric { name: string; running: boolean; pid: number | null; mem_rss: number; cpu_percent: number; }
   interface TemperatureMetric { sensor: string; temp_celsius: number; }
   interface LoadAverage { load_1m: number; load_5m: number; load_15m: number; }
@@ -24,6 +24,12 @@
     value: string; threshold: string; first_seen: string; last_seen: string;
     count: number; acknowledged: boolean;
   }
+  interface ConntrackStatus { active_sessions: number; max_sessions: number; tcp_established: number; tcp_syn_sent: number; tcp_time_wait: number; udp: number; icmp: number; other: number; }
+  interface VppPerformance {
+    packet_rate?: { rx: number; tx: number };
+    threads?: { name: string; cpu_time: number; state: string }[];
+    errors?: { total: number; counters: { count: number; node: string; reason: string }[] };
+  }
 
   // -----------------------------------------------------------------------
   // State
@@ -35,7 +41,13 @@
   let historyHours = 1;
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
   let historyInterval: ReturnType<typeof setInterval> | null = null;
-  let activeTab: 'overview' | 'cpu' | 'network' | 'disk' | 'processes' | 'vpp' | 'alerts' = 'overview';
+  let activeTab: 'overview' | 'cpu' | 'memory' | 'network' | 'disk' | 'processes' | 'vpp' | 'alerts' = 'overview';
+
+  // Network sub-data
+  let conntrack: ConntrackStatus | null = null;
+  let networkLatency: { target: string; latency_ms: number | null; timestamp: string } | null = null;
+  let vppPerf: VppPerformance | null = null;
+  let latencyTarget = '8.8.8.8';
 
   // -----------------------------------------------------------------------
   // Helpers
@@ -91,6 +103,16 @@
 
   function formatTime(iso: string): string {
     try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+  }
+
+  function healthBadgeColor(health: string): string {
+    switch (health) {
+      case 'healthy': return '#00ff88';
+      case 'failing': return '#ff4444';
+      case 'no-smart': return '#888';
+      case 'unknown': return '#666';
+      default: return '#666';
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -172,6 +194,51 @@
     }
   }
 
+  async function fetchConntrack() {
+    try {
+      const res = await fetch('/api/conntrack/status');
+      const data = await res.json();
+      if (data.status === 'ok') {
+        conntrack = data;
+      }
+    } catch (e) {
+      console.error('Failed to fetch conntrack', e);
+    }
+  }
+
+  async function fetchVppPerf() {
+    try {
+      const res = await fetch('/api/system/vpp-performance');
+      const data = await res.json();
+      if (data.performance) {
+        vppPerf = data.performance;
+      }
+    } catch (e) {
+      console.error('Failed to fetch VPP performance', e);
+    }
+  }
+
+  async function measureLatency() {
+    try {
+      const res = await fetch('/api/diag/ping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host: latencyTarget, count: 3 }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok' && data.avg_ms !== undefined) {
+        networkLatency = { target: latencyTarget, latency_ms: data.avg_ms, timestamp: new Date().toISOString() };
+      } else if (data.average_latency !== undefined) {
+        networkLatency = { target: latencyTarget, latency_ms: data.average_latency, timestamp: new Date().toISOString() };
+      } else {
+        networkLatency = { target: latencyTarget, latency_ms: null, timestamp: new Date().toISOString() };
+      }
+    } catch (e) {
+      console.error('Failed to measure latency', e);
+      networkLatency = { target: latencyTarget, latency_ms: null, timestamp: new Date().toISOString() };
+    }
+  }
+
   // -----------------------------------------------------------------------
   // Lifecycle
   // -----------------------------------------------------------------------
@@ -179,11 +246,18 @@
     fetchMetrics();
     fetchAlerts();
     fetchHistory();
+    fetchConntrack();
+    fetchVppPerf();
+    measureLatency();
     refreshInterval = setInterval(() => {
       fetchMetrics();
       fetchAlerts();
+      fetchConntrack();
+      fetchVppPerf();
     }, 5000);
     historyInterval = setInterval(fetchHistory, 30000);
+    // Measure latency every 30 seconds
+    setInterval(measureLatency, 30000);
   });
 
   onDestroy(() => {
@@ -215,6 +289,7 @@
       {#each [
         { id: 'overview', label: 'Overview' },
         { id: 'cpu', label: 'CPU' },
+        { id: 'memory', label: 'Memory' },
         { id: 'network', label: 'Network' },
         { id: 'disk', label: 'Disk' },
         { id: 'processes', label: 'Processes' },
@@ -254,6 +329,9 @@
             <div class="progress-fill" style="width: {metrics.memory.percent}%; background: {barColor(metrics.memory.percent)}"></div>
           </div>
           <div class="sub-text">Cached: {formatBytes(metrics.memory.cached)}</div>
+          {#if metrics.memory.swap_total > 0}
+            <div class="sub-text">Swap: {formatBytes(metrics.memory.swap_used)} / {formatBytes(metrics.memory.swap_total)} ({metrics.memory.swap_percent.toFixed(1)}%)</div>
+          {/if}
         </div>
 
         <!-- Disk Card -->
@@ -284,6 +362,11 @@
               <span class="tx">TX {formatBitsPerSec(iface.tx_bps)}</span>
             </div>
           {/each}
+          {#if networkLatency}
+            <div class="net-latency">
+              Latency to {networkLatency.target}: {networkLatency.latency_ms !== null ? networkLatency.latency_ms.toFixed(1) + ' ms' : 'N/A'}
+            </div>
+          {/if}
         </div>
 
         <!-- VPP Card -->
@@ -295,6 +378,9 @@
             <div class="vpp-detail">NAT Sessions: {metrics.vpp.nat_sessions}</div>
             <div class="vpp-detail">PPPoE: {metrics.vpp.pppoe_active} active / {metrics.vpp.pppoe_total} total</div>
             <div class="vpp-detail">Memory: {metrics.vpp.memory_used_mb.toFixed(1)} / {metrics.vpp.memory_total_mb.toFixed(1)} MB</div>
+            {#if metrics.vpp.worker_threads > 0}
+              <div class="vpp-detail">Workers: {metrics.vpp.worker_threads}</div>
+            {/if}
           {:else}
             <div class="big-value" style="color: #ff4444">Unavailable</div>
           {/if}
@@ -309,6 +395,9 @@
             {#each metrics.temperatures as temp}
               <div class="sys-detail">{temp.sensor}: {temp.temp_celsius.toFixed(1)}C</div>
             {/each}
+          {/if}
+          {#if conntrack}
+            <div class="sys-detail">ConnTrack: {conntrack.active_sessions} / {conntrack.max_sessions} sessions</div>
           {/if}
         </div>
       </div>
@@ -361,11 +450,108 @@
           {/each}
         </div>
       </div>
+
+      <div class="overview-grid">
+        <div class="card">
+          <h3>Load Average</h3>
+          <div class="load-grid">
+            <div class="load-item">
+              <span class="load-value">{metrics.load_average.load_1m.toFixed(2)}</span>
+              <span class="load-label">1 min</span>
+            </div>
+            <div class="load-item">
+              <span class="load-value">{metrics.load_average.load_5m.toFixed(2)}</span>
+              <span class="load-label">5 min</span>
+            </div>
+            <div class="load-item">
+              <span class="load-value">{metrics.load_average.load_15m.toFixed(2)}</span>
+              <span class="load-label">15 min</span>
+            </div>
+          </div>
+        </div>
+
+        {#if metrics.temperatures.length > 0}
+          <div class="card">
+            <h3>CPU Temperature</h3>
+            {#each metrics.temperatures as temp}
+              <div class="temp-row">
+                <span class="temp-name">{temp.sensor}</span>
+                <span class="temp-value" style="color: {temp.temp_celsius > 80 ? '#ff4444' : temp.temp_celsius > 60 ? '#ffaa00' : '#00ff88'}">{temp.temp_celsius.toFixed(1)}C</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
       {#if history.length > 0}
         <div class="card wide">
           <h3>CPU History ({historyHours}h)</h3>
           <div class="mini-chart">
             {#each buildBarData(getHistoryValues('cpu_percent')) as bar}
+              <div class="mini-bar" style="height: {bar.height}%; background: {barColor(parseFloat(bar.label))}" title="{bar.label}%"></div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    {/if}
+
+    <!-- Memory Tab -->
+    {#if activeTab === 'memory'}
+      <div class="overview-grid">
+        <div class="card">
+          <h3>Physical Memory</h3>
+          <div class="big-value" style="color: {barColor(metrics.memory.percent)}">{metrics.memory.percent.toFixed(1)}%</div>
+          <div class="sub-text">{formatBytes(metrics.memory.used)} / {formatBytes(metrics.memory.total)}</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {metrics.memory.percent}%; background: {barColor(metrics.memory.percent)}"></div>
+          </div>
+        </div>
+
+        {#if metrics.memory.swap_total > 0}
+          <div class="card">
+            <h3>Swap</h3>
+            <div class="big-value" style="color: {barColor(metrics.memory.swap_percent)}">{metrics.memory.swap_percent.toFixed(1)}%</div>
+            <div class="sub-text">{formatBytes(metrics.memory.swap_used)} / {formatBytes(metrics.memory.swap_total)}</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {metrics.memory.swap_percent}%; background: {barColor(metrics.memory.swap_percent)}"></div>
+            </div>
+          </div>
+        {:else}
+          <div class="card">
+            <h3>Swap</h3>
+            <div class="big-value" style="color: #666">Not configured</div>
+            <div class="sub-text">No swap space allocated</div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Memory Breakdown Chart -->
+      <div class="card wide">
+        <h3>Memory Breakdown</h3>
+        <div class="mem-breakdown">
+          <div class="mem-bar-container">
+            <div class="mem-bar">
+              <div class="mem-segment used" style="width: {(metrics.memory.used / metrics.memory.total * 100)}%" title="Used: {formatBytes(metrics.memory.used)}"></div>
+              <div class="mem-segment cached" style="width: {(metrics.memory.cached / metrics.memory.total * 100)}%" title="Cached: {formatBytes(metrics.memory.cached)}"></div>
+              <div class="mem-segment buffers" style="width: {(metrics.memory.buffers / metrics.memory.total * 100)}%" title="Buffers: {formatBytes(metrics.memory.buffers)}"></div>
+              <div class="mem-segment free" style="width: {(metrics.memory.free / metrics.memory.total * 100)}%" title="Free: {formatBytes(metrics.memory.free)}"></div>
+            </div>
+          </div>
+          <div class="mem-legend">
+            <div class="legend-item"><span class="legend-dot" style="background: #ff6b6b"></span>Used: {formatBytes(metrics.memory.used)}</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ffd93d"></span>Cached: {formatBytes(metrics.memory.cached)}</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #6bcb77"></span>Buffers: {formatBytes(metrics.memory.buffers)}</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #4d96ff"></span>Free: {formatBytes(metrics.memory.free)}</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #888"></span>Available: {formatBytes(metrics.memory.available)}</div>
+          </div>
+        </div>
+      </div>
+
+      {#if history.length > 0}
+        <div class="card wide">
+          <h3>Memory Usage History ({historyHours}h)</h3>
+          <div class="mini-chart">
+            {#each buildBarData(getHistoryValues('memory', 'percent')) as bar}
               <div class="mini-bar" style="height: {bar.height}%; background: {barColor(parseFloat(bar.label))}" title="{bar.label}%"></div>
             {/each}
           </div>
@@ -387,6 +573,8 @@
                 <th>TX Rate</th>
                 <th>RX Packets</th>
                 <th>TX Packets</th>
+                <th>RX pps</th>
+                <th>TX pps</th>
                 <th>Errors</th>
                 <th>Drops</th>
               </tr>
@@ -400,6 +588,8 @@
                   <td class="tx">{formatBitsPerSec(iface.tx_bps)}</td>
                   <td>{iface.rx_packets.toLocaleString()}</td>
                   <td>{iface.tx_packets.toLocaleString()}</td>
+                  <td>{iface.rx_pps.toLocaleString()}</td>
+                  <td>{iface.tx_pps.toLocaleString()}</td>
                   <td class:error={iface.rx_errors + iface.tx_errors > 0}>{iface.rx_errors + iface.tx_errors}</td>
                   <td class:error={iface.rx_drops + iface.tx_drops > 0}>{iface.rx_drops + iface.tx_drops}</td>
                 </tr>
@@ -408,6 +598,94 @@
           </table>
         </div>
       </div>
+
+      <!-- Total Bandwidth -->
+      <div class="overview-grid">
+        <div class="card">
+          <h3>Total RX Bandwidth</h3>
+          <div class="big-value rx">{formatBitsPerSec(metrics.network.reduce((sum, i) => sum + i.rx_bps, 0))}</div>
+        </div>
+        <div class="card">
+          <h3>Total TX Bandwidth</h3>
+          <div class="big-value tx">{formatBitsPerSec(metrics.network.reduce((sum, i) => sum + i.tx_bps, 0))}</div>
+        </div>
+        <div class="card">
+          <h3>Total RX Packets</h3>
+          <div class="big-value">{metrics.network.reduce((sum, i) => sum + i.rx_packets, 0).toLocaleString()}</div>
+        </div>
+        <div class="card">
+          <h3>Total TX Packets</h3>
+          <div class="big-value">{metrics.network.reduce((sum, i) => sum + i.tx_packets, 0).toLocaleString()}</div>
+        </div>
+      </div>
+
+      <!-- ConnTrack -->
+      {#if conntrack}
+        <div class="card wide">
+          <h3>Connection Tracking</h3>
+          <div class="overview-grid compact">
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.active_sessions}</span>
+              <span class="stat-label">Active Sessions</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.max_sessions}</span>
+              <span class="stat-label">Max Sessions</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.tcp_established}</span>
+              <span class="stat-label">TCP Established</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.tcp_syn_sent}</span>
+              <span class="stat-label">TCP SYN Sent</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.tcp_time_wait}</span>
+              <span class="stat-label">TCP Time Wait</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.udp}</span>
+              <span class="stat-label">UDP</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.icmp}</span>
+              <span class="stat-label">ICMP</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{conntrack.other}</span>
+              <span class="stat-label">Other</span>
+            </div>
+          </div>
+          <div class="progress-bar" style="margin-top: 0.75rem">
+            <div class="progress-fill" style="width: {(conntrack.active_sessions / Math.max(conntrack.max_sessions, 1)) * 100}%; background: {barColor((conntrack.active_sessions / Math.max(conntrack.max_sessions, 1)) * 100)}"></div>
+          </div>
+          <div class="sub-text">{((conntrack.active_sessions / Math.max(conntrack.max_sessions, 1)) * 100).toFixed(1)}% of capacity</div>
+        </div>
+      {/if}
+
+      <!-- Network Latency -->
+      <div class="card wide">
+        <h3>Network Latency</h3>
+        <div class="latency-section">
+          <div class="latency-input-row">
+            <input type="text" bind:value={latencyTarget} placeholder="Target IP/hostname" class="latency-input" />
+            <button class="btn-ping" on:click={measureLatency}>Ping</button>
+          </div>
+          {#if networkLatency}
+            <div class="latency-result">
+              <span class="latency-target">{networkLatency.target}</span>
+              {#if networkLatency.latency_ms !== null}
+                <span class="latency-value" style="color: {networkLatency.latency_ms < 30 ? '#00ff88' : networkLatency.latency_ms < 100 ? '#ffaa00' : '#ff4444'}">{networkLatency.latency_ms.toFixed(1)} ms</span>
+              {:else}
+                <span class="latency-value" style="color: #ff4444">No response</span>
+              {/if}
+              <span class="latency-time">{formatTime(networkLatency.timestamp)}</span>
+            </div>
+          {/if}
+        </div>
+      </div>
+
       {#if history.length > 0}
         <div class="card wide">
           <h3>Network History ({historyHours}h)</h3>
@@ -436,6 +714,7 @@
               <span class="disk-device">{disk.device}</span>
               <span class="disk-mount">{disk.mountpoint}</span>
               <span class="disk-type">{disk.fstype}</span>
+              <span class="disk-health" style="color: {healthBadgeColor(disk.health)}">{disk.health}</span>
             </div>
             <div class="disk-bar-section">
               <div class="progress-bar">
@@ -452,16 +731,42 @@
       <div class="card wide">
         <h3>Disk I/O</h3>
         <div class="disk-io-summary">
-          <span>Read: {formatBytes(metrics.disk_io.total_read_bytes_per_sec)}/s</span>
-          <span>Write: {formatBytes(metrics.disk_io.total_write_bytes_per_sec)}/s</span>
+          <span>Total Read: {formatBytes(metrics.disk_io.total_read_bytes_per_sec)}/s</span>
+          <span>Total Write: {formatBytes(metrics.disk_io.total_write_bytes_per_sec)}/s</span>
         </div>
-        {#each metrics.disk_io.devices as dev}
-          <div class="disk-io-row">
-            <span class="dev-name">{dev.name}</span>
-            <span class="rx">R: {formatBytes(dev.read_bytes_per_sec)}/s</span>
-            <span class="tx">W: {formatBytes(dev.write_bytes_per_sec)}/s</span>
-          </div>
-        {/each}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>Read Rate</th>
+                <th>Write Rate</th>
+                <th>I/O Bar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each metrics.disk_io.devices as dev}
+                {@const totalIO = dev.read_bytes_per_sec + dev.write_bytes_per_sec}
+                {@const maxIO = Math.max(...metrics.disk_io.devices.map(d => d.read_bytes_per_sec + d.write_bytes_per_sec), 1)}
+                <tr>
+                  <td class="iface-name">{dev.name}</td>
+                  <td class="rx">{formatBytes(dev.read_bytes_per_sec)}/s</td>
+                  <td class="tx">{formatBytes(dev.write_bytes_per_sec)}/s</td>
+                  <td>
+                    <div class="disk-io-bar">
+                      <div class="disk-io-read" style="width: {(dev.read_bytes_per_sec / maxIO) * 100}%"></div>
+                      <div class="disk-io-write" style="width: {(dev.write_bytes_per_sec / maxIO) * 100}%"></div>
+                    </div>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <div class="io-legend">
+          <span class="legend-item"><span class="legend-dot rx"></span>Read</span>
+          <span class="legend-item"><span class="legend-dot tx"></span>Write</span>
+        </div>
       </div>
     {/if}
 
@@ -526,10 +831,90 @@
             </div>
           </div>
         </div>
+
+        <!-- Worker Threads -->
+        {#if metrics.vpp.worker_threads > 0 || (vppPerf?.threads && vppPerf.threads.length > 0)}
+          <div class="card wide">
+            <h3>Worker Threads</h3>
+            <div class="sub-text" style="margin-bottom: 0.75rem">Total worker threads: {metrics.vpp.worker_threads || vppPerf?.threads?.length || 0}</div>
+            {#if vppPerf?.threads && vppPerf.threads.length > 0}
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Thread</th>
+                      <th>State</th>
+                      <th>CPU Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each vppPerf.threads as thread}
+                      <tr>
+                        <td class="iface-name">{thread.name}</td>
+                        <td><span class="state-badge" class:up={thread.state === 'running'}>{thread.state}</span></td>
+                        <td>{thread.cpu_time.toFixed(1)}%</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Packet Processing Rate -->
+        <div class="card wide">
+          <h3>Packet Processing Rate</h3>
+          <div class="overview-grid compact">
+            <div class="stat-item">
+              <span class="stat-value rx">{metrics.vpp.packet_rate_rx.toLocaleString()}</span>
+              <span class="stat-label">Total RX Packets</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value tx">{metrics.vpp.packet_rate_tx.toLocaleString()}</span>
+              <span class="stat-label">Total TX Packets</span>
+            </div>
+            {#if vppPerf?.packet_rate}
+              <div class="stat-item">
+                <span class="stat-value">{vppPerf.packet_rate.rx.toLocaleString()}</span>
+                <span class="stat-label">Current RX pps</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{vppPerf.packet_rate.tx.toLocaleString()}</span>
+                <span class="stat-label">Current TX pps</span>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- VPP Errors -->
         {#if metrics.vpp.errors_total > 0}
           <div class="card wide warning-card">
             <h3>VPP Errors ({metrics.vpp.errors_total})</h3>
-            <div class="sub-text">Error counters detected in the VPP data plane.</div>
+            {#if vppPerf?.errors?.counters && vppPerf.errors.counters.length > 0}
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Count</th>
+                      <th>Node</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each vppPerf.errors.counters.slice(0, 15) as counter}
+                      <tr>
+                        <td class="error">{counter.count.toLocaleString()}</td>
+                        <td>{counter.node}</td>
+                        <td>{counter.reason}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {:else}
+              <div class="sub-text">Error counters detected in the VPP data plane.</div>
+            {/if}
           </div>
         {/if}
       {:else}
@@ -626,6 +1011,7 @@
     margin-bottom: 1.5rem;
     border-bottom: 2px solid #333;
     padding-bottom: 0;
+    overflow-x: auto;
   }
 
   .tab {
@@ -638,6 +1024,7 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.2s;
+    white-space: nowrap;
   }
 
   .tab:hover { color: #ccc; }
@@ -649,6 +1036,10 @@
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
+  }
+
+  .overview-grid.compact {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 
   .card {
@@ -690,6 +1081,7 @@
   .net-state { font-size: 0.8rem; text-transform: uppercase; color: #888; }
   .net-state.up { color: #00ff88; }
   .net-throughput { display: flex; gap: 1rem; font-size: 0.8rem; color: #aaa; margin-top: 0.25rem; }
+  .net-latency { font-size: 0.8rem; color: #aaa; margin-top: 0.5rem; }
   .rx { color: #4fc3f7; }
   .tx { color: #81c784; }
 
@@ -728,6 +1120,81 @@
 
   .core-label { font-size: 0.65rem; color: #666; margin-top: 4px; }
   .core-value { font-size: 0.65rem; color: #888; }
+
+  /* Load Average */
+  .load-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .load-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  .load-value { font-size: 1.5rem; font-weight: bold; color: #00ff88; }
+  .load-label { font-size: 0.8rem; color: #888; }
+
+  /* Temperature */
+  .temp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #222;
+  }
+
+  .temp-name { color: #ccc; font-size: 0.85rem; }
+  .temp-value { font-weight: bold; font-size: 0.9rem; }
+
+  /* Memory Breakdown */
+  .mem-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mem-bar-container { width: 100%; }
+
+  .mem-bar {
+    display: flex;
+    height: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #333;
+  }
+
+  .mem-segment {
+    height: 100%;
+    transition: width 0.5s ease;
+  }
+
+  .mem-segment.used { background: #ff6b6b; }
+  .mem-segment.cached { background: #ffd93d; }
+  .mem-segment.buffers { background: #6bcb77; }
+  .mem-segment.free { background: #4d96ff; }
+
+  .mem-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #aaa;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .legend-dot.rx { background: #4fc3f7; }
+  .legend-dot.tx { background: #81c784; }
 
   /* Process grid */
   .process-grid {
@@ -809,17 +1276,130 @@
 
   /* Disk detail */
   .disk-detail-row { margin-bottom: 1rem; }
-  .disk-info { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
+  .disk-info { display: flex; gap: 1rem; margin-bottom: 0.5rem; align-items: center; }
   .disk-device { font-weight: 600; color: #e0e0e0; }
   .disk-mount { color: #888; }
   .disk-type { color: #666; font-size: 0.8rem; }
+  .disk-health {
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: #222;
+  }
   .disk-bar-section { display: flex; align-items: center; gap: 0.75rem; }
   .disk-pct { font-weight: bold; min-width: 50px; }
   .disk-sizes { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
 
   .disk-io-summary { display: flex; gap: 2rem; margin-bottom: 1rem; font-size: 0.9rem; color: #aaa; }
-  .disk-io-row { display: flex; gap: 1.5rem; padding: 0.4rem 0; border-bottom: 1px solid #222; font-size: 0.85rem; }
-  .dev-name { font-weight: 600; color: #e0e0e0; min-width: 100px; }
+
+  .disk-io-bar {
+    display: flex;
+    gap: 2px;
+    height: 12px;
+    border-radius: 2px;
+    overflow: hidden;
+    min-width: 100px;
+  }
+
+  .disk-io-read {
+    height: 100%;
+    background: #4fc3f7;
+    border-radius: 2px;
+  }
+
+  .disk-io-write {
+    height: 100%;
+    background: #81c784;
+    border-radius: 2px;
+  }
+
+  .io-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: #aaa;
+  }
+
+  /* Stat items */
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: #16213e;
+    border-radius: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #00ff88;
+  }
+
+  .stat-value.rx { color: #4fc3f7; }
+  .stat-value.tx { color: #81c784; }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-align: center;
+  }
+
+  /* Latency */
+  .latency-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .latency-input-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .latency-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: #0f0f23;
+    border: 1px solid #333;
+    color: #e0e0e0;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+  }
+
+  .latency-input:focus {
+    outline: none;
+    border-color: #00ff88;
+  }
+
+  .btn-ping {
+    padding: 0.5rem 1rem;
+    background: #16213e;
+    border: 1px solid #444;
+    color: #ccc;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .btn-ping:hover { background: #333; border-color: #00ff88; color: #00ff88; }
+
+  .latency-result {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: #16213e;
+    border-radius: 0.5rem;
+  }
+
+  .latency-target { color: #888; font-size: 0.85rem; }
+  .latency-value { font-size: 1.1rem; font-weight: bold; }
+  .latency-time { font-size: 0.75rem; color: #666; margin-left: auto; }
 
   /* Alerts */
   .alert-header { display: flex; justify-content: space-between; align-items: center; }

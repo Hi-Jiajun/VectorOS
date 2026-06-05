@@ -155,6 +155,10 @@ def get_memory():
     available = meminfo.get('MemAvailable', total)
     used = total - available
 
+    swap_total = meminfo.get('SwapTotal', 0)
+    swap_free = meminfo.get('SwapFree', 0)
+    swap_used = swap_total - swap_free
+
     return {
         'total': total,
         'used': used,
@@ -163,7 +167,36 @@ def get_memory():
         'cached': cached,
         'available': available,
         'percent': round((used / total * 100) if total > 0 else 0, 1),
+        'swap_total': swap_total,
+        'swap_used': swap_used,
+        'swap_free': swap_free,
+        'swap_percent': round((swap_used / swap_total * 100) if swap_total > 0 else 0, 1),
     }
+
+
+def get_disk_health(device):
+    """Check disk health using smartctl if available."""
+    # Strip partition number and /dev/ prefix for the base device
+    base = device.split('/')[-1]
+    # Remove trailing partition numbers (e.g., sda1 -> sda, nvme0n1p1 -> nvme0n1)
+    import re as _re
+    base = _re.sub(r'p?\d+$', '', base)
+
+    try:
+        output = subprocess.check_output(
+            ['smartctl', '-H', f'/dev/{base}'],
+            stderr=subprocess.DEVNULL, text=True, timeout=5,
+        )
+        if 'PASSED' in output or 'OK' in output:
+            return 'healthy'
+        elif 'FAILED' in output:
+            return 'failing'
+        else:
+            return 'unknown'
+    except FileNotFoundError:
+        return 'no-smart'
+    except Exception:
+        return 'unknown'
 
 
 def get_disk_usage():
@@ -175,14 +208,19 @@ def get_disk_usage():
         for line in output.strip().split('\n')[1:]:
             parts = line.split()
             if len(parts) >= 7 and not parts[0].startswith('tmpfs'):
+                device = parts[0]
+                health = 'unknown'
+                if device.startswith('/dev/'):
+                    health = get_disk_health(device)
                 disks.append({
-                    'device': parts[0],
+                    'device': device,
                     'fstype': parts[1],
                     'total': int(parts[2]),
                     'used': int(parts[3]),
                     'available': int(parts[4]),
                     'percent': float(parts[5].rstrip('%')),
                     'mountpoint': parts[6],
+                    'health': health,
                 })
     except Exception:
         pass
@@ -456,6 +494,33 @@ def get_vpp_metrics():
                 pass
     errors['counters'] = errors['counters'][:20]
 
+    # Worker thread count
+    thread_output, _ = run_vppctl(['show', 'thread'])
+    worker_threads = 0
+    for line in thread_output.split('\n'):
+        if 'worker' in line.lower() or 'thread' in line.lower():
+            parts = line.split()
+            for p in parts:
+                try:
+                    val = int(p)
+                    if val > worker_threads:
+                        worker_threads = val
+                except ValueError:
+                    pass
+    # Fallback: count lines that look like thread entries
+    if worker_threads == 0:
+        for line in thread_output.split('\n'):
+            stripped = line.strip()
+            if stripped and stripped[0].isdigit():
+                worker_threads += 1
+
+    # Packet rate from interface counters (rx/tx packets per second)
+    packet_rate_rx = 0
+    packet_rate_tx = 0
+    for iface in interfaces:
+        packet_rate_rx += iface.get('rx_packets', 0)
+        packet_rate_tx += iface.get('tx_packets', 0)
+
     return {
         'available': True,
         'version': version,
@@ -464,6 +529,9 @@ def get_vpp_metrics():
         'pppoe': pppoe,
         'memory': vpp_mem,
         'errors': errors,
+        'worker_threads': worker_threads,
+        'packet_rate_rx': packet_rate_rx,
+        'packet_rate_tx': packet_rate_tx,
     }
 
 

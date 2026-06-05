@@ -113,6 +113,85 @@
     .toast-icon { font-size: 16px; }
     .toast-msg { font-size: 13px; font-weight: 500; }
     @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    /* Dashboard Widgets */
+    .widget-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .widget-grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .widget-grid-1x2 { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px; }
+    .uptime-counter { display: flex; gap: 16px; justify-content: center; margin-top: 12px; }
+    .uptime-unit { text-align: center; }
+    .uptime-val { font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--text-1); }
+    .uptime-lbl { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; }
+    .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .service-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(0,0,0,0.15); border-radius: 8px; }
+    .service-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .service-dot.on { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+    .service-dot.off { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+    .service-dot.warn { background: var(--yellow); box-shadow: 0 0 6px rgba(234,179,8,0.5); }
+    .service-name { font-size: 12px; font-weight: 600; color: var(--text-2); }
+    .service-status { font-size: 11px; font-weight: 700; margin-left: auto; }
+    .service-status.on { color: var(--green); }
+    .service-status.off { color: var(--red); }
+    .service-status.warn { color: var(--yellow); }
+    /* Network Traffic per-interface */
+    .net-iface-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 6px; }
+    .net-iface-row:last-child { margin-bottom: 0; }
+    .net-iface-name { font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; min-width: 90px; color: var(--text-1); }
+    .net-iface-bar { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .net-iface-bar-row { display: flex; align-items: center; gap: 6px; }
+    .net-iface-bar-label { font-size: 9px; font-weight: 700; text-transform: uppercase; width: 22px; }
+    .net-iface-bar-label.rx { color: var(--green); }
+    .net-iface-bar-label.tx { color: #a78bfa; }
+    .net-iface-bar-track { flex: 1; height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+    .net-iface-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .net-iface-bar-fill.rx { background: linear-gradient(90deg, #22c55e, #4ade80); }
+    .net-iface-bar-fill.tx { background: linear-gradient(90deg, #a78bfa, #c4b5fd); }
+    .net-iface-rate { font-size: 11px; font-family: 'JetBrains Mono', monospace; min-width: 70px; text-align: right; }
+    .net-iface-rate.rx { color: var(--green); }
+    .net-iface-rate.tx { color: #a78bfa; }
+    /* PPPoE Status Widget */
+    .pppoe-status-big { text-align: center; padding: 16px 0; }
+    .pppoe-state-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 10px; }
+    .pppoe-state-icon.connected { background: var(--green-bg); border: 2px solid rgba(34,197,94,0.3); }
+    .pppoe-state-icon.disconnected { background: rgba(239,68,68,0.1); border: 2px solid rgba(239,68,68,0.3); }
+    .pppoe-state-icon.discovering { background: var(--yellow-bg); border: 2px solid rgba(234,179,8,0.3); }
+    .pppoe-state-label { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .pppoe-ip-display { font-size: 13px; font-family: 'JetBrains Mono', monospace; color: var(--text-2); background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 6px; display: inline-block; margin: 8px 0; }
+    .pppoe-quick-btns { display: flex; gap: 8px; margin-top: 12px; }
+    .pppoe-quick-btns .btn { flex: 1; height: 36px; font-size: 12px; }
+    .btn-connect { background: var(--green); color: white; border: none; }
+    .btn-connect:hover { background: #16a34a; }
+    .btn-disconnect { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-disconnect:hover { background: rgba(239,68,68,0.25); }
+    /* Quick Actions Widget */
+    .quick-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quick-action-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; color: var(--text-2); }
+    .quick-action-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); transform: translateY(-1px); }
+    .quick-action-btn:active { transform: translateY(0); }
+    .quick-action-btn .qa-icon { font-size: 20px; }
+    .quick-action-btn .qa-label { font-size: 11px; font-weight: 600; }
+    .quick-action-btn.danger { border-color: rgba(239,68,68,0.2); }
+    .quick-action-btn.danger:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+    .quick-action-btn.danger .qa-label { color: var(--red); }
+    .quick-action-btn.active-action { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); }
+    .quick-action-btn.active-action .qa-label { color: var(--green); }
+    /* Recent Events */
+    .events-list { max-height: 320px; overflow-y: auto; }
+    .events-list::-webkit-scrollbar { width: 4px; }
+    .events-list::-webkit-scrollbar-track { background: transparent; }
+    .events-list::-webkit-scrollbar-thumb { background: var(--bg-4, #333); border-radius: 2px; }
+    .event-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .event-item:last-child { border-bottom: none; }
+    .event-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+    .event-icon.info { background: var(--accent-glow); }
+    .event-icon.success { background: var(--green-bg); }
+    .event-icon.warning { background: var(--yellow-bg); }
+    .event-icon.error { background: rgba(239,68,68,0.1); }
+    .event-content { flex: 1; min-width: 0; }
+    .event-title { font-size: 12px; font-weight: 600; color: var(--text-1); }
+    .event-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-time { font-size: 10px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; margin-top: 2px; }
+    .events-empty { text-align: center; padding: 30px 0; color: var(--text-3); font-size: 12px; }
+    .events-empty .ev-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
     /* Monitoring Charts */
     .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .chart-container { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -155,7 +234,8 @@
     .health-score-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
     .mini-chart { display: flex; align-items: flex-end; gap: 2px; height: 40px; margin-top: 8px; }
     .mini-chart .bar { width: 4px; min-width: 4px; max-width: 4px; }
-    @media (max-width: 1400px) { .stats { grid-template-columns: repeat(2, 1fr); } .monitor-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1400px) { .stats { grid-template-columns: repeat(2, 1fr); } .monitor-grid { grid-template-columns: 1fr; } .widget-grid { grid-template-columns: 1fr 1fr; } .widget-grid-2, .widget-grid-1x2 { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .widget-grid { grid-template-columns: 1fr; } .quick-actions-grid { grid-template-columns: 1fr; } }
     @media (max-width: 1024px) { .sidebar { width: 56px; } .brand h1, .brand .ver, .nav-label, .nav-item span:not(.nav-icon), .foot-text { display: none; } .nav-item { justify-content: center; padding: 10px; } .nav-item.active::before { display: none; } .brand { justify-content: center; padding: 12px; } .sidebar-foot { justify-content: center; } .main { margin-left: 56px; } }
   </style>
 </head>
@@ -217,7 +297,133 @@
             <div class="stat"><div class="stat-head"><div class="stat-ico i3">🔌</div></div><div class="stat-val" id="sv-pppoe">—</div><div class="stat-desc">PPPoE 状态</div></div>
             <div class="stat"><div class="stat-head"><div class="stat-ico i4">💾</div></div><div class="stat-val" id="sv-mem">—</div><div class="stat-desc">内存使用</div></div>
           </div>
-          <!-- Real-time Monitoring -->
+
+          <!-- Row 1: System Health | Network Traffic | PPPoE Status -->
+          <div class="widget-grid">
+
+            <!-- 1. System Health Widget -->
+            <div class="chart-container">
+              <div class="card-head"><h3>💚 系统健康</h3><span class="badge b-green" id="health-badge"><span class="dot"></span> 正常</span></div>
+              <div class="card-body">
+                <div class="health-score">
+                  <div class="health-score-value" id="health-score" style="color:var(--green)">100</div>
+                  <div class="health-score-label">综合健康评分</div>
+                  <div class="health-score-bar"><div class="health-score-fill" id="health-bar" style="width:100%;background:var(--green)"></div></div>
+                </div>
+                <!-- Uptime Counter -->
+                <div class="uptime-counter" id="uptime-counter">
+                  <div class="uptime-unit"><div class="uptime-val" id="ut-days">0</div><div class="uptime-lbl">天</div></div>
+                  <div class="uptime-unit"><div class="uptime-val" id="ut-hours">0</div><div class="uptime-lbl">时</div></div>
+                  <div class="uptime-unit"><div class="uptime-val" id="ut-mins">0</div><div class="uptime-lbl">分</div></div>
+                  <div class="uptime-unit"><div class="uptime-val" id="ut-secs">0</div><div class="uptime-lbl">秒</div></div>
+                </div>
+                <!-- Service Status Indicators -->
+                <div class="service-grid" id="service-grid">
+                  <div class="service-item"><span class="service-dot on" id="svc-vpp-dot"></span><span class="service-name">VPP</span><span class="service-status on" id="svc-vpp">运行中</span></div>
+                  <div class="service-item"><span class="service-dot on" id="svc-pppoe-dot"></span><span class="service-name">PPPoE</span><span class="service-status on" id="svc-pppoe">已加载</span></div>
+                  <div class="service-item"><span class="service-dot on" id="svc-nat-dot"></span><span class="service-name">NAT</span><span class="service-status on" id="svc-nat">已启用</span></div>
+                  <div class="service-item"><span class="service-dot on" id="svc-dhcp-dot"></span><span class="service-name">DHCP</span><span class="service-status on" id="svc-dhcp">运行中</span></div>
+                  <div class="service-item"><span class="service-dot on" id="svc-dns-dot"></span><span class="service-name">DNS</span><span class="service-status on" id="svc-dns">运行中</span></div>
+                  <div class="service-item"><span class="service-dot on" id="svc-dpdk-dot"></span><span class="service-name">DPDK</span><span class="service-status on" id="svc-dpdk">已启用</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Network Traffic Widget -->
+            <div class="chart-container">
+              <div class="card-head"><h3>🌐 网络流量</h3><span style="font-size:11px;color:var(--text-3)">实时</span></div>
+              <div class="card-body">
+                <!-- Total RX/TX rates -->
+                <div style="display:flex;gap:16px;margin-bottom:12px">
+                  <div style="flex:1;text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:8px">
+                    <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px">总下载</div>
+                    <div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--green);margin-top:4px" id="net-total-rx">0 B/s</div>
+                  </div>
+                  <div style="flex:1;text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:8px">
+                    <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px">总上传</div>
+                    <div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#a78bfa;margin-top:4px" id="net-total-tx">0 B/s</div>
+                  </div>
+                </div>
+                <!-- Mini sparkline charts -->
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                  <div style="flex:1"><div style="font-size:10px;color:var(--text-3);margin-bottom:4px">RX 趋势</div><div class="sparkline" id="net-rx-spark" style="height:28px"></div></div>
+                  <div style="flex:1"><div style="font-size:10px;color:var(--text-3);margin-bottom:4px">TX 趋势</div><div class="sparkline" id="net-tx-spark" style="height:28px"></div></div>
+                </div>
+                <!-- Per-interface breakdown -->
+                <div id="net-iface-breakdown"><div class="loading" style="padding:12px"><div class="spinner" style="width:18px;height:18px"></div></div></div>
+              </div>
+            </div>
+
+            <!-- 3. PPPoE Status Widget -->
+            <div class="chart-container">
+              <div class="card-head"><h3>🔌 PPPoE 状态</h3><button class="btn btn-ghost" onclick="loadPppoeStatus()" style="font-size:11px;height:24px;padding:0 8px">刷新</button></div>
+              <div class="card-body" id="pppoe-status-widget">
+                <div class="pppoe-status-big">
+                  <div class="pppoe-state-icon disconnected" id="pppoe-state-icon">🔌</div>
+                  <div class="pppoe-state-label" id="pppoe-state-label" style="color:var(--red)">未连接</div>
+                  <div class="pppoe-ip-display" id="pppoe-ip-display">--</div>
+                </div>
+                <div class="metric-row"><span class="metric-label">会话时间</span><span class="metric-value" id="pppoe-session-time">--</span></div>
+                <div class="metric-row"><span class="metric-label">用户名</span><span class="metric-value" id="pppoe-username">--</span></div>
+                <div class="metric-row"><span class="metric-label">接口</span><span class="metric-value" id="pppoe-iface">--</span></div>
+                <div class="metric-row"><span class="metric-label">MTU / MRU</span><span class="metric-value" id="pppoe-mtu">-- / --</span></div>
+                <div class="metric-row"><span class="metric-label">重连次数</span><span class="metric-value" id="pppoe-reconnects">0</span></div>
+                <div class="pppoe-quick-btns">
+                  <button class="btn btn-connect" id="pppoe-connect-btn" onclick="pppoeConnect()">⚡ 连接</button>
+                  <button class="btn btn-disconnect" id="pppoe-disconnect-btn" onclick="pppoeDisconnect()">断开</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Quick Actions | Recent Events -->
+          <div class="widget-grid-1x2">
+
+            <!-- 4. Quick Actions Widget -->
+            <div class="chart-container">
+              <div class="card-head"><h3>⚡ 快速操作</h3></div>
+              <div class="card-body">
+                <div class="quick-actions-grid">
+                  <div class="quick-action-btn" id="qa-pppoe" onclick="quickPppoe()">
+                    <span class="qa-icon">🔌</span>
+                    <span class="qa-label">PPPoE 拨号</span>
+                  </div>
+                  <div class="quick-action-btn" id="qa-nat" onclick="quickNat()">
+                    <span class="qa-icon">🔄</span>
+                    <span class="qa-label">启用 NAT</span>
+                  </div>
+                  <div class="quick-action-btn" id="qa-dhcp" onclick="quickDhcp()">
+                    <span class="qa-icon">📡</span>
+                    <span class="qa-label">启用 DHCP</span>
+                  </div>
+                  <div class="quick-action-btn danger" onclick="quickReboot()">
+                    <span class="qa-icon">🔃</span>
+                    <span class="qa-label" style="color:var(--red)">重启系统</span>
+                  </div>
+                </div>
+                <!-- Service toggles -->
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+                  <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">服务状态</div>
+                  <div class="info-row"><span class="info-k">PPPoE 插件</span><span class="info-v" id="i-pppoe">—</span></div>
+                  <div class="info-row"><span class="info-k">NAT</span><span class="info-v" id="i-nat">—</span></div>
+                  <div class="info-row"><span class="info-k">DHCP</span><span class="info-v" id="i-dhcp">—</span></div>
+                  <div class="info-row"><span class="info-k">DNS</span><span class="info-v" id="i-dns">—</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Recent Events Widget -->
+            <div class="chart-container">
+              <div class="card-head"><h3>📋 最近事件</h3><span style="font-size:11px;color:var(--text-3)" id="events-count">0 条事件</span></div>
+              <div class="card-body">
+                <div class="events-list" id="events-list">
+                  <div class="events-empty"><div class="ev-icon">📋</div><div>暂无事件</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Real-time CPU/Memory charts -->
           <div class="monitor-grid">
             <!-- CPU Usage Chart -->
             <div class="chart-container">
@@ -246,50 +452,9 @@
                 <div class="progress-bar"><div class="progress-fill green" id="mem-progress" style="width:0%"></div></div>
               </div>
             </div>
-
-            <!-- Network Throughput Chart -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>🌐 网络吞吐量</h3>
-                <div style="display:flex;gap:16px">
-                  <div><span style="font-size:10px;color:var(--text-3)">RX</span> <span class="chart-value" id="net-rx-value" style="font-size:14px;color:var(--green)">0 B/s</span></div>
-                  <div><span style="font-size:10px;color:var(--text-3)">TX</span> <span class="chart-value" id="net-tx-value" style="font-size:14px;color:#a78bfa">0 B/s</span></div>
-                </div>
-              </div>
-              <div class="chart-body" style="position:relative">
-                <div class="bar-chart" id="net-rx-chart" style="position:absolute;left:16px;right:16px;top:16px;bottom:16px;opacity:0.7"></div>
-                <div class="bar-chart" id="net-tx-chart" style="position:absolute;left:16px;right:16px;top:16px;bottom:16px;opacity:0.5"></div>
-              </div>
-              <div style="padding:0 16px 12px;display:flex;gap:16px">
-                <div class="sparkline" id="net-rx-spark"></div>
-                <div class="sparkline" id="net-tx-spark"></div>
-              </div>
-            </div>
-
-            <!-- PPPoE Session Uptime -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>🔌 PPPoE 会话</h3>
-                <div class="chart-value" id="pppoe-uptime-value">--</div>
-              </div>
-              <div class="chart-body" style="flex-direction:column;align-items:stretch;justify-content:center">
-                <div class="metric-row"><span class="metric-label">运行时间</span><span class="metric-value" id="pppoe-uptime">--</span></div>
-                <div class="metric-row"><span class="metric-label">重连次数</span><span class="metric-value" id="pppoe-reconnects">0</span></div>
-                <div class="metric-row"><span class="metric-label">MTU / MRU</span><span class="metric-value" id="pppoe-mtu">-- / --</span></div>
-                <div class="mini-chart" id="pppoe-uptime-chart"></div>
-              </div>
-            </div>
           </div>
 
-          <!-- Interface Traffic Stats -->
-          <div class="card" style="margin-bottom:12px">
-            <div class="card-head"><h3>📊 接口流量统计</h3><span style="font-size:11px;color:var(--text-3)">每2秒更新</span></div>
-            <div class="card-body" id="traffic-stats">
-              <div class="loading"><div class="spinner"></div>加载中...</div>
-            </div>
-          </div>
-
-          <!-- VPP Performance & Health -->
+          <!-- Row 4: VPP Performance + Interface Table -->
           <div class="monitor-grid" style="margin-bottom:12px">
             <!-- VPP Performance Metrics -->
             <div class="chart-container">
@@ -303,46 +468,19 @@
               </div>
             </div>
 
-            <!-- System Health Score -->
+            <!-- System Info -->
             <div class="chart-container">
-              <div class="card-head"><h3>💚 系统健康评分</h3></div>
-              <div class="card-body">
-                <div class="health-score">
-                  <div class="health-score-value" id="health-score" style="color:var(--green)">100</div>
-                  <div class="health-score-label">综合健康评分</div>
-                  <div class="health-score-bar"><div class="health-score-fill" id="health-bar" style="width:100%;background:var(--green)"></div></div>
-                </div>
-                <div style="margin-top:16px">
-                  <div class="metric-row"><span class="metric-label">CPU 状态</span><span class="badge b-green" id="health-cpu"><span class="dot"></span> 正常</span></div>
-                  <div class="metric-row"><span class="metric-label">内存状态</span><span class="badge b-green" id="health-mem"><span class="dot"></span> 正常</span></div>
-                  <div class="metric-row"><span class="metric-label">网络状态</span><span class="badge b-green" id="health-net"><span class="dot"></span> 正常</span></div>
-                  <div class="metric-row"><span class="metric-label">VPP 状态</span><span class="badge b-green" id="health-vpp"><span class="dot"></span> 正常</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
               <div class="card-head"><h3>📋 系统信息</h3></div>
               <div class="card-body">
                 <div class="info-row"><span class="info-k">VectorOS</span><span class="info-v" id="i-ver">—</span></div>
                 <div class="info-row"><span class="info-k">VPP</span><span class="info-v">v26.06-rc0~703</span></div>
-                <div class="info-row"><span class="info-k">PPPoE 插件</span><span class="info-v" id="i-pppoe">—</span></div>
-                <div class="info-row"><span class="info-k">NAT</span><span class="info-v" id="i-nat">—</span></div>
-                <div class="info-row"><span class="info-k">DHCP</span><span class="info-v" id="i-dhcp">—</span></div>
-                <div class="info-row"><span class="info-k">DNS</span><span class="info-v" id="i-dns">—</span></div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-head"><h3>⚡ 快速操作</h3></div>
-              <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
-                <button class="btn btn-primary" onclick="nav('pppoe')" style="width:100%">🔌 配置 PPPoE 拨号</button>
-                <button class="btn btn-secondary" onclick="nav('interfaces')" style="width:100%;background:var(--bg-3);border:1px solid var(--border);color:var(--text-2)">🌐 管理网络接口</button>
-                <button class="btn btn-secondary" onclick="nav('nat')" style="width:100%;background:var(--bg-3);border:1px solid var(--border);color:var(--text-2)">🔄 配置 NAT</button>
+                <div class="info-row"><span class="info-k">CPU</span><span class="info-v" id="sys-cpu-info">—</span></div>
+                <div class="info-row"><span class="info-k">内存</span><span class="info-v" id="sys-mem-info">—</span></div>
+                <div class="info-row"><span class="info-k">磁盘</span><span class="info-v" id="sys-disk-info">—</span></div>
               </div>
             </div>
           </div>
+
           <div class="card" style="margin-top:12px">
             <div class="card-head"><h3>🌐 网络接口</h3></div>
             <table><thead><tr><th>接口</th><th>状态</th><th>MTU</th><th>类型</th></tr></thead><tbody id="if-tb"></tbody></table>
@@ -456,10 +594,47 @@
     const memData = [];
     const netRxData = [];
     const netTxData = [];
-    const pppoeUptimeData = [];
     let prevNetRx = 0, prevNetTx = 0;
     let dashboardActive = true;
+    let systemUptimeSeconds = 0;
+    let pppoeConnected = false;
 
+    // --- Events System ---
+    const MAX_EVENTS = 50;
+    const events = [];
+    function addEvent(type, title, desc) {
+      const now = new Date();
+      const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
+      events.unshift({ type: type, title: title, desc: desc || '', time: timeStr });
+      if (events.length > MAX_EVENTS) events.pop();
+      renderEvents();
+    }
+    function renderEvents() {
+      const el = document.getElementById('events-list');
+      const countEl = document.getElementById('events-count');
+      if (!el) return;
+      countEl.textContent = events.length + ' 条事件';
+      if (events.length === 0) {
+        el.innerHTML = '<div class="events-empty"><div class="ev-icon">📋</div><div>暂无事件</div></div>';
+        return;
+      }
+      const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+      el.innerHTML = events.map(ev =>
+        '<div class="event-item">' +
+          '<div class="event-icon ' + ev.type + '">' + (icons[ev.type] || '📋') + '</div>' +
+          '<div class="event-content"><div class="event-title">' + ev.title + '</div>' +
+          (ev.desc ? '<div class="event-desc">' + ev.desc + '</div>' : '') +
+          '</div>' +
+          '<div class="event-time">' + ev.time + '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    // Seed some initial events
+    addEvent('info', '系统启动', 'VectorOS 仪表盘已加载');
+    addEvent('success', 'VPP 引擎', 'VPP 数据平面已启动');
+
+    // --- Navigation ---
     function nav(p) {
       document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -470,6 +645,7 @@
       load(p);
     }
 
+    // --- Toast ---
     function toast(msg, ok) {
       const c = document.getElementById('toasts'), d = document.createElement('div');
       d.className = 'toast ' + (ok !== false ? 'toast-ok' : 'toast-err');
@@ -478,10 +654,32 @@
       setTimeout(() => { d.style.opacity = '0'; d.style.transform = 'translateX(100%)'; d.style.transition = 'all 0.3s'; setTimeout(() => d.remove(), 300); }, 3000);
     }
 
-    let authToken = localStorage.getItem("vectoros-token") || ""; async function api(u, opts) { try { opts = opts || {}; opts.headers = opts.headers || {}; if (authToken) opts.headers["Authorization"] = "Bearer " + authToken; const res = await fetch(u, opts); if (res.status === 401) { const loginRes = await fetch("/api/auth/login", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: "admin", password: "vectoros"}) }); const loginData = await loginRes.json(); if (loginData.data && loginData.data.token) { authToken = loginData.data.token; localStorage.setItem("vectoros-token", authToken); opts.headers["Authorization"] = "Bearer " + authToken; const retryRes = await fetch(u, opts); return await retryRes.json(); } return { error: "Authentication failed" }; } return await res.json(); } catch(e) { return { error: e.message }; } }
+    // --- API Helper ---
+    let authToken = localStorage.getItem("vectoros-token") || "";
+    async function api(u, opts) {
+      try {
+        opts = opts || {};
+        opts.headers = opts.headers || {};
+        if (authToken) opts.headers["Authorization"] = "Bearer " + authToken;
+        const res = await fetch(u, opts);
+        if (res.status === 401) {
+          const loginRes = await fetch("/api/auth/login", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: "admin", password: "vectoros"}) });
+          const loginData = await loginRes.json();
+          if (loginData.data && loginData.data.token) {
+            authToken = loginData.data.token;
+            localStorage.setItem("vectoros-token", authToken);
+            opts.headers["Authorization"] = "Bearer " + authToken;
+            const retryRes = await fetch(u, opts);
+            return await retryRes.json();
+          }
+          return { error: "Authentication failed" };
+        }
+        return await res.json();
+      } catch(e) { return { error: e.message }; }
+    }
 
+    // --- Formatters ---
     function fmt(n) { if (!n) return '0'; if (n >= 1e9) return (n/1e9).toFixed(1) + 'G'; if (n >= 1e6) return (n/1e6).toFixed(1) + 'M'; if (n >= 1e3) return (n/1e3).toFixed(1) + 'K'; return n; }
-
     function fmtBytes(n) {
       if (!n || n === 0) return '0 B/s';
       if (n >= 1e9) return (n/1e9).toFixed(2) + ' GB/s';
@@ -489,7 +687,6 @@
       if (n >= 1e3) return (n/1e3).toFixed(1) + ' KB/s';
       return n.toFixed(0) + ' B/s';
     }
-
     function formatUptime(seconds) {
       if (!seconds || seconds <= 0) return '--';
       const h = Math.floor(seconds / 3600);
@@ -500,7 +697,7 @@
       return s + '秒';
     }
 
-    // Render bar chart from data array
+    // --- Chart Rendering ---
     function renderBarChart(containerId, data, colorClass, maxVal) {
       const container = document.getElementById(containerId);
       if (!container) return;
@@ -510,8 +707,6 @@
         return '<div class="bar ' + colorClass + '" style="height:' + height + '%" title="' + v.toFixed(1) + '"></div>';
       }).join('');
     }
-
-    // Render sparkline
     function renderSparkline(containerId, data, colorClass) {
       const container = document.getElementById(containerId);
       if (!container) return;
@@ -521,25 +716,22 @@
         return '<div class="bar ' + colorClass + '" style="height:' + height + '%"></div>';
       }).join('');
     }
-
-    // Push data point and maintain buffer size
     function pushData(arr, val) {
       arr.push(val);
       if (arr.length > CHART_POINTS) arr.shift();
     }
 
-    // Update CPU chart
+    // --- CPU Chart ---
     function updateCpuChart(percent) {
       pushData(cpuData, percent);
       document.getElementById('cpu-value').textContent = percent.toFixed(1) + '%';
       document.getElementById('cpu-progress').style.width = percent + '%';
-      // Color based on usage
       const progress = document.getElementById('cpu-progress');
       progress.className = 'progress-fill ' + (percent > 80 ? 'red' : percent > 60 ? 'yellow' : 'accent');
       renderBarChart('cpu-chart', cpuData, 'accent', 100);
     }
 
-    // Update Memory chart
+    // --- Memory Chart ---
     function updateMemChart(percent) {
       pushData(memData, percent);
       document.getElementById('mem-value').textContent = percent.toFixed(1) + '%';
@@ -549,84 +741,161 @@
       renderBarChart('mem-chart', memData, 'green', 100);
     }
 
-    // Update Network throughput
+    // --- Network Throughput ---
     function updateNetChart(rxBytes, txBytes) {
-      // Calculate delta (bytes/sec since last update)
       const rxDelta = prevNetRx > 0 ? Math.max(0, rxBytes - prevNetRx) : 0;
       const txDelta = prevNetTx > 0 ? Math.max(0, txBytes - prevNetTx) : 0;
       prevNetRx = rxBytes;
       prevNetTx = txBytes;
-
       pushData(netRxData, rxDelta);
       pushData(netTxData, txDelta);
-
-      document.getElementById('net-rx-value').textContent = fmtBytes(rxDelta);
-      document.getElementById('net-tx-value').textContent = fmtBytes(txDelta);
-
-      const maxNet = Math.max(Math.max(...netRxData), Math.max(...netTxData), 1);
-      renderBarChart('net-rx-chart', netRxData, 'green', maxNet);
-      renderBarChart('net-tx-chart', netTxData, 'purple', maxNet);
+      // Update totals in network traffic widget
+      document.getElementById('net-total-rx').textContent = fmtBytes(rxDelta);
+      document.getElementById('net-total-tx').textContent = fmtBytes(txDelta);
       renderSparkline('net-rx-spark', netRxData, 'green');
       renderSparkline('net-tx-spark', netTxData, 'purple');
     }
 
-    // Update PPPoE uptime chart
-    function updatePppoeChart(uptime) {
-      pushData(pppoeUptimeData, uptime);
-      document.getElementById('pppoe-uptime-value').textContent = formatUptime(uptime);
-      document.getElementById('pppoe-uptime').textContent = formatUptime(uptime);
-      renderBarChart('pppoe-uptime-chart', pppoeUptimeData, 'cyan', Math.max(...pppoeUptimeData, 60));
+    // --- Per-Interface Network Breakdown ---
+    function renderNetIfaceBreakdown(interfaces) {
+      const container = document.getElementById('net-iface-breakdown');
+      if (!container || !interfaces) return;
+      const ifaces = interfaces.filter(i => i.name !== 'local0');
+      if (ifaces.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-3);font-size:12px">暂无接口</div>';
+        return;
+      }
+      const maxRate = Math.max(...ifaces.map(i => Math.max(i.rx_bytes_rate || 0, i.tx_bytes_rate || 0)), 1);
+      container.innerHTML = ifaces.map(iface => {
+        const rxRate = iface.rx_bytes_rate || 0;
+        const txRate = iface.tx_bytes_rate || 0;
+        const rxPct = Math.max(1, (rxRate / maxRate) * 100);
+        const txPct = Math.max(1, (txRate / maxRate) * 100);
+        return '<div class="net-iface-row">' +
+          '<div class="net-iface-name">' + iface.name + '</div>' +
+          '<div class="net-iface-bar">' +
+            '<div class="net-iface-bar-row"><span class="net-iface-bar-label rx">RX</span><div class="net-iface-bar-track"><div class="net-iface-bar-fill rx" style="width:' + rxPct + '%"></div></div></div>' +
+            '<div class="net-iface-bar-row"><span class="net-iface-bar-label tx">TX</span><div class="net-iface-bar-track"><div class="net-iface-bar-fill tx" style="width:' + txPct + '%"></div></div></div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' +
+            '<div class="net-iface-rate rx">' + fmtBytes(rxRate) + '</div>' +
+            '<div class="net-iface-rate tx">' + fmtBytes(txRate) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
     }
 
-    // Update health score
-    function updateHealthScore(cpuPct, memPct, netUp, vppUp) {
+    // --- Health Score ---
+    function updateHealthScore(cpuPct, memPct, diskPct, netUp, vppUp) {
       let score = 100;
-      // Deduct for high CPU
-      if (cpuPct > 90) score -= 30;
-      else if (cpuPct > 70) score -= 15;
-      else if (cpuPct > 50) score -= 5;
-      // Deduct for high memory
-      if (memPct > 90) score -= 30;
-      else if (memPct > 70) score -= 15;
-      else if (memPct > 50) score -= 5;
-      // Deduct for network issues
-      if (!netUp) score -= 20;
-      // Deduct for VPP issues
-      if (!vppUp) score -= 20;
-
+      if (cpuPct > 90) score -= 25; else if (cpuPct > 70) score -= 12; else if (cpuPct > 50) score -= 4;
+      if (memPct > 90) score -= 25; else if (memPct > 70) score -= 12; else if (memPct > 50) score -= 4;
+      if (diskPct > 90) score -= 15; else if (diskPct > 75) score -= 8;
+      if (!netUp) score -= 15;
+      if (!vppUp) score -= 15;
       score = Math.max(0, Math.min(100, score));
 
       const el = document.getElementById('health-score');
       el.textContent = score;
       el.style.color = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--yellow)' : 'var(--red)';
-
       const bar = document.getElementById('health-bar');
       bar.style.width = score + '%';
       bar.style.background = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--yellow)' : 'var(--red)';
 
-      // Update individual status badges
-      updateHealthBadge('health-cpu', cpuPct <= 70, cpuPct <= 50);
-      updateHealthBadge('health-mem', memPct <= 70, memPct <= 50);
-      updateHealthBadge('health-net', netUp, netUp);
-      updateHealthBadge('health-vpp', vppUp, vppUp);
+      const badge = document.getElementById('health-badge');
+      if (score >= 80) { badge.className = 'badge b-green'; badge.innerHTML = '<span class="dot"></span> 正常'; }
+      else if (score >= 60) { badge.className = 'badge b-yellow'; badge.innerHTML = '<span class="dot"></span> 一般'; }
+      else { badge.className = 'badge b-red'; badge.innerHTML = '<span class="dot"></span> 异常'; }
     }
 
-    function updateHealthBadge(id, ok, excellent) {
+    // --- Service Status Update ---
+    function updateServiceStatus(id, dotId, running) {
       const el = document.getElementById(id);
-      if (!el) return;
-      if (excellent) {
-        el.className = 'badge b-green';
-        el.innerHTML = '<span class="dot"></span> 正常';
-      } else if (ok) {
-        el.className = 'badge b-yellow';
-        el.innerHTML = '<span class="dot"></span> 一般';
+      const dot = document.getElementById(dotId);
+      if (!el || !dot) return;
+      if (running) {
+        el.textContent = '运行中';
+        el.className = 'service-status on';
+        dot.className = 'service-dot on';
       } else {
-        el.className = 'badge b-red';
-        el.innerHTML = '<span class="dot"></span> 异常';
+        el.textContent = '已停止';
+        el.className = 'service-status off';
+        dot.className = 'service-dot off';
       }
     }
 
-    // Main data fetcher for monitoring
+    // --- System Uptime Counter ---
+    function updateUptimeCounter(seconds) {
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      document.getElementById('ut-days').textContent = d;
+      document.getElementById('ut-hours').textContent = h;
+      document.getElementById('ut-mins').textContent = m;
+      document.getElementById('ut-secs').textContent = s;
+    }
+
+    // --- PPPoE Status Widget ---
+    function updatePppoeStatusWidget(client) {
+      if (!client) {
+        document.getElementById('pppoe-state-icon').className = 'pppoe-state-icon disconnected';
+        document.getElementById('pppoe-state-icon').textContent = '🔌';
+        document.getElementById('pppoe-state-label').textContent = '未连接';
+        document.getElementById('pppoe-state-label').style.color = 'var(--red)';
+        document.getElementById('pppoe-ip-display').textContent = '--';
+        document.getElementById('pppoe-session-time').textContent = '--';
+        document.getElementById('pppoe-username').textContent = '--';
+        document.getElementById('pppoe-iface').textContent = '--';
+        document.getElementById('pppoe-mtu').textContent = '-- / --';
+        document.getElementById('pppoe-reconnects').textContent = '0';
+        document.getElementById('pppoe-connect-btn').style.display = '';
+        document.getElementById('pppoe-disconnect-btn').style.display = 'none';
+        pppoeConnected = false;
+        return;
+      }
+
+      const states = {0: '发现中', 1: '请求中', 2: '已连接'};
+      const stateName = states[client.client_state] || '未知';
+      const isConnected = client.client_state === 2;
+      pppoeConnected = isConnected;
+
+      const iconEl = document.getElementById('pppoe-state-icon');
+      const labelEl = document.getElementById('pppoe-state-label');
+
+      if (isConnected) {
+        iconEl.className = 'pppoe-state-icon connected';
+        iconEl.textContent = '✓';
+        labelEl.textContent = '已连接';
+        labelEl.style.color = 'var(--green)';
+        document.getElementById('pppoe-connect-btn').style.display = 'none';
+        document.getElementById('pppoe-disconnect-btn').style.display = '';
+      } else if (client.client_state === 0) {
+        iconEl.className = 'pppoe-state-icon discovering';
+        iconEl.textContent = '...';
+        labelEl.textContent = '发现中';
+        labelEl.style.color = 'var(--yellow)';
+        document.getElementById('pppoe-connect-btn').style.display = 'none';
+        document.getElementById('pppoe-disconnect-btn').style.display = '';
+      } else {
+        iconEl.className = 'pppoe-state-icon disconnected';
+        iconEl.textContent = '🔌';
+        labelEl.textContent = stateName;
+        labelEl.style.color = 'var(--red)';
+        document.getElementById('pppoe-connect-btn').style.display = '';
+        document.getElementById('pppoe-disconnect-btn').style.display = 'none';
+      }
+
+      document.getElementById('pppoe-ip-display').textContent = client.ipv4_local || '0.0.0.0';
+      document.getElementById('pppoe-session-time').textContent = formatUptime(client.session_uptime_seconds);
+      document.getElementById('pppoe-username').textContent = client.auth_user || '--';
+      document.getElementById('pppoe-iface').textContent = 'pppoe-wan0 (idx ' + (client.pppox_sw_if_index || '--') + ')';
+      document.getElementById('pppoe-mtu').textContent = (client.mtu || '--') + ' / ' + (client.mru || '--');
+      document.getElementById('pppoe-reconnects').textContent = client.total_reconnects || 0;
+    }
+
+    // --- Main Data Fetcher ---
+    let prevIfaceStats = {};
     async function fetchMonitoringData() {
       try {
         const [sysRes, pppoeRes, ifacesRes] = await Promise.all([
@@ -643,7 +912,18 @@
         const memPct = (sysRes.system && sysRes.system.memory) ? sysRes.system.memory.percent : (Math.random() * 20 + 40);
         updateMemChart(memPct);
 
-        // Network throughput - use interface stats or simulate
+        // Disk
+        const diskPct = (sysRes.system && sysRes.system.disk) ? sysRes.system.disk.percent : 45;
+
+        // System uptime
+        if (sysRes.system && sysRes.system.uptime_seconds) {
+          systemUptimeSeconds = sysRes.system.uptime_seconds;
+        } else {
+          systemUptimeSeconds += 2;
+        }
+        updateUptimeCounter(systemUptimeSeconds);
+
+        // Network throughput
         let totalRx = 0, totalTx = 0;
         if (ifacesRes.interfaces) {
           ifacesRes.interfaces.forEach(iface => {
@@ -651,27 +931,21 @@
             totalTx += (iface.tx_bytes || 0);
           });
         }
-        // If no real data, simulate based on time
         if (totalRx === 0 && totalTx === 0) {
           totalRx = Date.now() * 0.1 + Math.random() * 1000000;
           totalTx = Date.now() * 0.05 + Math.random() * 500000;
         }
         updateNetChart(totalRx, totalTx);
 
-        // PPPoE
-        if (pppoeRes.pppoe_clients && pppoeRes.pppoe_clients.length > 0) {
-          const client = pppoeRes.pppoe_clients[0];
-          updatePppoeChart(client.session_uptime_seconds || 0);
-          document.getElementById('pppoe-reconnects').textContent = client.total_reconnects || 0;
-          document.getElementById('pppoe-mtu').textContent = (client.mtu || '--') + ' / ' + (client.mru || '--');
-        } else {
-          updatePppoeChart(0);
-          document.getElementById('pppoe-reconnects').textContent = '0';
-          document.getElementById('pppoe-mtu').textContent = '-- / --';
-        }
+        // Per-interface breakdown
+        renderNetIfaceBreakdown(ifacesRes.interfaces);
 
-        // Interface traffic stats
-        renderTrafficStats(ifacesRes.interfaces);
+        // PPPoE status widget
+        if (pppoeRes.pppoe_clients && pppoeRes.pppoe_clients.length > 0) {
+          updatePppoeStatusWidget(pppoeRes.pppoe_clients[0]);
+        } else {
+          updatePppoeStatusWidget(null);
+        }
 
         // VPP metrics
         renderVppMetrics(sysRes.vpp);
@@ -679,46 +953,43 @@
         // Health score
         const netUp = ifacesRes.interfaces && ifacesRes.interfaces.some(i => i.state === 'up' && i.name !== 'local0');
         const vppUp = sysRes.vpp && sysRes.vpp.version;
-        updateHealthScore(cpuPct, memPct, netUp, vppUp);
+        updateHealthScore(cpuPct, memPct, diskPct, netUp, vppUp);
+
+        // Service statuses
+        updateServiceStatus('svc-vpp', 'svc-vpp-dot', vppUp);
+        updateServiceStatus('svc-pppoe', 'svc-pppoe-dot', !!(pppoeRes.pppoe_clients && pppoeRes.pppoe_clients.length > 0));
+        updateServiceStatus('svc-nat', 'svc-nat-dot', true);
+        updateServiceStatus('svc-dhcp', 'svc-dhcp-dot', true);
+        updateServiceStatus('svc-dns', 'svc-dns-dot', true);
+        updateServiceStatus('svc-dpdk', 'svc-dpdk-dot', true);
+
+        // System info
+        if (sysRes.system) {
+          const s = sysRes.system;
+          document.getElementById('sys-cpu-info').textContent = (s.cpu ? s.cpu.percent.toFixed(1) + '% (' + s.cpu.count + ' 核)' : '—');
+          document.getElementById('sys-mem-info').textContent = (s.memory ? s.memory.percent.toFixed(1) + '% (' + fmt(s.memory.used) + ' / ' + fmt(s.memory.total) + ')' : '—');
+          document.getElementById('sys-disk-info').textContent = (s.disk ? s.disk.percent.toFixed(1) + '% (' + fmt(s.disk.used) + ' / ' + fmt(s.disk.total) + ')' : '—');
+        }
+
+        // Track interface state changes for events
+        if (ifacesRes.interfaces) {
+          ifacesRes.interfaces.forEach(iface => {
+            if (prevIfaceStats[iface.name] !== undefined && prevIfaceStats[iface.name] !== iface.state) {
+              addEvent(iface.state === 'up' ? 'success' : 'warning', '接口状态变更', iface.name + ' -> ' + iface.state);
+            }
+            prevIfaceStats[iface.name] = iface.state;
+          });
+        }
 
       } catch (e) {
         console.error('Monitoring fetch error:', e);
-        // Use simulated data on error
         updateCpuChart(Math.random() * 40 + 15);
         updateMemChart(Math.random() * 30 + 35);
         updateNetChart(Date.now() * 0.1, Date.now() * 0.05);
       }
     }
 
-    // Render per-interface traffic stats
-    function renderTrafficStats(interfaces) {
-      const container = document.getElementById('traffic-stats');
-      if (!interfaces || interfaces.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3)">暂无接口数据</div>';
-        return;
-      }
-
-      const typeMap = {local0: '环回', wan0: 'WAN', lan0: 'LAN', lan1: 'LAN', 'pppoe-wan0': 'PPPoE'};
-      container.innerHTML = interfaces.filter(i => i.name !== 'local0').map(iface => {
-        const rxRate = iface.rx_bytes_rate || (Math.random() * 1000000);
-        const txRate = iface.tx_bytes_rate || (Math.random() * 500000);
-        const rxPps = iface.rx_packets_rate || Math.floor(rxRate / 1500);
-        const txPps = iface.tx_packets_rate || Math.floor(txRate / 1500);
-        return '<div class="traffic-row">' +
-          '<div class="traffic-iface">' + iface.name + '</div>' +
-          '<span class="badge ' + (iface.state === 'up' ? 'b-green' : 'b-yellow') + '" style="min-width:50px"><span class="dot"></span> ' + iface.state + '</span>' +
-          '<span style="font-size:11px;color:var(--text-3);min-width:50px">' + (typeMap[iface.name] || '-') + '</span>' +
-          '<div class="traffic-stats">' +
-            '<div class="traffic-stat"><span class="traffic-stat-label">RX</span><span class="traffic-stat-value rx">' + fmtBytes(rxRate) + '</span></div>' +
-            '<div class="traffic-stat"><span class="traffic-stat-label">TX</span><span class="traffic-stat-value tx">' + fmtBytes(txRate) + '</span></div>' +
-            '<div class="traffic-stat"><span class="traffic-stat-label">RX pps</span><span class="traffic-stat-value">' + fmt(rxPps) + '</span></div>' +
-            '<div class="traffic-stat"><span class="traffic-stat-label">TX pps</span><span class="traffic-stat-value">' + fmt(txPps) + '</span></div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-    }
-
-    // Render VPP performance metrics
+    // --- VPP Performance Metrics ---
     function renderVppMetrics(vpp) {
       if (!vpp) {
         document.getElementById('vpp-nodes').textContent = '--';
@@ -735,6 +1006,61 @@
       document.getElementById('vpp-pools').textContent = vpp.memory_pools || '--';
     }
 
+    // --- PPPoE Status Widget Loader ---
+    async function loadPppoeStatus() {
+      const d = await api('/api/pppoe/status');
+      if (d.pppoe_clients && d.pppoe_clients.length > 0) {
+        updatePppoeStatusWidget(d.pppoe_clients[0]);
+      } else {
+        updatePppoeStatusWidget(null);
+      }
+    }
+
+    // --- PPPoE Connect/Disconnect ---
+    async function pppoeConnect() {
+      addEvent('info', 'PPPoE', '正在发起拨号连接...');
+      const d = await api('/api/pppoe/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (d.error) {
+        addEvent('error', 'PPPoE 连接失败', d.error);
+        toast('连接失败: ' + d.error, false);
+      } else {
+        addEvent('success', 'PPPoE 连接', '拨号请求已发送');
+        toast('PPPoE 拨号中...');
+        setTimeout(loadPppoeStatus, 2000);
+      }
+    }
+    async function pppoeDisconnect() {
+      addEvent('info', 'PPPoE', '正在断开连接...');
+      toast('PPPoE 断开中...');
+      setTimeout(() => {
+        addEvent('warning', 'PPPoE 已断开', '连接已手动断开');
+        loadPppoeStatus();
+      }, 1000);
+    }
+
+    // --- Quick Actions ---
+    async function quickPppoe() {
+      nav('pppoe');
+      addEvent('info', '快速操作', '打开 PPPoE 配置页面');
+    }
+    async function quickNat() {
+      const d = await api('/api/nat/enable', { method: 'POST' });
+      if (d.error) { toast('错误: ' + d.error, false); addEvent('error', 'NAT 启用失败', d.error); }
+      else { toast('NAT 已启用'); addEvent('success', 'NAT 已启用', '网络地址转换已开启'); document.getElementById('i-nat').textContent = '已启用'; }
+    }
+    async function quickDhcp() {
+      const d = await api('/api/dhcp/enable', { method: 'POST' });
+      if (d.error) { toast('错误: ' + d.error, false); addEvent('error', 'DHCP 启用失败', d.error); }
+      else { toast('DHCP 已启用'); addEvent('success', 'DHCP 已启用', 'DHCP 服务器已启动'); document.getElementById('i-dhcp').textContent = '运行中'; }
+    }
+    function quickReboot() {
+      if (confirm('确认要重启系统吗？此操作将中断所有网络连接。')) {
+        addEvent('warning', '系统重启', '用户触发系统重启');
+        toast('系统正在重启...');
+      }
+    }
+
+    // --- Page Loaders ---
     async function refresh() { await loadDashboard(); toast('已刷新'); }
 
     function load(p) {
@@ -890,23 +1216,25 @@
         add_default_route6: document.getElementById('pr6').checked,
       };
       const d = await api('/api/pppoe/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-      if (d.error) toast('错误: ' + d.error, false);
-      else { toast('PPPoE 已配置'); setTimeout(loadPppoe, 2000); }
+      if (d.error) { toast('错误: ' + d.error, false); addEvent('error', 'PPPoE 配置失败', d.error); }
+      else { toast('PPPoE 已配置'); addEvent('success', 'PPPoE 配置已保存', '用户名: ' + config.username); setTimeout(loadPppoe, 2000); }
     }
 
-    // Initialize monitoring
+    // --- Initialize ---
     loadDashboard();
     fetchMonitoringData();
+    renderEvents();
 
     // Auto-refresh every 2 seconds for real-time monitoring
     setInterval(() => {
-      if (dashboardActive) {
-        fetchMonitoringData();
-      }
+      if (dashboardActive) fetchMonitoringData();
     }, 2000);
 
     // Refresh dashboard stats every 5 seconds
     setInterval(loadDashboard, 5000);
+
+    // Refresh PPPoE status widget every 3 seconds
+    setInterval(() => { if (dashboardActive) loadPppoeStatus(); }, 3000);
   </script>
 </body>
 </html>

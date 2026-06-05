@@ -46,6 +46,14 @@ pub struct MemoryMetric {
     pub cached: u64,
     pub available: u64,
     pub percent: f64,
+    #[serde(default)]
+    pub swap_total: u64,
+    #[serde(default)]
+    pub swap_used: u64,
+    #[serde(default)]
+    pub swap_free: u64,
+    #[serde(default)]
+    pub swap_percent: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +65,8 @@ pub struct DiskMetric {
     pub available: u64,
     pub percent: f64,
     pub mountpoint: String,
+    #[serde(default)]
+    pub health: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,6 +113,12 @@ pub struct VppMetric {
     pub memory_used_mb: f64,
     pub memory_percent: f64,
     pub errors_total: u64,
+    #[serde(default)]
+    pub worker_threads: u32,
+    #[serde(default)]
+    pub packet_rate_rx: u64,
+    #[serde(default)]
+    pub packet_rate_tx: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -544,6 +560,10 @@ fn collect_metrics_from_script() -> Result<SystemMetrics> {
             cached: raw["memory"]["cached"].as_u64().unwrap_or(0),
             available: raw["memory"]["available"].as_u64().unwrap_or(0),
             percent: raw["memory"]["percent"].as_f64().unwrap_or(0.0),
+            swap_total: raw["memory"]["swap_total"].as_u64().unwrap_or(0),
+            swap_used: raw["memory"]["swap_used"].as_u64().unwrap_or(0),
+            swap_free: raw["memory"]["swap_free"].as_u64().unwrap_or(0),
+            swap_percent: raw["memory"]["swap_percent"].as_f64().unwrap_or(0.0),
         },
         disk_usage: parse_disk_metrics(&raw["disk_usage"]),
         disk_io: DiskIoMetric {
@@ -563,6 +583,9 @@ fn collect_metrics_from_script() -> Result<SystemMetrics> {
             memory_used_mb: raw["vpp"]["memory"]["used_mb"].as_f64().unwrap_or(0.0),
             memory_percent: raw["vpp"]["memory"]["percent"].as_f64().unwrap_or(0.0),
             errors_total: raw["vpp"]["errors"]["total"].as_u64().unwrap_or(0),
+            worker_threads: raw["vpp"]["worker_threads"].as_u64().unwrap_or(0) as u32,
+            packet_rate_rx: raw["vpp"]["packet_rate_rx"].as_u64().unwrap_or(0),
+            packet_rate_tx: raw["vpp"]["packet_rate_tx"].as_u64().unwrap_or(0),
         },
         processes: parse_process_metrics(&raw["processes"]),
         temperatures: parse_temperature_metrics(&raw["temperatures"]),
@@ -602,6 +625,7 @@ fn parse_disk_metrics(val: &serde_json::Value) -> Vec<DiskMetric> {
                 available: item["available"].as_u64().unwrap_or(0),
                 percent: item["percent"].as_f64().unwrap_or(0.0),
                 mountpoint: item["mountpoint"].as_str().unwrap_or("").to_string(),
+                health: item["health"].as_str().unwrap_or("unknown").to_string(),
             });
         }
     }
