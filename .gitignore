@@ -23,3 +23,7 @@ Thumbs.db
 *.so
 *.o
 __pycache__/
+
+# Claude configuration (local only)
+CLAUDE.md
+.claude/
