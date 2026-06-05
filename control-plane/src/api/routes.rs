@@ -177,6 +177,11 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/api/monitor/history", get(handlers::get_monitor_history))
         .route("/api/monitor/alerts", get(handlers::get_monitor_alerts))
         .route("/api/monitor/alerts/ack", post(handlers::acknowledge_alert))
+        // VPP ACL (direct VPP integration)
+        .route("/api/vpp/acl/add", post(handlers::add_vpp_acl))
+        .route("/api/vpp/acl/list", get(handlers::list_vpp_acls))
+        .route("/api/vpp/acl/:index", delete(handlers::delete_vpp_acl))
+        .route("/api/vpp/acl/apply", post(handlers::apply_vpp_acl))
         // WebSocket for real-time updates
         .route("/ws", get(websocket::ws_handler))
 }

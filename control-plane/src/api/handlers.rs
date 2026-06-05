@@ -4015,3 +4015,124 @@ pub async fn get_security_status() -> Json<Value> {
     }))
 }
 
+
+/// Add VPP ACL rule
+#[utoipa::path(
+    post,
+    path = "/api/vpp/acl/add",
+    tag = "VPP ACL",
+    request_body = VppAclRule,
+    responses(
+        (status = 200, description = "ACL rule added", body = Value)
+    )
+)]
+pub async fn add_vpp_acl(
+    Json(rule): Json<VppAclRule>,
+) -> Json<Value> {
+    let acl = crate::services::vpp_acl::VppAclManager::new();
+    let acl_rule = crate::services::vpp_acl::AclRule {
+        index: 0,
+        action: rule.action,
+        src: rule.src,
+        dst: rule.dst,
+        proto: rule.proto,
+        sport: rule.sport,
+        dport: rule.dport,
+        tag: rule.tag.unwrap_or_else(|| "vectoros".to_string()),
+    };
+
+    match acl.add_rule(&acl_rule) {
+        Ok(index) => Json(json!({
+            "status": "ok",
+            "acl_index": index,
+            "message": format!("ACL rule added (index: {})", index)
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Show VPP ACL rules
+#[utoipa::path(
+    get,
+    path = "/api/vpp/acl/list",
+    tag = "VPP ACL",
+    responses(
+        (status = 200, description = "ACL rules list", body = Value)
+    )
+)]
+pub async fn list_vpp_acls() -> Json<Value> {
+    let acl = crate::services::vpp_acl::VppAclManager::new();
+    match acl.show_rules() {
+        Ok(rules) => Json(json!({ "rules": rules, "count": rules.len() })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Delete VPP ACL rule
+#[utoipa::path(
+    delete,
+    path = "/api/vpp/acl/{index}",
+    tag = "VPP ACL",
+    params(
+        ("index" = u32, Path, description = "ACL rule index")
+    ),
+    responses(
+        (status = 200, description = "ACL rule deleted", body = Value)
+    )
+)]
+pub async fn delete_vpp_acl(Path(index): Path<u32>) -> Json<Value> {
+    let acl = crate::services::vpp_acl::VppAclManager::new();
+    match acl.delete_rule(index) {
+        Ok(()) => Json(json!({ "status": "ok", "message": format!("ACL rule {} deleted", index) })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+/// Apply VPP ACL to interface
+#[utoipa::path(
+    post,
+    path = "/api/vpp/acl/apply",
+    tag = "VPP ACL",
+    request_body = VppAclApply,
+    responses(
+        (status = 200, description = "ACL applied", body = Value)
+    )
+)]
+pub async fn apply_vpp_acl(
+    Json(req): Json<VppAclApply>,
+) -> Json<Value> {
+    let acl = crate::services::vpp_acl::VppAclManager::new();
+    match acl.apply_to_interface(&req.interface, req.acl_index, req.input) {
+        Ok(()) => Json(json!({
+            "status": "ok",
+            "message": format!("ACL {} applied to {} {}", req.acl_index, req.interface, if req.input { "input" } else { "output" })
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct VppAclRule {
+    pub action: String,
+    pub src: String,
+    pub dst: String,
+    #[serde(default)]
+    pub proto: u8,
+    #[serde(default = "default_sport")]
+    pub sport: String,
+    #[serde(default = "default_dport")]
+    pub dport: String,
+    pub tag: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct VppAclApply {
+    pub interface: String,
+    pub acl_index: u32,
+    #[serde(default = "default_true")]
+    pub input: bool,
+}
+
+fn default_sport() -> String { "0-65535".to_string() }
+fn default_dport() -> String { "0-65535".to_string() }
+fn default_true() -> bool { true }
